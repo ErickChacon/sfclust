@@ -60,6 +60,7 @@ library(sf)
 library(sfclust)
 library(INLA)
 library(ggplot2)
+library(stars)
 ```
 
 We use Voronoi tesselation to simulate a spatial domain that will be used in our simulation
@@ -140,10 +141,16 @@ Y = do.call(cbind, Y)
 matplot(time, Y, type = "l", lty = 1, xlab = "time", ylab = "Obervations")
 ```
 
-Then we will create a sftime object.
+Then we will create a stars object.
 
 ```{r}
+stars_obj <- st_as_stars(
+  Y = Y,
+  dims = list(time = time, space = coords)
+)
 
+# Assign dimensions to the stars object (time and space)
+st_dimensions(stars_obj) <- st_dimensions(space = coords, time = time_seq)
 ```
 [Next: Modeling](#modeling)
 

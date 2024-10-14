@@ -5,26 +5,29 @@
 \title{Detect Spatial Functional Clusters Based on Bayesian Spanning Tree}
 \usage{
 sfclust(
-  Y,
+  data,
+  formula,
   graphdata = list(graph = NULL, mst = NULL, cluster = NULL),
-  X = NULL,
-  N = NULL,
-  formula = Y ~ 1 + X,
   family = "normal",
   q = 0.5,
-  correction = NULL,
+  correction = FALSE,
   niter = 100,
   burnin = 0,
   thin = 1,
   path_save = NULL,
   nsave = 10,
+  move_prob = c(0.425, 0.425, 0.1),
   ...
 )
 }
 \arguments{
+\item{data}{A stars object contains response, covariates, and other needed data}
+
 \item{formula}{A formula object representing the model to be fitted.}
 
 \item{q}{q is the penalty of the cluster number.}
+
+\item{niter}{MCMC Integer, number of MCMC iterations to perform.}
 
 \item{burnin}{Integer, number of burn-in iterations to discard.}
 
@@ -32,13 +35,13 @@ sfclust(
 
 \item{path_save}{Character, the path where results should be saved.}
 
-\item{data}{A list containing data matrices 'Y' and 'X', and 'N' for the number of trials or cases.}
+\item{nsave}{the number of the gap of saved results in the chain.}
+
+\item{move_prob}{a vector of probabilities of the birth, death, change steps.}
 
 \item{graph}{Initial spanning tree used for the Bayesian model.}
 
 \item{init_val}{List of initial values for parameters 'trees', 'beta', and 'cluster'.}
-
-\item{MCMC}{Integer, number of MCMC iterations to perform.}
 }
 \value{
 NULL The function primarily outputs results to a specified path and does not return anything.
@@ -48,18 +51,4 @@ This function implements a Reversible Jump Markov Chain Monte Carlo (RJMCMC) alg
 for detecting spatial functional clusters based on a Bayesian analysis of spanning trees.
 It handles various types of moves including birth, death, change, and hyperparameter updates
 to explore the space of possible cluster configurations.
-}
-\examples{
-# Example setup (note: actual data and parameters need to be defined)
-\dontrun{
-data <- list(Y = matrix(rnorm(100), ncol = 10), X = matrix(rnorm(100), ncol = 10))
-formula <- Y ~ X1 + X2
-inla.extra <- list(correction = TRUE)
-graph <- matrix(sample(0:1, 100, replace = TRUE), ncol = 10)
-init_val <- list(trees = graph, beta = runif(10), cluster = sample(1:5, 10, replace = TRUE))
-hyperpar <- list(c = 0.5)
-path_save <- "path/to/save/results/"
-
-bsfc(data, family, formula, graph, init_val, hyperpar, MCMC, burnin, THIN, path_save)
-}
 }
