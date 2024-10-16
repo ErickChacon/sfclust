@@ -16,6 +16,8 @@ sfclust(
   thin = 1,
   path_save = NULL,
   nsave = 10,
+  time_var = "time",
+  N_var = NULL,
   move_prob = c(0.425, 0.425, 0.1),
   ...
 )
@@ -36,6 +38,10 @@ sfclust(
 \item{path_save}{Character, the path where results should be saved.}
 
 \item{nsave}{the number of the gap of saved results in the chain.}
+
+\item{time_var}{the variable name of the time dimension in the data.}
+
+\item{N_var}{the variable name of the N dimension in the data when the it is necessary.}
 
 \item{move_prob}{a vector of probabilities of the birth, death, change steps.}
 

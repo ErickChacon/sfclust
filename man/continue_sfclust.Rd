@@ -18,7 +18,7 @@ continue_sfclust(
   path_save = NULL,
   nsave = 10,
   time_var,
-  N_var,
+  N_var = NULL,
   move_prob = c(0.425, 0.425, 0.1),
   ...
 )

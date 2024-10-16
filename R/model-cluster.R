@@ -15,6 +15,8 @@
 #' @param thin Integer, thinning interval for recording the results.
 #' @param path_save Character, the path where results should be saved.
 #' @param nsave the number of the gap of saved results in the chain.
+#' @param time_var the variable name of the time dimension in the data.
+#' @param N_var the variable name of the N dimension in the data when the it is necessary.
 #' @param move_prob a vector of probabilities of the birth, death, change steps.
 #'
 #' @return NULL The function primarily outputs results to a specified path and does not return anything.
@@ -22,7 +24,7 @@
 #' @export
 sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cluster = NULL),
                     family = "normal", q = 0.5, correction = FALSE, niter = 100, burnin = 0, thin = 1,
-                    path_save = NULL, nsave = 10, move_prob = c(0.425, 0.425, 0.1), ...) {
+                    path_save = NULL, nsave = 10,time_var = "time", N_var = NULL, move_prob = c(0.425, 0.425, 0.1), ...) {
   ## Setup
   # Dimensions
   ns <- length(unique(data$geometry))
@@ -44,7 +46,7 @@ sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cl
 
   ## Initialize
   # Initialize log likelihood vector
-  log_mlike_vec <- log_mlik_all(data, cluster, formula, family, correction, ...)
+  log_mlike_vec <- log_mlik_all(data, cluster, formula, family, correction,time_var, N_var, ...)
   log_mlike <- sum(log_mlike_vec)
 
   # Determine if an edge in graph is within a cluster or between two clusters
@@ -86,7 +88,7 @@ sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cl
       }
       log_P <- log(rd_new) - log(rb)
       log_A <- log(1 - c)
-      log_L_new <- log_mlik_ratio("split", log_mlike_vec, split_res, data, formula, family, correction, FALSE, ...)
+      log_L_new <- log_mlik_ratio("split", log_mlike_vec, split_res, data, formula, family, correction, FALSE, time_var, N_var, ...)
       log_L <- log_L_new$ratio
       acc_prob <- min(0, log_A + log_P + log_L)
       acc_prob <- exp(acc_prob)
@@ -112,7 +114,7 @@ sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cl
       }
       log_P <- log(rb_new) - log(rd)
       log_A <- -log(1 - c)
-      log_L_new <- log_mlik_ratio("merge", log_mlike_vec, merge_res, data, formula, family, correction, FALSE, ...)
+      log_L_new <- log_mlik_ratio("merge", log_mlike_vec, merge_res, data, formula, family, correction, FALSE, time_var, N_var, ...)
       log_L <- log_L_new$ratio
       acc_prob <- min(0, log_A + log_P + log_L)
       acc_prob <- exp(acc_prob)
@@ -132,7 +134,7 @@ sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cl
       cid_rm <- merge_res$cluster_rm
       k <- k - 1
 
-      log_L_new_merge <- log_mlik_ratio("merge", log_mlike_vec, merge_res, data, formula, family, correction, FALSE, ...)
+      log_L_new_merge <- log_mlik_ratio("merge", log_mlike_vec, merge_res, data, formula, family, correction, FALSE, time_var, N_var, ...)
 
       split_res <- splitCluster(mstgraph, k, merge_res$cluster)
       split_res$k <- k + 1
@@ -141,7 +143,7 @@ sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cl
 
       log_L_new <- log_mlik_ratio(
         "split", log_L_new_merge$log_mlike_vec, split_res, data,
-        formula, family, correction, FALSE, ...
+        formula, family, correction, FALSE, time_var, N_var, ...
       )
       log_L <- log_L_new$ratio + log_L_new_merge$ratio
 
@@ -252,7 +254,7 @@ sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cl
 continue_sfclust <- function(result, data, membership,
                           formula, family = "normal", q = 0.5,
                           correction = FALSE, niter = 100, burnin = 0, thin = 1, path_save = NULL, nsave = 10,
-                          time_var, N_var, move_prob = c(0.425, 0.425, 0.1), ...) {
+                          time_var, N_var = NULL, move_prob = c(0.425, 0.425, 0.1), ...) {
   n <- length(result[["mst"]])
   cluster <- result[['cluster']][n,]
   mst <- result[["mst"]][[n]]

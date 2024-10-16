@@ -13,6 +13,8 @@ log_mlik_ratio(
   family = "normal",
   correction = FALSE,
   detailed = FALSE,
+  time_var,
+  N_var,
   ...
 )
 }
@@ -29,14 +31,14 @@ log_mlik_ratio(
 
 \item{detailed}{Logical, indicating whether detailed output from INLA is required.}
 
+\item{time_var}{The name of the time variable in the stars object.}
+
+\item{N_var}{The name of the variable used as exposure or trials (for Poisson, binomial, etc.).}
+
 \item{log_like_vec}{A numeric vector of existing log likelihoods for all clusters.}
 
 \item{control.move}{A list containing control parameters and information about the move,
 such as \code{clust_old}, \code{k}, \code{cluster_newid}, and \code{cluster_rm}.}
-
-\item{time_var}{The name of the time variable in the stars object.}
-
-\item{N_var}{The name of the variable used as exposure or trials (for Poisson, binomial, etc.).}
 }
 \value{
 A list containing the updated log likelihood vector and the log likelihood ratio (\code{llratio}).

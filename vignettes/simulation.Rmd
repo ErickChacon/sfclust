@@ -69,7 +69,8 @@ later obtain MST. Finally, We can create n clusters by removing n-1 edges of the
 this case, we will create 10 clusters. Firstly, we will create the areas inside the domain.
 ```{r warning=FALSE}
 set.seed(7)
-box <- st_as_sfc(st_bbox(c(xmin = 0, ymin = 0, xmax = 1, ymax = 1))) # Define a bounding box
+bbox <- st_bbox(c(xmin = 0, ymin = 0, xmax = 1, ymax = 1))
+box <- st_as_sfc(bbox) # Define a bounding box
 n <- 100
 points <- st_union(st_sample(box, size = n))
 vor <- st_voronoi(points, box)
@@ -141,17 +142,6 @@ Y = do.call(cbind, Y)
 matplot(time, Y, type = "l", lty = 1, xlab = "time", ylab = "Obervations")
 ```
 
-Then we will create a stars object.
-
-```{r}
-stars_obj <- st_as_stars(
-  Y = Y,
-  dims = list(time = time, space = coords)
-)
-
-# Assign dimensions to the stars object (time and space)
-st_dimensions(stars_obj) <- st_dimensions(space = coords, time = time_seq)
-```
 [Next: Modeling](#modeling)
 
 <div class="page-break"></div>
@@ -159,14 +149,28 @@ st_dimensions(stars_obj) <- st_dimensions(space = coords, time = time_seq)
 # Modeling
 <a id="modeling"></a>
 
-In this section, we show how to use Bsfclust algorithm to find the spatial clusters.
+In this section, we show how to use Bsfclust algorithm to find the spatial clusters. First we will create a stars object.
 
 ```{r warning=FALSE}
+coords <- st_centroid(geodata)
+time_seq <- time
 nt=dim(Y)[1]; ns=dim(Y)[2]  
 ## build design matrix
 time = seq(0,1, length.out = 100)
 # compute fixed effects
 X = poly(time, 2, raw = TRUE, simple = TRUE)
+X1 <- X[, 1]
+X2 <- X[, 2]
+
+# Expand X1 and X2 to match the space-time dimensions (100 time points, 100 space points)
+# Replicate X1 and X2 across space
+X1_expanded <- matrix(rep(X1, each = 100), nrow = 100, ncol = 100)
+X2_expanded <- matrix(rep(X2, each = 100), nrow = 100, ncol = 100)
+
+
+# Combine X1, X2, and Y into a single stars object
+data <- st_as_stars(Y = Y, X1 = X1_expanded, X2 = X2_expanded)
+st_dimensions(data) <- st_dimensions(space = coords$geometry, time = time_seq)
 map <- geodata
 ```
 
@@ -214,14 +218,14 @@ $$
 \pi(C = n_{init})(1-c)^{n_{init}}
 $$
 ```{r}
-formula <- Y ~ 1 + X
+formula <- Y ~ 1 + X1 + X2
 ```
 
 We set the parameter $q = 0.5$. We executed our algorithm with 2000 iterations for the simulated data.
 ```{r eval=FALSE, warning=FALSE}
-result <- sfclust(Y, graphdata = geodata, X = X, N = NULL,
+result <- sfclust(data = data, graphdata = geodata,
                 formula, family = "normal", q = 0.5,
-                correction = F, niter = 2000, burnin = 0, thin = 1,  path_save = '~/Documents/project3/data/simu_result.rds', nsave = 50) 
+                correction = F, niter = 2000, burnin = 0, thin = 1,  path_save = '~/Documents/project3/data/simu_result.rds', nsave = 50, ) 
 ```
 ```{r include=FALSE}
 result <- readRDS('~/Documents/project3/data/simu_result.rds')
