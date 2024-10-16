@@ -33,7 +33,6 @@
 #' @export
 log_mlik_each <- function(k, stars_obj, membership, formula, family = "normal", correction = FALSE, time_var, N_var, detailed = FALSE, ...) {
   inla_data <- preprocess_data_each(stars_obj, k, membership, time_var = time_var)
-  
   if (family == "poisson") {
     model <- INLA::inla(formula, family,
                         E = inla_data[[N_var]],  # Use N from the stars object, if present
@@ -58,7 +57,7 @@ log_mlik_each <- function(k, stars_obj, membership, formula, family = "normal", 
                         control.compute = list(config = TRUE), ...
     )
   }
-  
+
   if (detailed) {
     return(model)
   } else {
@@ -115,30 +114,30 @@ preprocess_data_each <- function(stars_obj, k, membership, time_var = "time") {
   if (!inherits(stars_obj, "stars")) {
     stop("Input must be a 'stars' object.")
   }
-  
+
   # Get the indices of the regions that belong to the kth cluster
   cluster_regions <- which(membership == k)
-  
+
   if (is.vector(membership)) {
     # Subset the stars object to only include the regions in the kth cluster
     stars_obj_subset <- stars_obj[, cluster_regions, , drop = FALSE]
   }
-  
+
   # Convert the subsetted stars object to a long data frame
   data_long <- as.data.frame(stars_obj_subset, long = TRUE)
-  
+
   # Calculate the number of time points (nt) and spatial locations (nk) in the cluster
   nt <- length(unique(data_long[[time_var]]))  # number of time points
   nk <- length(cluster_regions)  # number of regions in the kth cluster
-  
+
   # Create id, idt, and ids ensuring correct indexing based on spatial locations and time
   data_long$id <- seq_len(nt * nk)  # Create unique IDs for each observation
   data_long$idt <- rep(seq_len(nt), each = nk)  # Create time index (idt) for each region
   data_long$ids <- rep(seq_len(nk), time = nt)  # Create spatial index (ids) for each time point
-  
+
   # Remove the first column (if it contains geometry or spatial information)
   data_inla <- data_long[, -1]
-  
+
   return(data_inla)  # Return the processed data for the kth cluster
 }
 
@@ -148,26 +147,26 @@ preprocess_data_each <- function(stars_obj, k, membership, time_var = "time") {
 get_structure_matrix <- function(model, formula) {
   # prior diagonal
   prior_diagonal <- model[[".args"]][["control.compute"]][["control.gcpo"]][["prior.diagonal"]]
-  
+
   # model config
   model <- model[["misc"]][["configs"]]
-  
+
   # effects dimension information
   x_info <- model[["contents"]]
   ef_start <- setNames(x_info$start[-1] - x_info$length[1], x_info$tag[-1])
   ef_end <- ef_start + x_info$length[-1] - 1
-  
+
   # select effect that requires correction
   fs <- as.list(attr(terms(formula), "variables"))[c(-1, -2)]
-  
+
   # Modify the regular expression to handle cases with or without spaces around the assignment
   fs_rw <- grepl("model\\s*=\\s*\"rw", sapply(fs, deparse))
-  
+
   fs_vars <- sapply(fs, all.vars)[fs_rw]
-  
+
   # provide structure matrix for selected effects
   ind <- which.max(sapply(model[["config"]], function(x) x$log.posterior))
-  
+
   out <- list()
   for (x in fs_vars) {
     i <- ef_start[x]
@@ -179,7 +178,7 @@ get_structure_matrix <- function(model, formula) {
     Matrix::diag(Qaux) <- Matrix::diag(Qaux) + prior_diagonal
     out[[x]] <- Qaux
   }
-  
+
   return(out)
 }
 

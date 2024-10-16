@@ -27,7 +27,8 @@ sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cl
                     path_save = NULL, nsave = 10,time_var = "time", N_var = NULL, move_prob = c(0.425, 0.425, 0.1), ...) {
   ## Setup
   # Dimensions
-  ns <- length(unique(data$geometry))
+  nt <- as.numeric(length(st_get_dimension_values(data, time_var)))
+  ns <- length(data[[1]])/nt
 
   # Initial values
   graph <- graphdata[["graph"]]

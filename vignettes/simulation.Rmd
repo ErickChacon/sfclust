@@ -225,7 +225,7 @@ We set the parameter $q = 0.5$. We executed our algorithm with 2000 iterations f
 ```{r eval=FALSE, warning=FALSE}
 result <- sfclust(data = data, graphdata = geodata,
                 formula, family = "normal", q = 0.5,
-                correction = F, niter = 2000, burnin = 0, thin = 1,  path_save = '~/Documents/project3/data/simu_result.rds', nsave = 50, ) 
+                correction = F, niter = 2000, burnin = 0, thin = 1,  path_save = '~/Documents/project3/data/simu_result.rds', nsave = 50) 
 ```
 ```{r include=FALSE}
 result <- readRDS('~/Documents/project3/data/simu_result.rds')
@@ -240,7 +240,7 @@ print(result)
 
 We need a correction when using random walk model as the computing of the mariginal likelihod is based on `R-INLA`.
 
-Formula defines the model where Yk is the response variable, Xk is a covariate, and f(id, model = "iid") adds a random effect for the id variable using an IID structure.
+Formula defines the model where Y is the response variable, X1 and X2 are covariates, and f(id, model = "iid") adds a random effect for the id variable using an IID structure.
 The bsfc function is applied to the data, with Y representing the observed response data, geodata containing the graph structure, and X representing the covariate matrix.
 We specify the family as "normal", set the hyperparameter q to 0.5, and disable bias correction by setting correction = FALSE.
 The MCMC sampling process runs for 2000 iterations without burn-in, with thinning set to 1.
@@ -260,7 +260,6 @@ clust_res <- result$cluster[length(result$mst),]
 table(clust_res,geodata$cluster)
 par(mfrow = c(1,2))
 plot(result, map)
-plot()
 ```
 
 Plot the estimated curves

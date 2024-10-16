@@ -26,8 +26,8 @@ log_mlik_ratio <- function(
   # update local marginal likelihoods for split move
   if (move == "split") {
     log_like_vec_new <- log_mlike_vec
-    M1 <- log_mlik_each(proposed_move$clust_old, stars_obj, proposed_move$cluster, formula, family, correction, detailed, time_var, N_var, ...)
-    M2 <- log_mlik_each(proposed_move$k, stars_obj, proposed_move$cluster, formula, family, correction, detailed, time_var, N_var,...)
+    M1 <- log_mlik_each(proposed_move$clust_old, stars_obj, proposed_move$cluster, formula, family, correction, time_var, N_var, detailed, ...)
+    M2 <- log_mlik_each(proposed_move$k, stars_obj, proposed_move$cluster, formula, family, correction, time_var, N_var, detailed, ...)
     log_like_vec_new[proposed_move$clust_old] <- M1
     log_like_vec_new[proposed_move$k] <- M2
     llratio <- M1 + M2 - log_mlike_vec[proposed_move$clust_old]
@@ -36,7 +36,7 @@ log_mlik_ratio <- function(
   # update local margina likelihoods for merge move
   if (move == "merge") {
     log_like_vec_new <- log_mlike_vec[-proposed_move$cluster_rm]
-    M1 <- log_mlik_each(proposed_move$cluster_newid, stars_obj, proposed_move$cluster, formula, family, correction, detailed, time_var, N_var, ...)
+    M1 <- log_mlik_each(proposed_move$cluster_newid, stars_obj, proposed_move$cluster, formula, family, correction, time_var, N_var, detailed, ...)
     log_like_vec_new[proposed_move$cluster_newid] <- M1
     llratio <- M1 - sum(log_mlike_vec[c(proposed_move$cluster_rm, proposed_move$cluster_newid)])
   }
