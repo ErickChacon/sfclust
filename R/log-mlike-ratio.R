@@ -22,7 +22,7 @@
 #' @export
 log_mlik_ratio <- function(
     move, log_mlike_vec, proposed_move, stars_obj,
-    formula, family = "normal", correction = FALSE, detailed = FALSE, time_var, N_var, ...) {
+    formula, family = "normal", correction = FALSE, time_var, N_var, detailed = F, ...) {
   # update local marginal likelihoods for split move
   if (move == "split") {
     log_like_vec_new <- log_mlike_vec

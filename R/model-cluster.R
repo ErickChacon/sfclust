@@ -89,7 +89,7 @@ sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cl
       }
       log_P <- log(rd_new) - log(rb)
       log_A <- log(1 - c)
-      log_L_new <- log_mlik_ratio("split", log_mlike_vec, split_res, data, formula, family, correction, FALSE, time_var, N_var, ...)
+      log_L_new <- log_mlik_ratio("split", log_mlike_vec, split_res, data, formula, family, correction, time_var, N_var,detailed = FALSE, ...)
       log_L <- log_L_new$ratio
       acc_prob <- min(0, log_A + log_P + log_L)
       acc_prob <- exp(acc_prob)
@@ -115,7 +115,7 @@ sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cl
       }
       log_P <- log(rb_new) - log(rd)
       log_A <- -log(1 - c)
-      log_L_new <- log_mlik_ratio("merge", log_mlike_vec, merge_res, data, formula, family, correction, FALSE, time_var, N_var, ...)
+      log_L_new <- log_mlik_ratio("merge", log_mlike_vec, merge_res, data, formula, family, correction, time_var, N_var, detailed = FALSE, ...)
       log_L <- log_L_new$ratio
       acc_prob <- min(0, log_A + log_P + log_L)
       acc_prob <- exp(acc_prob)
@@ -135,7 +135,7 @@ sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cl
       cid_rm <- merge_res$cluster_rm
       k <- k - 1
 
-      log_L_new_merge <- log_mlik_ratio("merge", log_mlike_vec, merge_res, data, formula, family, correction, FALSE, time_var, N_var, ...)
+      log_L_new_merge <- log_mlik_ratio("merge", log_mlike_vec, merge_res, data, formula, family, correction, time_var, N_var, detailed = FALSE, ...)
 
       split_res <- splitCluster(mstgraph, k, merge_res$cluster)
       split_res$k <- k + 1
@@ -144,7 +144,7 @@ sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cl
 
       log_L_new <- log_mlik_ratio(
         "split", log_L_new_merge$log_mlike_vec, split_res, data,
-        formula, family, correction, FALSE, time_var, N_var, ...
+        formula, family, correction, time_var, N_var, detailed = FALSE,...
       )
       log_L <- log_L_new$ratio + log_L_new_merge$ratio
 
