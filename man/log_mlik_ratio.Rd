@@ -12,9 +12,9 @@ log_mlik_ratio(
   formula,
   family = "normal",
   correction = FALSE,
-  detailed = FALSE,
   time_var,
   N_var,
+  detailed = F,
   ...
 )
 }
@@ -29,11 +29,11 @@ log_mlik_ratio(
 
 \item{correction}{Logical, specifying whether correction calculations should be executed.}
 
-\item{detailed}{Logical, indicating whether detailed output from INLA is required.}
-
 \item{time_var}{The name of the time variable in the stars object.}
 
 \item{N_var}{The name of the variable used as exposure or trials (for Poisson, binomial, etc.).}
+
+\item{detailed}{Logical, indicating whether detailed output from INLA is required.}
 
 \item{log_like_vec}{A numeric vector of existing log likelihoods for all clusters.}
 

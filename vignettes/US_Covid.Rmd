@@ -14,62 +14,40 @@ vignette: >
 
 Disease clustering, particularly functional disease clustering, plays a crucial role in identifying patterns that help in understanding and managing health crises. By grouping regions with similar disease trajectories, it becomes possible to detect early signs of outbreaks and allocate resources effectively. Functional clustering, in particular, captures changes over time, adding an additional layer of insight into disease progression.
 
-The `bsfclust` package provides tools for Bayesian spatial functional clustering, which is especially useful in detecting clusters of neighboring regions with similar disease risks. These clusters can help uncover inequalities and guide the distribution of health resources based on risk levels.
+The `sfclust` package provides tools for Bayesian spatial functional clustering, which is especially useful in detecting clusters of neighboring regions with similar disease risks. These clusters can help uncover inequalities and guide the distribution of health resources based on risk levels.
 
-Compared to traditional spatial clustering methods, `bsfclust` offers greater flexibility by allowing each cluster to have its own unique parameters, offering a more adaptable model. Additionally, the number of clusters is not restricted by their size or shape, and spatial contiguity is ensured by the initial full graph structure. The method also supports the analysis of non-Gaussian data, with latent functions represented by different processes, making it suitable for a wide range of applications.
+Compared to traditional spatial clustering methods, `sfclust` offers greater flexibility by allowing each cluster to have its own unique parameters, offering a more adaptable model. Additionally, the number of clusters is not restricted by their size or shape, and spatial contiguity is ensured by the initial full graph structure. The method also supports the analysis of non-Gaussian data, with latent functions represented by different processes, making it suitable for a wide range of applications.
 
-This vignette demonstrates how to use the `bsfclust` package to perform Bayesian spatial functional clustering on COVID-19 data from the United States, illustrating its application to disease mapping.
+This vignette demonstrates how to use the `sfclust` package to perform Bayesian spatial functional clustering on COVID-19 data from the United States, illustrating its application to disease mapping.
 
 # Loading Necessary Packages
 
-We begin by loading the required packages. These packages will assist with data manipulation, visualization, and running the `bsfclust` algorithm.
+We begin by loading the required packages. These packages will assist with data manipulation, visualization, and running the `sfclust` algorithm.
 
 ```{r include=FALSE}
-packages <- c("gridExtra", "deldir", "fields", "igraph", 
-              "ggplot2",  "grid", "class", "spdep", 'sf', 'sfclust','cccd','ggraph')
-
-package.check <- lapply(packages, FUN = function(x) {
-  if (!require(x, character.only = TRUE)) {
-    install.packages(x, dependencies = TRUE, repos = "http://cran.us.r-project.org")
-    library(x, character.only = TRUE)
-  } else {
-    library(x, character.only = TRUE)
-  }
-})
+packages <- c("stars", "deldir", "fields", "igraph", 
+              "ggplot2",  "grid", "class", 'sf', 'sfclust','ggraph')
+lapply(packages, require, character.only = TRUE)
 ```
 # Loading and Preparing the Data
 
 We will use a pre-processed dataset that contains COVID-19 case counts (`Y`), population data (`N`), and a `map` object representing the spatial layout of the regions. The data covers both spatial and temporal dimensions, focusing on the weekly COVID-19 cases across 49 states in the U.S (Hawaii and Alaska are not included) during the 2020 (51 weeks in total). Each state’s infection data is captured over time to identify how the pandemic evolved geographically. 
 
-The dataset is stored in `.rds` format, pre-processed for this analysis. It contains 4 lists, with `Y` and `N` are t $\times$ s matrixs, where $Y{[i,t]}$ represents the new cases in j week in the state i, and $N{[i,t]}$ is the population size in j week in the state i. The dimension of matrix `Y` and `N` are the same
+The dataset is stored in `.rds` format, pre-processed for this analysis. It is a `stars` object, including response `Y`, expected cases `E`, and the total population `N`.
 ```{r warning=FALSE}
 data("us_covid")
-Y <- as.matrix(us_covid$Y)   # COVID-19 case counts
-head(Y)
-N <- us_covid$N  
-dim(N)
-```
-
-Our primary objective is to find groups of neighboring states that experienced similar COVID-19 transmission patterns at the start of the pandemic. Thus, we compute the expected cases `E`. 
-
-```{r}
-# Extract relevant information from the dataset
-ratio <- colMeans(Y / N)           # Calculate the ratio of cases to population
-E <- sweep(N, MARGIN = 2, STATS = ratio, `*`) # Expected counts based on population
-nt <- dim(N)[1]                    # Number of time points
-ns <- dim(N)[2]                    # Number of spatial regions
-time <- seq(0, 1, length.out = nt) # Normalized time vector
-map <- us_covid$map          # Spatial map of the regions
+map <- st_as_sf(st_get_dimension_values(us_covid, "space"))
+st_geometry(map) <- "geometry"
 ```
 
 # Running the Clustering Algorithm
 
-We'll now use the `bsfc` function to perform clustering based on the preprocessed data. This step includes building a Minimum Spanning Tree (MST) and running the Bayesian spatial functional clustering algorithm.
-The function `initial.cluster ` is to build a initial partition parameters (Graph, MST, cluster). We could generate the initial graph by different ways, like Kth nearest neighbor (`method` = 'knn') or using adjacency matrix like the follwing example. The number of the initial cluster is set by `nclust`. If the `weights` = NULL, means the weights of every egdge in the initial graph is random generated from U[0,1].
+We'll now use the `sfclust()` function to perform clustering based on the preprocessed data. This step includes building a Minimum Spanning Tree (MST) and running the Bayesian spatial functional clustering algorithm.
+The function `initial_cluster() ` is to build a initial partition parameters (Graph, MST, cluster). We could generate the initial graph by adjacency matrix. Other possible ways to construct graph are provided in another vignette. The number of the initial cluster is set by `nclust`. If the `weights` = NULL, means the weights of every egdge in the initial graph is random generated from U[0,1].
 
 ```{r warning=FALSE, fig.width=6, fig.height=4}
 # Initialize the graph data using Minimum Spanning Tree (MST)
-geodata <- initial_cluster (map, method = 'adjmat', nclust = 10)
+geodata <- initial_cluster (map, nclust = 10)
 coords <- st_coordinates(st_centroid(map))
 plot(geodata$graph, layout = coords)
 ```
@@ -91,10 +69,16 @@ $$f_{c,1} \mid v_{c}, \rho_{c}, \boldsymbol{\theta}_{T} \sim N(0, v_{c}^{-1}(1-\
 $$f_{c, t} = \rho_{c} f_{c, t-1} + \varepsilon_{c,t} ~\text{for}~ t = 2, \dots, T~\text{where}~ \varepsilon_{c,t} \mid \boldsymbol{\theta}_{T} \sim N(0, v_{c}^{-1})$$
 ```{r}
 # Define the formula for the Bayesian spatial functional model
-formula <- Yk ~ f(idt, model = "ar", order = 1) + f(id, model = "iid")
+formula <- Y ~ 1+ f(idt, model = "ar", order = 1) + f(id, model = "iid")
 ```
  
- `bsfc` is the main functions to implement Bayesian spatial functional clustering based on bayesian spanning tree.  `Y` is the response, here is the Covid cases in the US. X is the random effect vector, referring to the `Xk` of the formula. We fit a `poisson` likelihood with the offset  `N` = E, where E is the expected cases. Hyperparameter `q` describe the penalty of the number of the final cluster, ranging from 0 to 1. We don't need any correction when using ar model. We will run `nter` = 1000 MCMC chain, without burn-in procedure. 
+ `sfclust()` is the main functions to implement Bayesian spatial functional clustering based on bayesian spanning tree.  `Y` is the response, here is the Covid cases in the US. `idt` is the index of the time, created by our function. 
+```{r}
+data <- preprocess_data_each(us_covid, 3, geodata$cluster, time_var = "time")
+head(data)
+```
+ 
+ We fit a `poisson` likelihood with the offset  `N` = E, where E is the expected cases. Hyperparameter `q` describe the penalty of the number of the final cluster, ranging from 0 to 1. We don't need any correction when using ar model. We will run `nter` = 1000 MCMC chain, without burn-in procedure. 
 
  
  The results of the function is saved in the path_res.rds. Please define a valid address and name before running the function. The function also return the results. 
@@ -104,7 +88,7 @@ formula <- Yk ~ f(idt, model = "ar", order = 1) + f(id, model = "iid")
 path <- '~/Documents/project3'
 path_res <- file.path(path, "data", "result","US_cluster.rds")
 # Run the bsfc algorithm with the defined parameters
-result <- bsfc(Y, graphdata = geodata, N = E, formula = formula, 
+result <- sfclust(us_covid, graphdata = geodata, N_var = 'E', formula = formula, 
      family = "poisson", q = 0.5, 
      correction = FALSE, niter = 1000, burnin = 0, 
      thin = 1, path_save = path_res)
@@ -122,7 +106,7 @@ path_res <- file.path(path, "data", "result","US_cluster.rds")
 result <- readRDS(path_res)
 ```
 ```{r fig.width=6, fig.height=4}
-plot(result$log_mlike, type = "l", main = "Marginal Likelihoods of the Initial MCMC Run",
+plot(result, type = "l", main = "Marginal Likelihoods of the Initial MCMC Run",
      xlab = "Iteration", ylab = "Marginal Likelihood")
 ```
 
@@ -131,17 +115,17 @@ The plot above shows the marginal likelihoods across iterations. If the plot ind
 
 # Continuing the MCMC Process
 Next, we'll use the continue_bsfc function to extend the MCMC process by adding 2000 more iterations.
-```{r}
+```{r include=FALSE}
 # Define the additional MCMC settings
-niter_additional <- 3000
-time <- seq(0, 1, length.out = nt)
 path_res <- file.path(path, "data", "result","US_cluster2.rds")
 ```
 Run the continuation of the BSFC process
 ```{r eval=FALSE}
+niter_additional <- 3000
+time <- seq(0, 1, length.out = nt)
 # the function runs for one hour
-continue_bsfc(result,
-  Y = Y, X = time, N = E, graph = geodata$graph,
+result_continue <- continue_bsfc(result,
+  us_covid, graph = geodata$graph,
   formula = formula, family = "poisson", q = 0.5,
   correction = FALSE, niter = niter_additional, burnin = 0, thin = 1,
   path_save = path_res

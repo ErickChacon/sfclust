@@ -226,7 +226,7 @@ sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cl
 #' @param result List containing results from a previous sfclust function, expected to include
 #'        a minimum spanning tree (`mst`) and cluster assignments.
 #' @param data A stars object containing spatial data, including covariates and response variables.
-#' @param membership Integer vector, indicating the cluster membership of each observation.
+#' @param graph Igraph object, a full graph to create MST.
 #' @param formula An object of class \code{\link[stats]{formula}}, specifying the model used in the analysis.
 #' @param family Character string specifying the family of distributions to use for the model.
 #'        Defaults to "normal".
@@ -252,7 +252,7 @@ sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cl
 #'         the additional MCMC iterations.
 #'
 #' @export
-continue_sfclust <- function(result, data, membership,
+continue_sfclust <- function(result, data, graph,
                           formula, family = "normal", q = 0.5,
                           correction = FALSE, niter = 100, burnin = 0, thin = 1, path_save = NULL, nsave = 10,
                           time_var, N_var = NULL, move_prob = c(0.425, 0.425, 0.1), ...) {

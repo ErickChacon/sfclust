@@ -18,10 +18,8 @@ Imports:
     igraph,
     sf,
     SparseM,
+    stars,
 Suggests:
-    gridExtra,
-    deldir,
-    grid,
     class,
     INLA,
     knitr,

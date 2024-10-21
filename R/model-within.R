@@ -33,21 +33,22 @@
 #' @export
 log_mlik_each <- function(k, stars_obj, membership, formula, family = "normal", correction = FALSE, time_var, N_var, detailed = FALSE, ...) {
   inla_data <- preprocess_data_each(stars_obj, k, membership, time_var = time_var)
+  N <- get(N_var, envir = as.environment(stars_obj))
   if (family == "poisson") {
     model <- INLA::inla(formula, family,
-                        E = inla_data[[N_var]],  # Use N from the stars object, if present
+                        E = N,  # Use N from the stars object, if present
                         data = inla_data, control.predictor = list(compute = TRUE),
                         control.compute = list(config = TRUE), ...
     )
   } else if (family == "binomial") {
     model <- INLA::inla(formula, family,
-                        Ntrials = inla_data[[N_var]],  # Use N from the stars object, if present
+                        Ntrials = N,  # Use N from the stars object, if present
                         data = inla_data, control.predictor = list(compute = TRUE),
                         control.compute = list(config = TRUE), ...
     )
   } else if (family == "nbinomial") {
     model <- INLA::inla(formula, family,
-                        control.family = list(variant = 1), Ntrials = inla_data[[N_var]],  # Use N from stars_obj
+                        control.family = list(variant = 1), Ntrials = N,  # Use N from stars_obj
                         data = inla_data, control.predictor = list(compute = TRUE),
                         control.compute = list(config = TRUE), ...
     )
@@ -109,6 +110,7 @@ log_mlik_all <- function(stars_obj, membership, formula, family = "normal", corr
 #' @examples
 #' preprocess_data_each(stars_obj, k = 1, membership, time_var = "time")
 #'
+#' @export
 preprocess_data_each <- function(stars_obj, k, membership, time_var = "time") {
   # Check if the input is a stars object
   if (!inherits(stars_obj, "stars")) {
@@ -120,7 +122,7 @@ preprocess_data_each <- function(stars_obj, k, membership, time_var = "time") {
 
   if (is.vector(membership)) {
     # Subset the stars object to only include the regions in the kth cluster
-    stars_obj_subset <- stars_obj[, cluster_regions, , drop = FALSE]
+    stars_obj_subset <- stars_obj[, ,cluster_regions, drop = FALSE]
   }
 
   # Convert the subsetted stars object to a long data frame
@@ -132,8 +134,8 @@ preprocess_data_each <- function(stars_obj, k, membership, time_var = "time") {
 
   # Create id, idt, and ids ensuring correct indexing based on spatial locations and time
   data_long$id <- seq_len(nt * nk)  # Create unique IDs for each observation
-  data_long$idt <- rep(seq_len(nt), each = nk)  # Create time index (idt) for each region
-  data_long$ids <- rep(seq_len(nk), time = nt)  # Create spatial index (ids) for each time point
+  data_long$idt <- rep(seq_len(nt), time = nk)  # Create time index (idt) for each region
+  data_long$ids <- rep(seq_len(nk), each = nt)  # Create spatial index (ids) for each time point
 
   # Remove the first column (if it contains geometry or spatial information)
   data_inla <- data_long[, -1]
