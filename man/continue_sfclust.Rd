@@ -7,7 +7,7 @@
 continue_sfclust(
   result,
   data,
-  membership,
+  graph,
   formula,
   family = "normal",
   q = 0.5,
@@ -29,7 +29,7 @@ a minimum spanning tree (\code{mst}) and cluster assignments.}
 
 \item{data}{A stars object containing spatial data, including covariates and response variables.}
 
-\item{membership}{Integer vector, indicating the cluster membership of each observation.}
+\item{graph}{Igraph object, a full graph to create MST.}
 
 \item{formula}{An object of class \code{\link[stats]{formula}}, specifying the model used in the analysis.}
 

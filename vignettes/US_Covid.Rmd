@@ -106,8 +106,7 @@ path_res <- file.path(path, "data", "result","US_cluster.rds")
 result <- readRDS(path_res)
 ```
 ```{r fig.width=6, fig.height=4}
-plot(result, type = "l", main = "Marginal Likelihoods of the Initial MCMC Run",
-     xlab = "Iteration", ylab = "Marginal Likelihood")
+plot(result, map)
 ```
 
 
@@ -121,13 +120,12 @@ path_res <- file.path(path, "data", "result","US_cluster2.rds")
 ```
 Run the continuation of the BSFC process
 ```{r eval=FALSE}
-niter_additional <- 3000
-time <- seq(0, 1, length.out = nt)
+niter_additional <- 4000
 # the function runs for one hour
-result_continue <- continue_bsfc(result,
+result_continue <- continue_sfclust(result,
   us_covid, graph = geodata$graph,
   formula = formula, family = "poisson", q = 0.5,
-  correction = FALSE, niter = niter_additional, burnin = 0, thin = 1,
+  correction = FALSE, niter = niter_additional, burnin = 0, thin = 1,time_var = "time", N_var = "E",
   path_save = path_res
 )
 ```

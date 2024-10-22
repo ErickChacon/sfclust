@@ -33,7 +33,7 @@
 #' @export
 log_mlik_each <- function(k, stars_obj, membership, formula, family = "normal", correction = FALSE, time_var, N_var, detailed = FALSE, ...) {
   inla_data <- preprocess_data_each(stars_obj, k, membership, time_var = time_var)
-  N <- get(N_var, envir = as.environment(stars_obj))
+  if(!is.null(N_var)){N <- get(N_var, envir = as.environment(stars_obj))}
   if (family == "poisson") {
     model <- INLA::inla(formula, family,
                         E = N,  # Use N from the stars object, if present
@@ -119,8 +119,10 @@ preprocess_data_each <- function(stars_obj, k, membership, time_var = "time") {
 
   # Get the indices of the regions that belong to the kth cluster
   cluster_regions <- which(membership == k)
-
+  dims <- st_dimensions(stars_obj)
+  space_dim_pos <- which(names(dims) == time_var)
   if (is.vector(membership)) {
+
     # Subset the stars object to only include the regions in the kth cluster
     stars_obj_subset <- stars_obj[, ,cluster_regions, drop = FALSE]
   }

@@ -143,29 +143,6 @@ Y = do.call(cbind, Y)
 matplot(time, Y, type = "l", lty = 1, xlab = "time", ylab = "Obervations")
 ```
 
-<<<<<<< Updated upstream
-=======
-Then we will create a stars object.
-
-```{r}
-time_seq <- seq.Date(from = as.Date("2022-01-01"), by = "day", length.out = dim(Y)[1])
-coords <- st_centroid(geodata)
-nt <- dim(Y)[1]
-ns <- dim(Y)[2]
-# Convert the Y matrix into an array with dimensions: time x space
-Y_array <- array(Y, dim = c(nt, ns))
-
-# Create the stars object
-stars_obj <- st_as_stars(
-  Y = Y_array,
-  dimensions = st_dimensions(
-    time = time_seq,
-    space = coords$geometry
-  )
-)
-
-```
->>>>>>> Stashed changes
 [Next: Modeling](#modeling)
 
 <div class="page-break"></div>
@@ -173,7 +150,7 @@ stars_obj <- st_as_stars(
 # Modeling
 <a id="modeling"></a>
 
-In this section, we show how to use Bsfclust algorithm to find the spatial clusters. First we will create a stars object.
+In this section, we show how to use sfclust algorithm to find the spatial clusters. First we will create a stars object.
 
 ```{r warning=FALSE}
 coords <- st_centroid(geodata)
@@ -188,13 +165,13 @@ X2 <- X[, 2]
 
 # Expand X1 and X2 to match the space-time dimensions (100 time points, 100 space points)
 # Replicate X1 and X2 across space
-X1_expanded <- matrix(rep(X1, each = 100), nrow = 100, ncol = 100)
-X2_expanded <- matrix(rep(X2, each = 100), nrow = 100, ncol = 100)
+X1_expanded <- matrix(rep(X1, time = 100), nrow = 100, ncol = 100)
+X2_expanded <- matrix(rep(X2, time = 100), nrow = 100, ncol = 100)
 
 
 # Combine X1, X2, and Y into a single stars object
 data <- st_as_stars(Y = Y, X1 = X1_expanded, X2 = X2_expanded)
-st_dimensions(data) <- st_dimensions(space = coords$geometry, time = time_seq)
+st_dimensions(data) <- st_dimensions(time = time_seq,space = coords$geometry)
 map <- geodata
 ```
 
@@ -254,7 +231,7 @@ result <- sfclust(data = data, graphdata = geodata,
 ```{r include=FALSE}
 result <- readRDS('~/Documents/project3/data/simu_result.rds')
 ```
-We could check the basic information of the result by following summary function `summary.sfclust`, we summary the model of the first `a` clusters.
+We could check the basic information of the result by following summary function `summary()`, we summary the model of the first `a` clusters.
 
 ```{r}
 class(result)
