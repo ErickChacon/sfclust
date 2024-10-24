@@ -107,8 +107,11 @@ log_mlik_all <- function(stars_obj, membership, formula, family = "normal", corr
 #' @param stnames The names of the `spatial` and `temporal` dimensions.
 #'
 #' @return A long-format data frame with ids for spatial and time indexing.
+#'
 #' @examples
+#' \dontrun{
 #' preprocess_data_each(x, k = 1, membership, time_var = "time")
+#' }
 #'
 #' @export
 preprocess_data_each <- function(x, k, membership, stnames = c("geometry", "time")) {
