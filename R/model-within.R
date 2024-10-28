@@ -32,7 +32,7 @@
 #' }
 #' @export
 log_mlik_each <- function(k, stars_obj, membership, formula, family = "normal", correction = FALSE, time_var, N_var, detailed = FALSE, ...) {
-  inla_data <- preprocess_data_each(stars_obj, k, membership, time_var = time_var)
+  inla_data <- data_each(stars_obj, k, membership, time_var = time_var)
   if(!is.null(N_var)){N <- get(N_var, envir = as.environment(stars_obj))}
   if (family == "poisson") {
     model <- INLA::inla(formula, family,
@@ -110,11 +110,11 @@ log_mlik_all <- function(stars_obj, membership, formula, family = "normal", corr
 #'
 #' @examples
 #' \dontrun{
-#' preprocess_data_each(x, k = 1, membership, time_var = "time")
+#' data_each(x, k = 1, membership = c(1, 1, 1, 2, 2))
 #' }
 #'
 #' @export
-preprocess_data_each <- function(x, k, membership, stnames = c("geometry", "time")) {
+data_each <- function(x, k, membership, stnames = c("geometry", "time")) {
   # Check if the input is a stars object and dimension names
   if (!inherits(x, "stars")) {
     stop("Input must be a 'stars' object.")

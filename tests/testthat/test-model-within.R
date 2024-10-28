@@ -1,7 +1,6 @@
 library(stars)
 
 test_that('filter stars object and convert to long format', {
-
   space <- st_sfc(lapply(1:10, function(i) st_point(c(i, i))))
   time <- seq(as.Date("2024-10-01"), by = "1 day", length.out = 3)
   ns <- length(space)
@@ -16,7 +15,7 @@ test_that('filter stars object and convert to long format', {
     dimensions = st_dimensions(geometry = space, time = time)
   )
 
-  xk <- preprocess_data_each(x, k = k, membership)
+  xk <- data_each(x, k = k, membership)
   expect_equal(nrow(xk), nk * nt)
   expect_equal(xk$ids, rep(1:nk, nt))
   expect_equal(xk$idt, rep(1:nt, each = nk))
@@ -28,7 +27,7 @@ test_that('filter stars object and convert to long format', {
     dimensions = st_dimensions(geometry = space, time = time, band = 1, point = TRUE)
   )
 
-  xk_aux <- preprocess_data_each(x, k = k, membership)
+  xk_aux <- data_each(x, k = k, membership)
   expect_equal(xk, subset(xk_aux, select = - band))
 
   # time dimension on rows and space dimension on columns
@@ -37,7 +36,7 @@ test_that('filter stars object and convert to long format', {
     dimensions = st_dimensions(time = time, geometry = space)
   )
 
-  xk <- preprocess_data_each(x, k = k, membership)
+  xk <- data_each(x, k = k, membership)
   expect_equal(nrow(xk), nk * nt)
   expect_equal(xk$ids, rep(1:nk, each = nt))
   expect_equal(xk$idt, rep(1:nt, nk))
