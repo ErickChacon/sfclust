@@ -42,3 +42,14 @@ test_that('filter stars object and convert to long format', {
   expect_equal(stdata_k$idt, rep(1:nt, nk))
   expect_equal(stdata_k$cases, as.numeric(outer(10 * (0:2), c(1, 4, 7, 10), `+`)))
 })
+
+test_that('get structure matrix and log marginal correction', {
+})
+
+test_that('log marginal likelihood', {
+})
+
+
+
+test_that('get structure matrix', {
+})
