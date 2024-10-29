@@ -4,14 +4,14 @@
 \alias{data_each}
 \title{Prepare data for a cluster}
 \usage{
-data_each(x, k, membership, stnames = c("geometry", "time"))
+data_each(k, membership, stdata, stnames = c("geometry", "time"))
 }
 \arguments{
-\item{x}{A stars object containing spatial-temporal dimensions defined in \code{stnames}.}
-
 \item{k}{The cluster number to subset.}
 
 \item{membership}{A vector defining the cluster membership for each region.}
+
+\item{stdata}{A stars object containing spatial-temporal dimensions defined in \code{stnames}.}
 
 \item{stnames}{The names of the \code{spatial} and \code{temporal} dimensions.}
 }
@@ -24,12 +24,14 @@ indices for time and spatial location.
 }
 \examples{
 
+library(stars)
+
 dims <- st_dimensions(
   geometry = st_sfc(lapply(1:5, function(i) st_point(c(i, i)))),
   time = seq(as.Date("2024-01-01"), by = "1 day", length.out = 3)
 )
-x <- st_as_stars(cases = array(1:15, dim = c(5, 3)), dimensions = dims)
+stdata <- st_as_stars(cases = array(1:15, dim = c(5, 3)), dimensions = dims)
 
-data_each(x, k = 2, membership = c(1, 1, 1, 2, 2))
+data_each(stdata, k = 2, membership = c(1, 1, 1, 2, 2))
 
 }
