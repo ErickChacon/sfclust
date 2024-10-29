@@ -10,7 +10,7 @@ log_mlik_all(
   formula,
   family = "normal",
   correction = FALSE,
-  time_var,
+  stnames,
   N_var,
   ...
 )
@@ -26,7 +26,7 @@ log_mlik_all(
 
 \item{correction}{Logical indicating whether a correction for dispersion or other factors should be applied. Defaults to FALSE.}
 
-\item{time_var}{The name of the time variable in the stars object.}
+\item{stnames}{The name of the time variable in the stars object.}
 
 \item{N_var}{The name of the variable used as exposure or trials (for Poisson, binomial, etc.).}
 
@@ -41,6 +41,7 @@ It applies a specified model to each cluster to calculate the likelihood.
 }
 \examples{
 \dontrun{
-log_mlikelihoods <- log_mlik_all(stars_obj, membership, family = "poisson", formula = Y ~ temperature + precipitation, time_var = "time", N_var = "expected_cases")
+log_mlikelihoods <- log_mlik_all(stars_obj, membership, family = "poisson", formula = Y
+~ temperature + precipitation, stnames = "time", N_var = "expected_cases")
 }
 }

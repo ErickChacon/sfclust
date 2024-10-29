@@ -2,8 +2,7 @@
 % Please edit documentation in R/model-within.R
 \name{data_each}
 \alias{data_each}
-\title{This function preprocesses the data from a stars object by subsetting based on a cluster
-and converting the data to a long format with proper indexing for time and spatial location.}
+\title{Prepare data for a cluster}
 \usage{
 data_each(x, k, membership, stnames = c("geometry", "time"))
 }
@@ -20,12 +19,17 @@ data_each(x, k, membership, stnames = c("geometry", "time"))
 A long-format data frame with ids for spatial and time indexing.
 }
 \description{
-This function preprocesses the data from a stars object by subsetting based on a cluster
-and converting the data to a long format with proper indexing for time and spatial location.
+Subset a spatio-temporal dataset for a cluster and convert it to a long format with
+indices for time and spatial location.
 }
 \examples{
-\dontrun{
-data_each(x, k = 1, membership = c(1, 1, 1, 2, 2))
-}
+
+dims <- st_dimensions(
+  geometry = st_sfc(lapply(1:5, function(i) st_point(c(i, i)))),
+  time = seq(as.Date("2024-01-01"), by = "1 day", length.out = 3)
+)
+x <- st_as_stars(cases = array(1:15, dim = c(5, 3)), dimensions = dims)
+
+data_each(x, k = 2, membership = c(1, 1, 1, 2, 2))
 
 }

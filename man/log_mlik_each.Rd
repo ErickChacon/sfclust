@@ -11,7 +11,7 @@ log_mlik_each(
   formula,
   family = "normal",
   correction = FALSE,
-  time_var,
+  stnames,
   N_var,
   detailed = FALSE,
   ...
@@ -32,7 +32,7 @@ log_mlik_each(
 \item{correction}{Logical, indicating whether a correction should be applied to the computed log marginal
 likelihood; defaults to FALSE.}
 
-\item{time_var}{The name of the time variable in the stars object.}
+\item{stnames}{The name of the time variable in the stars object.}
 
 \item{N_var}{The name of the variable used as exposure or trials (for Poisson, binomial, etc.).}
 
