@@ -11,7 +11,8 @@
 #'        object.
 #' @param correction Logical value indicating whether a correction for dispersion.
 #' @param detailed Logical value indicating whether to return the INLA model instead of
-#'        the log marginal likelihood.
+#'        the log marginal likelihood. The argument `correction` is not applied in this
+#'        case.
 #' @param ... Arguments passed to the `inla` function (eg. `family`, `formula` and `E`).
 #'
 #' @return A numeric vector containing the log marginal likelihood for each cluster or the
@@ -80,6 +81,7 @@ log_mlik_correction <- function(model) {
     Slogdet <- sapply(Slist, function(x) 2 * sum(log(Matrix::diag(SparseM::chol(x)))))
     0.5 * sum(Slogdet)
   } else {
+    warning("No structure matrix found to apply correction.")
     0.0
   }
 }
