@@ -23,12 +23,19 @@
 #'
 #' @export
 sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cluster = NULL),
-                    family = "normal", q = 0.5, correction = FALSE, niter = 100, burnin = 0, thin = 1,
+                    family = "normal", q = 0.5, correction = TRUE, niter = 100, burnin = 0, thin = 1,
                     path_save = NULL, nsave = 10,time_var = "time", N_var = NULL, move_prob = c(0.425, 0.425, 0.1), ...) {
   ## Setup
   # Dimensions
   nt <- as.numeric(length(st_get_dimension_values(data, time_var)))
   ns <- length(data[[1]])/nt
+
+  if (correction) {
+    if (length(correction_required(formula)) == 0) {
+      correction <- FALSE
+      warning("Log marginal-likelihood correction not required. Disabling correction.")
+    }
+  }
 
   # Initial values
   graph <- graphdata[["graph"]]
@@ -47,7 +54,7 @@ sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cl
 
   ## Initialize
   # Initialize log likelihood vector
-  log_mlike_vec <- log_mlik_all(data, cluster, formula, family, correction,time_var, N_var, ...)
+  log_mlike_vec <- log_mlik_all(data, cluster, formula, family, correction, time_var, N_var, ...)
   log_mlike <- sum(log_mlike_vec)
 
   # Determine if an edge in graph is within a cluster or between two clusters

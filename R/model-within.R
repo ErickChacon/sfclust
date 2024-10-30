@@ -43,17 +43,20 @@
 #' }
 #' @export
 log_mlik_all <- function(membership, stdata, stnames = c("geometry", "time"),
-                         correction = FALSE, detailed = FALSE, ...) {
+                         correction = TRUE, detailed = FALSE, formula, ...) {
   q <- max(membership)
+
   if (detailed) {
-    lapply(1:q, log_mlik_each, membership, stdata, stnames, correction, detailed, ...)
+    lapply(1:q, log_mlik_each, membership, stdata, stnames, correction, detailed,
+      formula = formula, ...)
   } else {
-    sapply(1:q, log_mlik_each, membership, stdata, stnames, correction, detailed, ...)
+    sapply(1:q, log_mlik_each, membership, stdata, stnames, correction, detailed,
+      formula = formula, ...)
   }
 }
 
 log_mlik_each <- function(k, membership, stdata, stnames = c("geometry", "time"),
-                          correction = FALSE, detailed = FALSE, ...) {
+                          correction = TRUE, detailed = FALSE, ...) {
   inla_data <- data_each(k, membership, stdata, stnames)
   model <- INLA::inla(
     data = inla_data,
@@ -67,8 +70,56 @@ log_mlik_each <- function(k, membership, stdata, stnames = c("geometry", "time")
   } else if (!correction) {
     model[["mlik"]][[1]]
   } else {
-    model[["mlik"]][[1]] + log_mlik_correction(model, formula)
+    model[["mlik"]][[1]] + log_mlik_correction(model)
   }
+}
+
+log_mlik_correction <- function(model) {
+  Slist <- get_structure_matrix(model)
+  if (!length(Slist) == 0) {
+    Slogdet <- sapply(Slist, function(x) 2 * sum(log(Matrix::diag(SparseM::chol(x)))))
+    0.5 * sum(Slogdet)
+  } else {
+    0.0
+  }
+}
+
+get_structure_matrix <- function(model) {
+  # obtain settings from model
+  prior_diagonal <- model[[".args"]][["control.compute"]][["control.gcpo"]][["prior.diagonal"]] # 0.0001
+  formula <- model[[".args"]][["formula"]]
+  model <- model[["misc"]][["configs"]]
+
+  # effects dimension information
+  x_info <- model[["contents"]]
+  ef_start <- setNames(x_info$start[-1] - x_info$length[1], x_info$tag[-1])
+  ef_end <- ef_start + x_info$length[-1] - 1
+
+  # select effect that requires correction
+  effs_to_correct <- correction_required(formula)
+
+  # provide structure matrix for selected effects
+  ind <- which.max(sapply(model[["config"]], function(x) x$log.posterior))
+
+  out <- list()
+  for (x in effs_to_correct) {
+    i <- ef_start[x]
+    j <- ef_end[x]
+    Qaux <- model[["config"]][[ind]][["Qprior"]][i:j, i:j]
+    Matrix::diag(Qaux) <- Matrix::diag(Qaux) - prior_diagonal
+    Qaux <- Qaux /
+      exp(model[["config"]][[ind]][["theta"]][paste0("Log precision for ", x)])
+    Matrix::diag(Qaux) <- Matrix::diag(Qaux) + prior_diagonal
+    out[[x]] <- Qaux
+  }
+
+  return(out)
+}
+
+correction_required <- function (formula) {
+  effects <- as.list(attr(terms(formula), "variables"))[c(-1, -2)]
+  need_correction <- grepl("model\\s*=\\s*\"c{0,1}rw", sapply(effects, deparse1))
+  sapply(effects, all.vars)[need_correction]
 }
 
 #' Prepare data for a cluster
@@ -122,48 +173,4 @@ data_each <- function(k, membership, stdata, stnames = c("geometry", "time")) {
   stdata <- as.data.frame(stdata)
   stdata[[stnames[1]]] <- NULL
   cbind(list(id = 1:nrow(dims)), dims, stdata)
-}
-
-log_mlik_correction <- function(model, formula) {
-  Slist <- get_structure_matrix(model, formula)
-  Slogdet <- sapply(Slist, function(x) 2 * sum(log(Matrix::diag(SparseM::chol(x)))))
-  0.5 * sum(Slogdet)
-}
-
-get_structure_matrix <- function(model, formula) {
-  # prior diagonal
-  prior_diagonal <- model[[".args"]][["control.compute"]][["control.gcpo"]][["prior.diagonal"]]
-
-  # model config
-  model <- model[["misc"]][["configs"]]
-
-  # effects dimension information
-  x_info <- model[["contents"]]
-  ef_start <- setNames(x_info$start[-1] - x_info$length[1], x_info$tag[-1])
-  ef_end <- ef_start + x_info$length[-1] - 1
-
-  # select effect that requires correction
-  fs <- as.list(attr(terms(formula), "variables"))[c(-1, -2)]
-
-  # modify the regular expression to handle cases with or without spaces around the assignment
-  fs_rw <- grepl("model\\s*=\\s*\"rw", sapply(fs, deparse))
-
-  fs_vars <- sapply(fs, all.vars)[fs_rw]
-
-  # provide structure matrix for selected effects
-  ind <- which.max(sapply(model[["config"]], function(x) x$log.posterior))
-
-  out <- list()
-  for (x in fs_vars) {
-    i <- ef_start[x]
-    j <- ef_end[x]
-    Qaux <- model[["config"]][[ind]][["Qprior"]][i:j, i:j]
-    Matrix::diag(Qaux) <- Matrix::diag(Qaux) - prior_diagonal
-    Qaux <- Qaux /
-      exp(model[["config"]][[ind]][["theta"]][paste0("Log precision for ", x)])
-    Matrix::diag(Qaux) <- Matrix::diag(Qaux) + prior_diagonal
-    out[[x]] <- Qaux
-  }
-
-  return(out)
 }
