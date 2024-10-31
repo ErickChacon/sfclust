@@ -12,7 +12,7 @@ sfclust(
   graphdata = list(graph = NULL, mst = NULL, cluster = NULL),
   family = "normal",
   q = 0.5,
-  correction = FALSE,
+  correction = TRUE,
   niter = 100,
   burnin = 0,
   thin = 1,

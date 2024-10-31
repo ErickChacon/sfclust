@@ -15,10 +15,11 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 Imports:
+    cubelyr,
     igraph,
     sf,
     SparseM,
-    stars,
+    stars
 Suggests:
     class,
     INLA,

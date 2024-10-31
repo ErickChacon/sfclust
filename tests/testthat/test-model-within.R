@@ -45,7 +45,7 @@ test_that('filter stars object and convert to long format', {
 })
 
 test_that('compute log marginal correction', {
-  # check wich terms require correction
+  # terms that require correction
   formula <- y ~ x + z
   expect_equal(correction_required(formula), character())
 
@@ -56,12 +56,12 @@ test_that('compute log marginal correction', {
   expect_equal(correction_required(formula), "z")
 
   formula <- y ~ x +
-      f(z, model = "crw1", hyper = list(prec = list(prior="loggamma", param = c(1, 0.01)))) +
+      f(z, model = "crw1", hyper = list(prec = list(prior = "loggamma", param = c(1, 0.01)))) +
       f(w, model = "rw2") +
       f(v, model = "ar")
   expect_equal(correction_required(formula), c("z", "w"))
 
-  # check structure matrix and log marginal likelihood correction
+  # structure matrix and log marginal likelihood correction
   n <- 10
   data <- data.frame(y = rnorm(n), time = 1:n, time2 = 1:n)
 

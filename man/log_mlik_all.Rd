@@ -8,8 +8,9 @@ log_mlik_all(
   membership,
   stdata,
   stnames = c("geometry", "time"),
-  correction = FALSE,
+  correction = TRUE,
   detailed = FALSE,
+  formula,
   ...
 )
 }
@@ -26,7 +27,8 @@ object.}
 \item{correction}{Logical value indicating whether a correction for dispersion.}
 
 \item{detailed}{Logical value indicating whether to return the INLA model instead of
-the log marginal likelihood.}
+the log marginal likelihood. The argument \code{correction} is not applied in this
+case.}
 
 \item{...}{Arguments passed to the \code{inla} function (eg. \code{family}, \code{formula} and \code{E}).}
 }
