@@ -44,15 +44,13 @@
 #' }
 #' @export
 log_mlik_all <- function(membership, stdata, stnames = c("geometry", "time"),
-                         correction = TRUE, detailed = FALSE, formula, ...) {
+                         correction = TRUE, detailed = FALSE, ...) {
   q <- max(membership)
 
   if (detailed) {
-    lapply(1:q, log_mlik_each, membership, stdata, stnames, correction, detailed,
-      formula = formula, ...)
+    lapply(1:q, log_mlik_each, membership, stdata, stnames, correction, detailed, ...)
   } else {
-    sapply(1:q, log_mlik_each, membership, stdata, stnames, correction, detailed,
-      formula = formula, ...)
+    sapply(1:q, log_mlik_each, membership, stdata, stnames, correction, detailed, ...)
   }
 }
 
@@ -81,7 +79,7 @@ log_mlik_correction <- function(model) {
     Slogdet <- sapply(Slist, function(x) 2 * sum(log(Matrix::diag(SparseM::chol(x)))))
     0.5 * sum(Slogdet)
   } else {
-    warning("No structure matrix found to apply correction.")
+    # warning("No structure matrix found to apply correction.")
     0.0
   }
 }
