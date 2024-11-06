@@ -70,11 +70,11 @@ splitCluster <- function(mstgraph, k, membership) {
   connect_comp <- components(mst_subgraph)
   cluster_new <- connect_comp$membership
   vid_new <- (V(mst_subgraph)$vid)[cluster_new == 2] # vid for vertices belonging to new cluster
-  cluster <- membership
-  cluster[vid_new] <- k + 1
+  membership[vid_new] <- k + 1
   return(list(
-    cluster = cluster, vid_new = vid_new,
-    clust_old = clust.split
+    membership = membership, vid_new = vid_new,
+    cluster_old = clust.split,
+    cluster_new = k + 1
   ))
 }
 
@@ -91,33 +91,30 @@ mergeCluster <- function(mstgraph, edge_status, membership) {
   v1 <- head_of(mstgraph, edge_merge)
   v2 <- tail_of(mstgraph, edge_merge)
   # clusters that v1, v2 belonging to
-  cluster <- membership
 
-  c1 <- cluster[v1]
-  c2 <- cluster[v2]
+  c1 <- membership[v1]
+  c2 <- membership[v2]
 
   ### merge the cluster with a larger label into the one with a smaller label
   if (c1 < c2) {
     c_rm <- c2
-    c_mer <- c1
+    c_new <- c1
   } else {
     c_rm <- c1
-    c_mer <- c2
+    c_new <- c2
   }
 
-  idx_rm <- (cluster == c_rm)
+  idx_rm <- (membership == c_rm)
 
   # vid of vertices in c_rm
   vid_old <- (V(mstgraph))[idx_rm]
 
   # now drop c_rm
-  cluster[idx_rm] <- c_mer
-  cluster[cluster > c_rm] <- cluster[cluster > c_rm] - 1
-
-  cluster_newid <- c_mer
+  membership[idx_rm] <- c_new
+  membership[membership > c_rm] <- membership[membership > c_rm] - 1
 
   # return the membership, the indices of the merged vertices
-  return(list(cluster = cluster, vid_old = vid_old, cluster_rm = c_rm, cluster_comb = c_mer, cluster_newid = cluster_newid))
+  return(list(membership = membership, vid_old = vid_old, cluster_rm = c_rm, cluster_new = c_new))
 }
 
 

@@ -22,13 +22,14 @@
 #' @return NULL The function primarily outputs results to a specified path and does not return anything.
 #'
 #' @export
-sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cluster = NULL),
-                    family = "normal", q = 0.5, correction = TRUE, niter = 100, burnin = 0, thin = 1,
+sfclust <- function(data, stnames = c("geometry", "time"), graphdata = list(graph = NULL, mst = NULL, cluster = NULL),
+                    formula, family = "normal", q = 0.5, correction = TRUE, niter = 100, burnin = 0, thin = 1,
                     path_save = NULL, nsave = 10,time_var = "time", N_var = NULL, move_prob = c(0.425, 0.425, 0.1), ...) {
   ## Setup
   # Dimensions
-  nt <- as.numeric(length(st_get_dimension_values(data, time_var)))
-  ns <- length(data[[1]])/nt
+  # nt <- length(st_get_dimension_values(data, stnames[2]))
+  ns <- length(st_get_dimension_values(data, stnames[1]))
+  # ns <- length(data[[1]])/nt
 
   if (correction) {
     if (length(correction_required(formula)) == 0) {
@@ -40,8 +41,8 @@ sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cl
   # Initial values
   graph <- graphdata[["graph"]]
   mstgraph <- graphdata[["mst"]]
-  cluster <- graphdata[["cluster"]]
-  k <- max(cluster)
+  membership <- graphdata[["cluster"]]
+  k <- max(membership)
 
   # Hyperparameters
   c <- q
@@ -54,11 +55,13 @@ sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cl
 
   ## Initialize
   # Initialize log likelihood vector
-  log_mlike_vec <- log_mlik_all(data, cluster, formula, family, correction, time_var, N_var, ...)
+
+  log_mlike_vec <- log_mlik_all(membership, data, stnames, correction, detailed = FALSE,
+            formula = formula, ...)
   log_mlike <- sum(log_mlike_vec)
 
   # Determine if an edge in graph is within a cluster or between two clusters
-  edge_status <- getEdgeStatus(cluster, mstgraph)
+  edge_status <- getEdgeStatus(membership, mstgraph)
 
   ## Prepare output
   cluster_out <- array(0, dim = c((niter - burnin) / thin, ns))
@@ -85,9 +88,8 @@ sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cl
     move_choice <- sample(4, 1, prob = c(rb, rd, rc, rhy))
 
     if (move_choice == 1) { ## Birth move
-      split_res <- splitCluster(mstgraph, k, cluster)
-      split_res$k <- k + 1
-      membership_new <- split_res$cluster
+      split_res <- splitCluster(mstgraph, k, membership)
+      membership_new <- split_res$membership
 
       if (k == ns - 1) {
         rd_new <- 0.85
@@ -96,23 +98,24 @@ sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cl
       }
       log_P <- log(rd_new) - log(rb)
       log_A <- log(1 - c)
-      log_L_new <- log_mlik_ratio("split", log_mlike_vec, split_res, data, formula, family, correction, time_var, N_var,detailed = FALSE, ...)
+      log_L_new <- log_mlik_ratio("split", split_res, log_mlike_vec, data, stnames, correction,
+        formula = formula, family = family, ...)
       log_L <- log_L_new$ratio
       acc_prob <- min(0, log_A + log_P + log_L)
       acc_prob <- exp(acc_prob)
       if (runif(1) < acc_prob) {
-        cluster <- membership_new
+        membership <- membership_new
         k <- k + 1
         log_mlike_vec <- log_L_new$log_mlike_vec
         log_mlike <- sum(log_mlike_vec)
-        edge_status <- getEdgeStatus(cluster, mstgraph)
+        edge_status <- getEdgeStatus(membership, mstgraph)
         birth_cnt <- birth_cnt + 1
       }
     }
 
     if (move_choice == 2) { ## Death move
-      merge_res <- mergeCluster(mstgraph, edge_status, cluster)
-      membership_new <- merge_res$cluster
+      merge_res <- mergeCluster(mstgraph, edge_status, membership)
+      membership_new <- merge_res$membership
       cid_rm <- merge_res$cluster_rm
 
       if (k == 2) {
@@ -122,55 +125,56 @@ sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cl
       }
       log_P <- log(rb_new) - log(rd)
       log_A <- -log(1 - c)
-      log_L_new <- log_mlik_ratio("merge", log_mlike_vec, merge_res, data, formula, family, correction, time_var, N_var, detailed = FALSE, ...)
+      log_L_new <- log_mlik_ratio("merge", merge_res, log_mlike_vec, data, stnames, correction,
+        formula = formula, family = family, ...)
       log_L <- log_L_new$ratio
       acc_prob <- min(0, log_A + log_P + log_L)
       acc_prob <- exp(acc_prob)
       if (runif(1) < acc_prob) {
-        cluster <- membership_new
+        membership <- membership_new
         k <- k - 1
         log_mlike_vec <- log_L_new$log_mlike_vec
         log_mlike <- sum(log_mlike_vec)
-        edge_status <- getEdgeStatus(cluster, mstgraph)
+        edge_status <- getEdgeStatus(membership, mstgraph)
         death_cnt <- death_cnt + 1
       }
     }
 
     if (move_choice == 3) { ## Change move
-      merge_res <- mergeCluster(mstgraph, edge_status, cluster)
-      membership_new <- merge_res$cluster
+      merge_res <- mergeCluster(mstgraph, edge_status, membership)
+      membership_new <- merge_res$membership
       cid_rm <- merge_res$cluster_rm
       k <- k - 1
 
-      log_L_new_merge <- log_mlik_ratio("merge", log_mlike_vec, merge_res, data, formula, family, correction, time_var, N_var, detailed = FALSE, ...)
+      log_L_new_merge <- log_mlik_ratio("merge", merge_res, log_mlike_vec, data, stnames, correction,
+        formula = formula, family = family, ...)
 
-      split_res <- splitCluster(mstgraph, k, merge_res$cluster)
-      split_res$k <- k + 1
-      membership_new <- split_res$cluster
+      split_res <- splitCluster(mstgraph, k, merge_res$membership)
+      membership_new <- split_res$membership
       k <- k + 1
 
       log_L_new <- log_mlik_ratio(
-        "split", log_L_new_merge$log_mlike_vec, split_res, data,
-        formula, family, correction, time_var, N_var, detailed = FALSE,...
+        "split", split_res, log_L_new_merge$log_mlike_vec, data, stnames, correction,
+        formula = formula, family = family,...
       )
       log_L <- log_L_new$ratio + log_L_new_merge$ratio
 
       acc_prob <- min(0, log_L)
       acc_prob <- exp(acc_prob)
       if (runif(1) < acc_prob) {
-        cluster <- membership_new
+        membership <- membership_new
         log_mlike_vec <- log_L_new$log_mlike_vec
         log_mlike <- sum(log_mlike_vec)
-        edge_status <- getEdgeStatus(cluster, mstgraph)
+        edge_status <- getEdgeStatus(membership, mstgraph)
         change_cnt <- change_cnt + 1
       }
     }
 
     if (move_choice == 4) { ## Hyper move
-      edge_status_G <- getEdgeStatus(cluster, graph)
+      edge_status_G <- getEdgeStatus(membership, graph)
       mstgraph <- proposeMST(graph, edge_status_G)
       V(mstgraph)$vid <- 1:ns
-      edge_status <- getEdgeStatus(cluster, mstgraph)
+      edge_status <- getEdgeStatus(membership, mstgraph)
       hyper_cnt <- hyper_cnt + 1
     }
 
@@ -189,7 +193,7 @@ sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cl
 
     if (iter > burnin & (iter - burnin) %% thin == 0) {
       mst_out[[(iter - burnin) / thin]] <- mstgraph
-      cluster_out[(iter - burnin) / thin, ] <- cluster
+      cluster_out[(iter - burnin) / thin, ] <- membership
       log_mlike_out[(iter - burnin) / thin] <- log_mlike
     }
 
@@ -206,22 +210,50 @@ sfclust <- function(data, formula, graphdata = list(graph = NULL, mst = NULL, cl
     }
   }
 
-  p <- max(cluster)
-  sorted_cluster <- as.numeric(names(sort(table(cluster), decreasing = TRUE)))
-  final_model <- lapply(1:p, log_mlik_each, data, sorted_cluster, formula, family, correction = FALSE, detailed = TRUE, time_var = time_var, N_var = N_var, ...)
+  # p <- max(membership)
+  # sorted_cluster <- as.numeric(names(sort(table(membership), decreasing = TRUE)))
+  # final_model <- lapply(1:p, log_mlik_each, data, sorted_cluster, formula, family, correction = FALSE, detailed = TRUE, time_var = time_var, N_var = N_var, ...)
+  #
+  # class(final_model) <- "sfclustm"
+  # # Final result
+  # output <- list(
+  #   cluster = cluster_out, log_mlike = log_mlike_out, mst = mst_out,
+  #   counts = c(births = birth_cnt, deaths = death_cnt, changes = change_cnt, hypers = hyper_cnt),
+  #   model = final_model,
+  #   formula = formula,
+  #   q = q
+  # )
+  # if (!is.null(path_save)) saveRDS(output, file = path_save)
+  # class(output) <- "sfclust"
+  # return(output)
 
-  class(final_model) <- "sfclustm"
-  # Final result
-  output <- list(
-    cluster = cluster_out, log_mlike = log_mlike_out, mst = mst_out,
-    counts = c(births = birth_cnt, deaths = death_cnt, changes = change_cnt, hypers = hyper_cnt),
-    model = final_model,
-    formula = formula,
-    q = q
-  )
-  if (!is.null(path_save)) saveRDS(output, file = path_save)
-  class(output) <- "sfclust"
-  return(output)
+          list(
+            cluster = cluster_out, log_mlike = log_mlike_out, mst = mst_out,
+            counts = c(births = birth_cnt, deaths = death_cnt, changes = change_cnt, hypers = hyper_cnt)
+          )
+}
+
+log_mlik_ratio <- function(move_type, move, log_mlike_vec, stdata, stnames = c("geometry", "time"),
+                           correction = TRUE, ...) {
+  # update local marginal likelihoods for split move
+  if (move_type == "split") {
+    log_like_vec_new <- log_mlike_vec
+    M1 <- log_mlik_each(move$cluster_old, move$membership, stdata, stnames, correction, detailed = FALSE, ...)
+    M2 <- log_mlik_each(move$cluster_new, move$membership, stdata, stnames, correction, detailed = FALSE, ...)
+    log_like_vec_new[move$cluster_old] <- M1
+    log_like_vec_new[move$cluster_new] <- M2
+    llratio <- M1 + M2 - log_mlike_vec[move$cluster_old]
+  }
+
+  # update local marginal likelihoods for merge move
+  if (move_type == "merge") {
+    log_like_vec_new <- log_mlike_vec[- move$cluster_rm]
+    M <- log_mlik_each(move$cluster_new, move$membership, stdata, stnames, correction, detailed = FALSE, ...)
+    log_like_vec_new[move$cluster_new] <- M
+    llratio <- M - sum(log_mlike_vec[c(move$cluster_rm, move$cluster_new)])
+  }
+
+  return(list(ratio = llratio, log_mlike_vec = log_like_vec_new))
 }
 
 #' Continue MCMC Clustering Procedure
