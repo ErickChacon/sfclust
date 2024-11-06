@@ -3,8 +3,8 @@
 #' Fit the specified INLA model to each cluster and compute the log marginal likelihood
 #' for each cluster specified in the membership vector.
 #'
-#' @param membership Integer vector indicating the cluster membership for each spatial
-#'        unit.
+#' @param membership Integer, character or factor vector indicating the cluster membership
+#'        for each spatial unit.
 #' @param stdata A stars object with spatial-temporal dimensions defined in `stnames`, and
 #'        including predictors and response variables.
 #' @param stnames The names of the `spatial` and `temporal` dimensions of the `stdata`
@@ -45,12 +45,28 @@
 #' @export
 log_mlik_all <- function(membership, stdata, stnames = c("geometry", "time"),
                          correction = TRUE, detailed = FALSE, ...) {
-  q <- max(membership)
+  clusters <- unique_clusters(membership)
 
   if (detailed) {
-    lapply(1:q, log_mlik_each, membership, stdata, stnames, correction, detailed, ...)
+    lapply(clusters, log_mlik_each, membership, stdata, stnames, correction, detailed, ...)
   } else {
-    sapply(1:q, log_mlik_each, membership, stdata, stnames, correction, detailed, ...)
+    sapply(clusters, log_mlik_each, membership, stdata, stnames, correction, detailed, ...)
+  }
+}
+
+unique_clusters <- function (membership) {
+  if (is.character(membership)) membership <- as.factor(membership)
+  if (is.factor(membership)){
+    clusters <- levels(membership)
+    setNames(clusters, clusters)
+  } else if (is.numeric(membership)) {
+    if (all(1:max(membership) %in% membership)) {
+      1:max(membership)
+    } else {
+      stop("`membership` vector does not contain all groups until `max(membership)`.")
+    }
+  } else {
+    stop("`membership` vector does not contain all groups until `max(membership)`.")
   }
 }
 

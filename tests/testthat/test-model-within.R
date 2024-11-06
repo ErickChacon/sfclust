@@ -96,3 +96,23 @@ test_that('compute log marginal correction', {
   model <- inla(formula, data = data, control.compute = list(config = TRUE))
   expect_equal(log_mlik_correction(model), - 5.8514497 - 3.45305292)
 })
+
+test_that('obtain unique clusters from membership', {
+  membership <- c(2, 4, 4, 3, 1)
+  expect_equal(unique_clusters(membership), 1:4)
+
+  membership <- c(3, 7, 7, 4, 2)
+  expect_error(unique_clusters(membership))
+
+  membership <- factor(c(3, 7, 7, 4, 2))
+  aux <- as.character(c(2, 3, 4, 7))
+  expect_equal(unique_clusters(membership), setNames(aux, aux))
+
+  membership <- factor(c("c", "e", "e", "d", "b"))
+  aux <- c("b", "c", "d", "e")
+  expect_equal(unique_clusters(membership), setNames(aux, aux))
+
+  membership <- c("c", "e", "e", "d", "b")
+  aux <- c("b", "c", "d", "e")
+  expect_equal(unique_clusters(membership), setNames(aux, aux))
+})
