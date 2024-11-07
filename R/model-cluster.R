@@ -22,19 +22,21 @@
 #' @return NULL The function primarily outputs results to a specified path and does not return anything.
 #'
 #' @export
-sfclust <- function(data, stnames = c("geometry", "time"), graphdata = list(graph = NULL, mst = NULL, cluster = NULL),
-                    formula, family = "normal", q = 0.5, correction = TRUE, niter = 100, burnin = 0, thin = 1,
-                    path_save = NULL, nsave = 10,time_var = "time", N_var = NULL, move_prob = c(0.425, 0.425, 0.1), ...) {
+sfclust <- function(stdata, stnames = c("geometry", "time"), graphdata = list(graph = NULL, mst = NULL, cluster = NULL),
+                    formula, q = 0.5, correction = TRUE, niter = 100, burnin = 0, thin = 1,
+                    path_save = NULL, nsave = 10,time_var = "time", move_prob = c(0.425, 0.425, 0.1), ...) {
+
   ## Setup
   # Dimensions
   # nt <- length(st_get_dimension_values(data, stnames[2]))
-  ns <- length(st_get_dimension_values(data, stnames[1]))
+  ns <- length(st_get_dimension_values(stdata, stnames[1]))
   # ns <- length(data[[1]])/nt
 
   if (correction) {
     if (length(correction_required(formula)) == 0) {
       correction <- FALSE
-      warning("Log marginal-likelihood correction not required. Disabling correction.")
+      warning("Log marginal-likelihood correction not required. Disabling correction.",
+                immediate. = TRUE)
     }
   }
 
@@ -56,7 +58,7 @@ sfclust <- function(data, stnames = c("geometry", "time"), graphdata = list(grap
   ## Initialize
   # Initialize log likelihood vector
 
-  log_mlike_vec <- log_mlik_all(membership, data, stnames, correction, detailed = FALSE,
+  log_mlike_vec <- log_mlik_all(membership, stdata, stnames, correction, detailed = FALSE,
             formula = formula, ...)
   log_mlike <- sum(log_mlike_vec)
 
@@ -98,8 +100,8 @@ sfclust <- function(data, stnames = c("geometry", "time"), graphdata = list(grap
       }
       log_P <- log(rd_new) - log(rb)
       log_A <- log(1 - c)
-      log_L_new <- log_mlik_ratio("split", split_res, log_mlike_vec, data, stnames, correction,
-        formula = formula, family = family, ...)
+      log_L_new <- log_mlik_ratio("split", split_res, log_mlike_vec, stdata, stnames, correction,
+        formula = formula, ...)
       log_L <- log_L_new$ratio
       acc_prob <- min(0, log_A + log_P + log_L)
       acc_prob <- exp(acc_prob)
@@ -125,8 +127,8 @@ sfclust <- function(data, stnames = c("geometry", "time"), graphdata = list(grap
       }
       log_P <- log(rb_new) - log(rd)
       log_A <- -log(1 - c)
-      log_L_new <- log_mlik_ratio("merge", merge_res, log_mlike_vec, data, stnames, correction,
-        formula = formula, family = family, ...)
+      log_L_new <- log_mlik_ratio("merge", merge_res, log_mlike_vec, stdata, stnames, correction,
+        formula = formula, ...)
       log_L <- log_L_new$ratio
       acc_prob <- min(0, log_A + log_P + log_L)
       acc_prob <- exp(acc_prob)
@@ -146,16 +148,16 @@ sfclust <- function(data, stnames = c("geometry", "time"), graphdata = list(grap
       cid_rm <- merge_res$cluster_rm
       k <- k - 1
 
-      log_L_new_merge <- log_mlik_ratio("merge", merge_res, log_mlike_vec, data, stnames, correction,
-        formula = formula, family = family, ...)
+      log_L_new_merge <- log_mlik_ratio("merge", merge_res, log_mlike_vec, stdata, stnames, correction,
+        formula = formula, ...)
 
       split_res <- splitCluster(mstgraph, k, merge_res$membership)
       membership_new <- split_res$membership
       k <- k + 1
 
       log_L_new <- log_mlik_ratio(
-        "split", split_res, log_L_new_merge$log_mlike_vec, data, stnames, correction,
-        formula = formula, family = family,...
+        "split", split_res, log_L_new_merge$log_mlike_vec, stdata, stnames, correction,
+        formula = formula,...
       )
       log_L <- log_L_new$ratio + log_L_new_merge$ratio
 
@@ -180,16 +182,16 @@ sfclust <- function(data, stnames = c("geometry", "time"), graphdata = list(grap
 
     ## Store estimates
 
-    if (iter %% 10 == 0) {
-      # cat("Iteration ", iter, ": clusters = ", k, ", births = ", birth_cnt, ", deaths = ",
-      #   death_cnt, ", changes = ", change_cnt, ", hypers = ", hyper_cnt, ", log_mlike = ", log_mlike, "\n",
-      #   sep = ""
-      # )
-      message("Iteration ", iter, ": clusters = ", k, ", births = ", birth_cnt, ", deaths = ",
-        death_cnt, ", changes = ", change_cnt, ", hypers = ", hyper_cnt, ", log_mlike = ", log_mlike, "\n",
-        sep = ""
-      )
-    }
+    # if (iter %% 10 == 0) {
+    #   # cat("Iteration ", iter, ": clusters = ", k, ", births = ", birth_cnt, ", deaths = ",
+    #   #   death_cnt, ", changes = ", change_cnt, ", hypers = ", hyper_cnt, ", log_mlike = ", log_mlike, "\n",
+    #   #   sep = ""
+    #   # )
+    #   message("Iteration ", iter, ": clusters = ", k, ", births = ", birth_cnt, ", deaths = ",
+    #     death_cnt, ", changes = ", change_cnt, ", hypers = ", hyper_cnt, ", log_mlike = ", log_mlike, "\n",
+    #     sep = ""
+    #   )
+    # }
 
     if (iter > burnin & (iter - burnin) %% thin == 0) {
       mst_out[[(iter - burnin) / thin]] <- mstgraph
@@ -212,7 +214,7 @@ sfclust <- function(data, stnames = c("geometry", "time"), graphdata = list(grap
 
   # p <- max(membership)
   # sorted_cluster <- as.numeric(names(sort(table(membership), decreasing = TRUE)))
-  # final_model <- lapply(1:p, log_mlik_each, data, sorted_cluster, formula, family, correction = FALSE, detailed = TRUE, time_var = time_var, N_var = N_var, ...)
+  # final_model <- lapply(1:p, log_mlik_each, stdata, sorted_cluster, formula, family, correction = FALSE, detailed = TRUE, time_var = time_var, N_var = N_var, ...)
   #
   # class(final_model) <- "sfclustm"
   # # Final result
@@ -231,6 +233,7 @@ sfclust <- function(data, stnames = c("geometry", "time"), graphdata = list(grap
             cluster = cluster_out, log_mlike = log_mlike_out, mst = mst_out,
             counts = c(births = birth_cnt, deaths = death_cnt, changes = change_cnt, hypers = hyper_cnt)
           )
+
 }
 
 log_mlik_ratio <- function(move_type, move, log_mlike_vec, stdata, stnames = c("geometry", "time"),
