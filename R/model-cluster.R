@@ -50,15 +50,17 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
   log_mlike_vec <- log_mlik_all(membership, stdata, stnames, correction, detailed = FALSE, ...)
   log_mlike <- sum(log_mlike_vec)
 
-  # output object
-  cluster_out <- array(0, dim = c((niter - burnin) / thin, ns))
+  # output objects
+  niter <- floor((niter - burnin - 1) / thin) * thin + 1 + burnin
+  nsamples <- (niter - burnin - 1) / thin + 1
+
+  membership_out <- array(0, dim = c(nsamples, ns))
+  log_mlike_out <- numeric(nsamples)
   mst_out <- list()
-  log_mlike_out <- numeric((niter - burnin) / thin)
+
+  birth_cnt <- death_cnt <- change_cnt <- hyper_cnt <- 0
 
   # MCMC sampling
-  birth_cnt <- death_cnt <- change_cnt <- hyper_cnt <- 0 # movement counts
-  # niter <- floor(niter - )
-
   for (iter in 1:niter) {
     rhy <- move_prob[4]
     if (nclust == 1) {
@@ -77,7 +79,7 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
 
     move_choice <- sample(4, 1, prob = c(rb, rd, rc, rhy))
 
-    if (move_choice == 1) { ## Birth move
+    if (move_choice == 1) { # birth move
       split_res <- splitCluster(mstgraph, nclust, membership)
       membership_new <- split_res$membership
 
@@ -89,7 +91,6 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
       log_P <- log(rd_new) - log(rb)
       log_A <- log(1 - q)
       log_L_new <- log_mlik_ratio("split", split_res, log_mlike_vec, stdata, stnames, correction, ...)
-        # formula = formula, ...)
       log_L <- log_L_new$ratio
       acc_prob <- min(0, log_A + log_P + log_L)
       acc_prob <- exp(acc_prob)
@@ -103,7 +104,7 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
       }
     }
 
-    if (move_choice == 2) { ## Death move
+    if (move_choice == 2) { # death move
       merge_res <- mergeCluster(mstgraph, edge_status, membership)
       membership_new <- merge_res$membership
       cid_rm <- merge_res$cluster_rm
@@ -116,7 +117,6 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
       log_P <- log(rb_new) - log(rd)
       log_A <- -log(1 - q)
       log_L_new <- log_mlik_ratio("merge", merge_res, log_mlike_vec, stdata, stnames, correction, ...)
-        # formula = formula, ...)
       log_L <- log_L_new$ratio
       acc_prob <- min(0, log_A + log_P + log_L)
       acc_prob <- exp(acc_prob)
@@ -130,14 +130,13 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
       }
     }
 
-    if (move_choice == 3) { ## Change move
+    if (move_choice == 3) { # change move
       merge_res <- mergeCluster(mstgraph, edge_status, membership)
       membership_new <- merge_res$membership
       cid_rm <- merge_res$cluster_rm
       nclust <- nclust - 1
 
       log_L_new_merge <- log_mlik_ratio("merge", merge_res, log_mlike_vec, stdata, stnames, correction, ...)
-        # formula = formula, ...)
 
       split_res <- splitCluster(mstgraph, nclust, merge_res$membership)
       membership_new <- split_res$membership
@@ -145,8 +144,6 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
 
       log_L_new <- log_mlik_ratio(
         "split", split_res, log_L_new_merge$log_mlike_vec, stdata, stnames, correction, ...)
-        # formula = formula,...
-      # )
       log_L <- log_L_new$ratio + log_L_new_merge$ratio
 
       acc_prob <- min(0, log_L)
@@ -160,7 +157,7 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
       }
     }
 
-    if (move_choice == 4) { ## Hyper move
+    if (move_choice == 4) { ## hyper move
       edge_status_G <- getEdgeStatus(membership, graph)
       mstgraph <- proposeMST(graph, edge_status_G)
       V(mstgraph)$vid <- 1:ns
@@ -181,17 +178,18 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
       )
     }
 
-    if (iter > burnin & (iter - burnin) %% thin == 0) {
-      mst_out[[(iter - burnin) / thin]] <- mstgraph
-      cluster_out[(iter - burnin) / thin, ] <- membership
-      log_mlike_out[(iter - burnin) / thin] <- log_mlike
+    if (iter > burnin & (iter - burnin - 1) %% thin == 0) {
+      isample <- (iter - burnin - 1) / thin + 1
+      membership_out[isample, ] <- membership
+      log_mlike_out[isample] <- log_mlike
+      mst_out[[isample]] <- mstgraph
     }
 
     if (iter %% nsave == 0) {
       if (!is.null(path_save)) {
         saveRDS(
           list(
-            cluster = cluster_out, log_mlike = log_mlike_out, mst = mst_out,
+            cluster = membership_out, log_mlike = log_mlike_out, mst = mst_out,
             counts = c(births = birth_cnt, deaths = death_cnt, changes = change_cnt, hypers = hyper_cnt)
           ),
           file = path_save
@@ -218,7 +216,7 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
   # return(output)
 
           list(
-            cluster = cluster_out, log_mlike = log_mlike_out, mst = mst_out,
+            cluster = membership_out, log_mlike = log_mlike_out, mst = mst_out,
             counts = c(births = birth_cnt, deaths = death_cnt, changes = change_cnt, hypers = hyper_cnt)
           )
 
