@@ -7,7 +7,7 @@
 #'
 #' @param data A stars object contains response, covariates, and other needed data
 #' @param formula A formula object representing the model to be fitted.
-#' @param graph Initial spanning tree used for the Bayesian model.
+#' @param graph Initial spanning tree used for the Bayesian model, list(graph = NULL, mst = NULL, cluster = NULL).
 #' @param init_val List of initial values for parameters 'trees', 'beta', and 'cluster'.
 #' @param q q is the penalty of the cluster number.
 #' @param niter MCMC Integer, number of MCMC iterations to perform.
@@ -17,20 +17,23 @@
 #' @param nsave the number of the gap of saved results in the chain.
 #' @param time_var the variable name of the time dimension in the data.
 #' @param N_var the variable name of the N dimension in the data when the it is necessary.
-#' @param move_prob a vector of probabilities of the birth, death, change steps.
+#' @param move_prob a vector of probabilities for birth, death, change and hyper moves
+#' respectively.
 #'
 #' @return NULL The function primarily outputs results to a specified path and does not return anything.
 #'
 #' @export
-sfclust <- function(stdata, stnames = c("geometry", "time"), graphdata = list(graph = NULL, mst = NULL, cluster = NULL),
-                    formula, q = 0.5, correction = TRUE, niter = 100, burnin = 0, thin = 1,
-                    path_save = NULL, nsave = 10,time_var = "time", move_prob = c(0.425, 0.425, 0.1), ...) {
+sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
+                    move_prob = c(0.425, 0.425, 0.1, 0.05), q = 0.5, correction = TRUE,
+                    niter = 100, burnin = 0, thin = 1, path_save = NULL, nsave = 10, ...) {
 
   ## Setup
   # Dimensions
-  # nt <- length(st_get_dimension_values(data, stnames[2]))
   ns <- length(st_get_dimension_values(stdata, stnames[1]))
-  # ns <- length(data[[1]])/nt
+
+  if (is.null(graphdata)) graphdata <- genclust(st_geometry(stdata))
+  formula <- list(...)$formula
+  # print(formula)
 
   if (correction) {
     if (length(correction_required(formula)) == 0) {
@@ -43,11 +46,8 @@ sfclust <- function(stdata, stnames = c("geometry", "time"), graphdata = list(gr
   # Initial values
   graph <- graphdata[["graph"]]
   mstgraph <- graphdata[["mst"]]
-  membership <- graphdata[["cluster"]]
+  membership <- graphdata[["membership"]]
   k <- max(membership)
-
-  # Hyperparameters
-  c <- q
 
   # Movement counts
   hyper_cnt <- 0
@@ -58,8 +58,8 @@ sfclust <- function(stdata, stnames = c("geometry", "time"), graphdata = list(gr
   ## Initialize
   # Initialize log likelihood vector
 
-  log_mlike_vec <- log_mlik_all(membership, stdata, stnames, correction, detailed = FALSE,
-            formula = formula, ...)
+  log_mlike_vec <- log_mlik_all(membership, stdata, stnames, correction, detailed = FALSE, ...)
+            # formula = formula, ...)
   log_mlike <- sum(log_mlike_vec)
 
   # Determine if an edge in graph is within a cluster or between two clusters
@@ -72,14 +72,14 @@ sfclust <- function(stdata, stnames = c("geometry", "time"), graphdata = list(gr
 
   ## MCMC sampling
   for (iter in 1:niter) {
-    rhy <- 0.05
+    rhy <- move_prob[4]
     if (k == 1) {
-      rb <- 0.95
+      rb <- 1 - rhy
       rd <- 0
       rc <- 0
     } else if (k == ns) {
       rb <- 0
-      rd <- 0.85
+      rd <- 0.9 - rhy
       rc <- 0.1
     } else {
       rb <- move_prob[1]
@@ -99,9 +99,9 @@ sfclust <- function(stdata, stnames = c("geometry", "time"), graphdata = list(gr
         rd_new <- move_prob[2]
       }
       log_P <- log(rd_new) - log(rb)
-      log_A <- log(1 - c)
-      log_L_new <- log_mlik_ratio("split", split_res, log_mlike_vec, stdata, stnames, correction,
-        formula = formula, ...)
+      log_A <- log(1 - q)
+      log_L_new <- log_mlik_ratio("split", split_res, log_mlike_vec, stdata, stnames, correction, ...)
+        # formula = formula, ...)
       log_L <- log_L_new$ratio
       acc_prob <- min(0, log_A + log_P + log_L)
       acc_prob <- exp(acc_prob)
@@ -126,9 +126,9 @@ sfclust <- function(stdata, stnames = c("geometry", "time"), graphdata = list(gr
         rb_new <- 0.425
       }
       log_P <- log(rb_new) - log(rd)
-      log_A <- -log(1 - c)
-      log_L_new <- log_mlik_ratio("merge", merge_res, log_mlike_vec, stdata, stnames, correction,
-        formula = formula, ...)
+      log_A <- -log(1 - q)
+      log_L_new <- log_mlik_ratio("merge", merge_res, log_mlike_vec, stdata, stnames, correction, ...)
+        # formula = formula, ...)
       log_L <- log_L_new$ratio
       acc_prob <- min(0, log_A + log_P + log_L)
       acc_prob <- exp(acc_prob)
@@ -148,17 +148,17 @@ sfclust <- function(stdata, stnames = c("geometry", "time"), graphdata = list(gr
       cid_rm <- merge_res$cluster_rm
       k <- k - 1
 
-      log_L_new_merge <- log_mlik_ratio("merge", merge_res, log_mlike_vec, stdata, stnames, correction,
-        formula = formula, ...)
+      log_L_new_merge <- log_mlik_ratio("merge", merge_res, log_mlike_vec, stdata, stnames, correction, ...)
+        # formula = formula, ...)
 
       split_res <- splitCluster(mstgraph, k, merge_res$membership)
       membership_new <- split_res$membership
       k <- k + 1
 
       log_L_new <- log_mlik_ratio(
-        "split", split_res, log_L_new_merge$log_mlike_vec, stdata, stnames, correction,
-        formula = formula,...
-      )
+        "split", split_res, log_L_new_merge$log_mlike_vec, stdata, stnames, correction, ...)
+        # formula = formula,...
+      # )
       log_L <- log_L_new$ratio + log_L_new_merge$ratio
 
       acc_prob <- min(0, log_L)
@@ -182,16 +182,16 @@ sfclust <- function(stdata, stnames = c("geometry", "time"), graphdata = list(gr
 
     ## Store estimates
 
-    # if (iter %% 10 == 0) {
-    #   # cat("Iteration ", iter, ": clusters = ", k, ", births = ", birth_cnt, ", deaths = ",
-    #   #   death_cnt, ", changes = ", change_cnt, ", hypers = ", hyper_cnt, ", log_mlike = ", log_mlike, "\n",
-    #   #   sep = ""
-    #   # )
-    #   message("Iteration ", iter, ": clusters = ", k, ", births = ", birth_cnt, ", deaths = ",
-    #     death_cnt, ", changes = ", change_cnt, ", hypers = ", hyper_cnt, ", log_mlike = ", log_mlike, "\n",
-    #     sep = ""
-    #   )
-    # }
+    if (iter %% 10 == 0) {
+      # cat("Iteration ", iter, ": clusters = ", k, ", births = ", birth_cnt, ", deaths = ",
+      #   death_cnt, ", changes = ", change_cnt, ", hypers = ", hyper_cnt, ", log_mlike = ", log_mlike, "\n",
+      #   sep = ""
+      # )
+      message("Iteration ", iter, ": clusters = ", k, ", births = ", birth_cnt, ", deaths = ",
+        death_cnt, ", changes = ", change_cnt, ", hypers = ", hyper_cnt, ", log_mlike = ", log_mlike, "\n",
+        sep = ""
+      )
+    }
 
     if (iter > burnin & (iter - burnin) %% thin == 0) {
       mst_out[[(iter - burnin) / thin]] <- mstgraph

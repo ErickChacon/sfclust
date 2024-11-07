@@ -10,13 +10,12 @@ log_mlik_all(
   stnames = c("geometry", "time"),
   correction = TRUE,
   detailed = FALSE,
-  formula,
   ...
 )
 }
 \arguments{
-\item{membership}{Integer vector indicating the cluster membership for each spatial
-unit.}
+\item{membership}{Integer, character or factor vector indicating the cluster membership
+for each spatial unit.}
 
 \item{stdata}{A stars object with spatial-temporal dimensions defined in \code{stnames}, and
 including predictors and response variables.}

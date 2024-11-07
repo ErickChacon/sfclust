@@ -7,10 +7,10 @@
 \title{Detect Spatial Functional Clusters Based on Bayesian Spanning Tree}
 \usage{
 sfclust(
-  data,
-  formula,
-  graphdata = list(graph = NULL, mst = NULL, cluster = NULL),
-  family = "normal",
+  stdata,
+  graphdata = NULL,
+  stnames = c("geometry", "time"),
+  move_prob = c(0.425, 0.425, 0.1, 0.05),
   q = 0.5,
   correction = TRUE,
   niter = 100,
@@ -18,16 +18,12 @@ sfclust(
   thin = 1,
   path_save = NULL,
   nsave = 10,
-  time_var = "time",
-  N_var = NULL,
-  move_prob = c(0.425, 0.425, 0.1),
   ...
 )
 }
 \arguments{
-\item{data}{A stars object contains response, covariates, and other needed data}
-
-\item{formula}{A formula object representing the model to be fitted.}
+\item{move_prob}{a vector of probabilities for birth, death, change and hyper moves
+respectively.}
 
 \item{q}{q is the penalty of the cluster number.}
 
@@ -41,15 +37,17 @@ sfclust(
 
 \item{nsave}{the number of the gap of saved results in the chain.}
 
+\item{data}{A stars object contains response, covariates, and other needed data}
+
+\item{formula}{A formula object representing the model to be fitted.}
+
+\item{graph}{Initial spanning tree used for the Bayesian model, list(graph = NULL, mst = NULL, cluster = NULL).}
+
+\item{init_val}{List of initial values for parameters 'trees', 'beta', and 'cluster'.}
+
 \item{time_var}{the variable name of the time dimension in the data.}
 
 \item{N_var}{the variable name of the N dimension in the data when the it is necessary.}
-
-\item{move_prob}{a vector of probabilities of the birth, death, change steps.}
-
-\item{graph}{Initial spanning tree used for the Bayesian model.}
-
-\item{init_val}{List of initial values for parameters 'trees', 'beta', and 'cluster'.}
 }
 \value{
 NULL The function primarily outputs results to a specified path and does not return anything.

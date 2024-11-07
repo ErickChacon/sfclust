@@ -1,7 +1,7 @@
-#' Initialize clusters for spatial clustering
+#' Generate clusters for spatial clustering
 #'
 #' Creates a undirected graph from spatial polygonal data, computes its minimum spanning
-#' tree (MST) and initialise the `nclust` clusters.
+#' tree (MST) and generate `nclust` clusters.
 #'
 #' @param x An `sf` or `sfc` object representing the spatial polygonal data. Additionally,
 #' it can also be a `matrix` or `Matrix` object with non-zero values representing the
@@ -12,18 +12,18 @@
 #' random weights are assigned.
 #'
 #' @return A list with three elements: 'graph' containing the initial undirected graph
-#' object, 'mst' containing the initial minimum spanning tree, and 'cluster' containing
+#' object, 'mst' containing the initial minimum spanning tree, and 'membership' containing
 #' the membership of `x`.
 #'
 #' @examples
 #'
 #'   librar(sf)
 #'   x <- st_make_grid(cellsize = c(1, 1), offset = c(0, 0), n = c(3, 2))
-#'   cluster_ini <- initial_cluster(x, nclust = 3, weights = 1:6))
+#'   cluster_ini <- genclust(x, nclust = 3, weights = 1:6))
 #'   print(cluster_ini)
 #'
 #' @export
-initial_cluster <- function(x, nclust = 10, weights = NULL){
+genclust <- function(x, nclust = 10, weights = NULL){
 
   # create adjacency, initial checks and weights if required
   if (inherits(x, c("sf", "sfc"))) {
@@ -47,5 +47,5 @@ initial_cluster <- function(x, nclust = 10, weights = NULL){
   rmid <- order(E(mstgraph)$weight, decreasing = TRUE)[1:(nclust - 1)]
   partition <- components(delete_edges(mstgraph, rmid))
 
-  return(list(graph = graph, mst = mstgraph, cluster = partition$membership))
+  return(list(graph = graph, mst = mstgraph, membership = partition$membership))
 }
