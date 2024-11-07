@@ -6,7 +6,6 @@
 #' to explore the space of possible cluster configurations.
 #'
 #' @param data A stars object contains response, covariates, and other needed data
-#' @param formula A formula object representing the model to be fitted.
 #' @param graph Initial spanning tree used for the Bayesian model, list(graph = NULL, mst = NULL, cluster = NULL).
 #' @param init_val List of initial values for parameters 'trees', 'beta', and 'cluster'.
 #' @param q q is the penalty of the cluster number.
@@ -18,6 +17,7 @@
 #' @param time_var the variable name of the time dimension in the data.
 #' @param N_var the variable name of the N dimension in the data when the it is necessary.
 #' @param move_prob a vector of probabilities for birth, death, change and hyper moves
+#' @param formula A formula object representing the model to be fitted.
 #' respectively.
 #'
 #' @return NULL The function primarily outputs results to a specified path and does not return anything.
@@ -27,57 +27,45 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
                     move_prob = c(0.425, 0.425, 0.1, 0.05), q = 0.5, correction = TRUE,
                     niter = 100, burnin = 0, thin = 1, path_save = NULL, nsave = 10, ...) {
 
-  ## Setup
-  # Dimensions
-  ns <- length(st_get_dimension_values(stdata, stnames[1]))
+  # number of regions
+  geoms <- st_get_dimension_values(stdata, stnames[1])
+  ns <- length(geoms)
 
-  if (is.null(graphdata)) graphdata <- genclust(st_geometry(stdata))
-  formula <- list(...)$formula
-  # print(formula)
-
+  # check if correction is required
   if (correction) {
-    if (length(correction_required(formula)) == 0) {
+    if (length(correction_required(list(...)[["formula"]])) == 0) {
       correction <- FALSE
-      warning("Log marginal-likelihood correction not required. Disabling correction.",
-                immediate. = TRUE)
+      warning("Log marginal-likelihood correction not required.", immediate. = TRUE)
     }
   }
 
-  # Initial values
+  # initial clustering
+  if (is.null(graphdata)) graphdata <- genclust(geoms)
   graph <- graphdata[["graph"]]
   mstgraph <- graphdata[["mst"]]
   membership <- graphdata[["membership"]]
-  k <- max(membership)
 
-  # Movement counts
-  hyper_cnt <- 0
-  birth_cnt <- 0
-  death_cnt <- 0
-  change_cnt <- 0
-
-  ## Initialize
-  # Initialize log likelihood vector
-
+  nclust <- max(membership)
+  edge_status <- getEdgeStatus(membership, mstgraph) # edge is within or between clusters
   log_mlike_vec <- log_mlik_all(membership, stdata, stnames, correction, detailed = FALSE, ...)
-            # formula = formula, ...)
   log_mlike <- sum(log_mlike_vec)
 
-  # Determine if an edge in graph is within a cluster or between two clusters
-  edge_status <- getEdgeStatus(membership, mstgraph)
-
-  ## Prepare output
+  # output object
   cluster_out <- array(0, dim = c((niter - burnin) / thin, ns))
   mst_out <- list()
   log_mlike_out <- numeric((niter - burnin) / thin)
 
-  ## MCMC sampling
+  # MCMC sampling
+  birth_cnt <- death_cnt <- change_cnt <- hyper_cnt <- 0 # movement counts
+  # niter <- floor(niter - )
+
   for (iter in 1:niter) {
     rhy <- move_prob[4]
-    if (k == 1) {
+    if (nclust == 1) {
       rb <- 1 - rhy
       rd <- 0
       rc <- 0
-    } else if (k == ns) {
+    } else if (nclust == ns) {
       rb <- 0
       rd <- 0.9 - rhy
       rc <- 0.1
@@ -90,11 +78,11 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
     move_choice <- sample(4, 1, prob = c(rb, rd, rc, rhy))
 
     if (move_choice == 1) { ## Birth move
-      split_res <- splitCluster(mstgraph, k, membership)
+      split_res <- splitCluster(mstgraph, nclust, membership)
       membership_new <- split_res$membership
 
-      if (k == ns - 1) {
-        rd_new <- 0.85
+      if (nclust == ns - 1) {
+        rd_new <-  0.9 - rhy
       } else {
         rd_new <- move_prob[2]
       }
@@ -107,7 +95,7 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
       acc_prob <- exp(acc_prob)
       if (runif(1) < acc_prob) {
         membership <- membership_new
-        k <- k + 1
+        nclust <- nclust + 1
         log_mlike_vec <- log_L_new$log_mlike_vec
         log_mlike <- sum(log_mlike_vec)
         edge_status <- getEdgeStatus(membership, mstgraph)
@@ -120,10 +108,10 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
       membership_new <- merge_res$membership
       cid_rm <- merge_res$cluster_rm
 
-      if (k == 2) {
-        rb_new <- 0.85
+      if (nclust == 2) {
+        rb_new <- 1 - rhy
       } else {
-        rb_new <- 0.425
+        rb_new <- move_prob[1]
       }
       log_P <- log(rb_new) - log(rd)
       log_A <- -log(1 - q)
@@ -134,7 +122,7 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
       acc_prob <- exp(acc_prob)
       if (runif(1) < acc_prob) {
         membership <- membership_new
-        k <- k - 1
+        nclust <- nclust - 1
         log_mlike_vec <- log_L_new$log_mlike_vec
         log_mlike <- sum(log_mlike_vec)
         edge_status <- getEdgeStatus(membership, mstgraph)
@@ -146,14 +134,14 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
       merge_res <- mergeCluster(mstgraph, edge_status, membership)
       membership_new <- merge_res$membership
       cid_rm <- merge_res$cluster_rm
-      k <- k - 1
+      nclust <- nclust - 1
 
       log_L_new_merge <- log_mlik_ratio("merge", merge_res, log_mlike_vec, stdata, stnames, correction, ...)
         # formula = formula, ...)
 
-      split_res <- splitCluster(mstgraph, k, merge_res$membership)
+      split_res <- splitCluster(mstgraph, nclust, merge_res$membership)
       membership_new <- split_res$membership
-      k <- k + 1
+      nclust <- nclust + 1
 
       log_L_new <- log_mlik_ratio(
         "split", split_res, log_L_new_merge$log_mlike_vec, stdata, stnames, correction, ...)
@@ -187,7 +175,7 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
       #   death_cnt, ", changes = ", change_cnt, ", hypers = ", hyper_cnt, ", log_mlike = ", log_mlike, "\n",
       #   sep = ""
       # )
-      message("Iteration ", iter, ": clusters = ", k, ", births = ", birth_cnt, ", deaths = ",
+      message("Iteration ", iter, ": clusters = ", nclust, ", births = ", birth_cnt, ", deaths = ",
         death_cnt, ", changes = ", change_cnt, ", hypers = ", hyper_cnt, ", log_mlike = ", log_mlike, "\n",
         sep = ""
       )
