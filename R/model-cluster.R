@@ -25,7 +25,7 @@
 #' @export
 sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
                     move_prob = c(0.425, 0.425, 0.1, 0.05), q = 0.5, correction = TRUE,
-                    niter = 100, burnin = 0, thin = 1, path_save = NULL, nsave = 10, ...) {
+                    niter = 100, burnin = 0, thin = 1, nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
 
   # number of regions
   geoms <- st_get_dimension_values(stdata, stnames[1])
@@ -81,7 +81,6 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
 
     if (move_choice == 1) { # birth move
       split_res <- splitCluster(mstgraph, nclust, membership)
-      membership_new <- split_res$membership
 
       if (nclust == ns - 1) {
         rd_new <-  0.9 - rhy
@@ -91,23 +90,20 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
       log_P <- log(rd_new) - log(rb)
       log_A <- log(1 - q)
       log_L_new <- log_mlik_ratio("split", split_res, log_mlike_vec, stdata, stnames, correction, ...)
-      log_L <- log_L_new$ratio
-      acc_prob <- min(0, log_A + log_P + log_L)
-      acc_prob <- exp(acc_prob)
+      acc_prob <- exp(min(0, log_A + log_P + log_L_new$ratio))
+
       if (runif(1) < acc_prob) {
-        membership <- membership_new
+        membership <- split_res$membership
+        edge_status <- getEdgeStatus(membership, mstgraph)
         nclust <- nclust + 1
         log_mlike_vec <- log_L_new$log_mlike_vec
         log_mlike <- sum(log_mlike_vec)
-        edge_status <- getEdgeStatus(membership, mstgraph)
         birth_cnt <- birth_cnt + 1
       }
     }
 
     if (move_choice == 2) { # death move
       merge_res <- mergeCluster(mstgraph, edge_status, membership)
-      membership_new <- merge_res$membership
-      cid_rm <- merge_res$cluster_rm
 
       if (nclust == 2) {
         rb_new <- 1 - rhy
@@ -117,67 +113,51 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
       log_P <- log(rb_new) - log(rd)
       log_A <- -log(1 - q)
       log_L_new <- log_mlik_ratio("merge", merge_res, log_mlike_vec, stdata, stnames, correction, ...)
-      log_L <- log_L_new$ratio
-      acc_prob <- min(0, log_A + log_P + log_L)
-      acc_prob <- exp(acc_prob)
+      acc_prob <- exp(min(0, log_A + log_P + log_L_new$ratio))
+
       if (runif(1) < acc_prob) {
-        membership <- membership_new
+        membership <- merge_res$membership
+        edge_status <- getEdgeStatus(membership, mstgraph)
         nclust <- nclust - 1
         log_mlike_vec <- log_L_new$log_mlike_vec
         log_mlike <- sum(log_mlike_vec)
-        edge_status <- getEdgeStatus(membership, mstgraph)
         death_cnt <- death_cnt + 1
       }
     }
 
     if (move_choice == 3) { # change move
       merge_res <- mergeCluster(mstgraph, edge_status, membership)
-      membership_new <- merge_res$membership
-      cid_rm <- merge_res$cluster_rm
-      nclust <- nclust - 1
+      split_res <- splitCluster(mstgraph, nclust - 1, merge_res$membership)
 
       log_L_new_merge <- log_mlik_ratio("merge", merge_res, log_mlike_vec, stdata, stnames, correction, ...)
+      log_L_new <- log_mlik_ratio("split", split_res, log_L_new_merge$log_mlike_vec, stdata, stnames, correction, ...)
+      acc_prob <- exp(min(0, log_L_new_merge$ratio + log_L_new$ratio))
 
-      split_res <- splitCluster(mstgraph, nclust, merge_res$membership)
-      membership_new <- split_res$membership
-      nclust <- nclust + 1
-
-      log_L_new <- log_mlik_ratio(
-        "split", split_res, log_L_new_merge$log_mlike_vec, stdata, stnames, correction, ...)
-      log_L <- log_L_new$ratio + log_L_new_merge$ratio
-
-      acc_prob <- min(0, log_L)
-      acc_prob <- exp(acc_prob)
       if (runif(1) < acc_prob) {
-        membership <- membership_new
+        membership <- split_res$membership
+        edge_status <- getEdgeStatus(membership, mstgraph)
         log_mlike_vec <- log_L_new$log_mlike_vec
         log_mlike <- sum(log_mlike_vec)
-        edge_status <- getEdgeStatus(membership, mstgraph)
         change_cnt <- change_cnt + 1
       }
     }
 
     if (move_choice == 4) { ## hyper move
-      edge_status_G <- getEdgeStatus(membership, graph)
-      mstgraph <- proposeMST(graph, edge_status_G)
+      mstgraph <- proposeMST(graph, getEdgeStatus(membership, graph))
       V(mstgraph)$vid <- 1:ns
       edge_status <- getEdgeStatus(membership, mstgraph)
       hyper_cnt <- hyper_cnt + 1
     }
 
-    ## Store estimates
-
-    if (iter %% 10 == 0) {
-      # cat("Iteration ", iter, ": clusters = ", k, ", births = ", birth_cnt, ", deaths = ",
-      #   death_cnt, ", changes = ", change_cnt, ", hypers = ", hyper_cnt, ", log_mlike = ", log_mlike, "\n",
-      #   sep = ""
-      # )
+    # report status
+    if (iter %% nmessage == 0) {
       message("Iteration ", iter, ": clusters = ", nclust, ", births = ", birth_cnt, ", deaths = ",
         death_cnt, ", changes = ", change_cnt, ", hypers = ", hyper_cnt, ", log_mlike = ", log_mlike, "\n",
         sep = ""
       )
     }
 
+    # store estimates
     if (iter > burnin & (iter - burnin - 1) %% thin == 0) {
       isample <- (iter - burnin - 1) / thin + 1
       membership_out[isample, ] <- membership
@@ -185,11 +165,12 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
       mst_out[[isample]] <- mstgraph
     }
 
-    if (iter %% nsave == 0) {
+    # save to file
+    if (iter > burnin & (iter - burnin - 1) %% nsave == 0) {
       if (!is.null(path_save)) {
         saveRDS(
           list(
-            cluster = membership_out, log_mlike = log_mlike_out, mst = mst_out,
+            membership = membership_out, log_mlike = log_mlike_out, mst = mst_out,
             counts = c(births = birth_cnt, deaths = death_cnt, changes = change_cnt, hypers = hyper_cnt)
           ),
           file = path_save
