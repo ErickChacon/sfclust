@@ -27,13 +27,16 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
                     move_prob = c(0.425, 0.425, 0.1, 0.05), q = 0.5, correction = TRUE,
                     niter = 100, burnin = 0, thin = 1, nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
 
+  args <- list(stdata = stdata, stnames = stnames, move_prob = move_prob, q = q, correction = correction)
+  inla_args <- list(...)
+
   # number of regions
   geoms <- st_get_dimension_values(stdata, stnames[1])
   ns <- length(geoms)
 
   # check if correction is required
   if (correction) {
-    if (length(correction_required(list(...)[["formula"]])) == 0) {
+    if (length(correction_required(inla_args[["formula"]])) == 0) {
       correction <- FALSE
       warning("Log marginal-likelihood correction not required.", immediate. = TRUE)
     }
@@ -179,28 +182,20 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
     }
   }
 
-  # p <- max(membership)
-  # sorted_cluster <- as.numeric(names(sort(table(membership), decreasing = TRUE)))
-  # final_model <- lapply(1:p, log_mlik_each, stdata, sorted_cluster, formula, family, correction = FALSE, detailed = TRUE, time_var = time_var, N_var = N_var, ...)
-  #
-  # class(final_model) <- "sfclustm"
-  # # Final result
-  # output <- list(
-  #   cluster = cluster_out, log_mlike = log_mlike_out, mst = mst_out,
-  #   counts = c(births = birth_cnt, deaths = death_cnt, changes = change_cnt, hypers = hyper_cnt),
-  #   model = final_model,
-  #   formula = formula,
-  #   q = q
-  # )
-  # if (!is.null(path_save)) saveRDS(output, file = path_save)
-  # class(output) <- "sfclust"
-  # return(output)
+  # final outcome
+  output <- list(
+    membership = membership_out,
+    models = log_mlik_all(membership, stdata, stnames, correction, detailed = TRUE, ...),
+    log_mlike = log_mlike_out,
+    counts = c(births = birth_cnt, deaths = death_cnt, changes = change_cnt, hypers = hyper_cnt)
+  )
+  attr(output, "mst") <- mst_out
+  attr(output, "args") <- args
+  attr(output, "inla_args") <- inla_args
+  class(output) <- "sfclust"
 
-          list(
-            cluster = membership_out, log_mlike = log_mlike_out, mst = mst_out,
-            counts = c(births = birth_cnt, deaths = death_cnt, changes = change_cnt, hypers = hyper_cnt)
-          )
-
+  if (!is.null(path_save)) saveRDS(output, file = path_save)
+  return(output)
 }
 
 log_mlik_ratio <- function(move_type, move, log_mlike_vec, stdata, stnames = c("geometry", "time"),
