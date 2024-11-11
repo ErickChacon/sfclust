@@ -215,9 +215,9 @@ print.sfclustm <- function(x, ...) {
 #' @export
 summary.sfclustm <- function(x, ...) {
   # Ensure that x is an sfclustm object
-  if (!inherits(x, "sfclustm")) {
-    stop("The object must be of class 'sfclustm'.")
-  }
+  # if (!inherits(x, "sfclustm")) {
+  #   stop("The object must be of class 'sfclustm'.")
+  # }
 
   # Initialize a list to store the summaries
   summaries <- lapply(seq_along(x), function(i) {

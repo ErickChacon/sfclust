@@ -116,23 +116,3 @@ test_that('obtain unique clusters from membership', {
   aux <- c("b", "c", "d", "e")
   expect_equal(unique_clusters(membership), setNames(aux, aux))
 })
-
-membership = c(4, 3, 4, 1, 2, 4, 2)
-clust = order(table(membership), decreasing = TRUE)
-cluster_sorted <- names(sort(table(membership), decreasing = TRUE))
-
-as.integer(setNames(seq_along(clust), clust)[as.character(membership)])
-
-sort(table(membership), decreasing = TRUE)
-
-as.numeric(names(sort(table(membership), decreasing = TRUE)))
-
-sort_membership <- function(x) {
-  clusters_sorted <- order(table(x), decreasing = TRUE)
-  clusters_labels <- setNames(seq_along(clusters_sorted), clusters_sorted)
-  as.integer(clusters_labels[as.character(x)])
-}
-
-# Example usage
-membership <- c(3, 3, 3, 2, 2, 1, 1, 1, 1, 4)
-sort_membership(membership)

@@ -28,7 +28,7 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
                     niter = 100, burnin = 0, thin = 1, nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
 
   args <- list(stdata = stdata, stnames = stnames, move_prob = move_prob, q = q, correction = correction)
-  inla_args <- list(...)
+  inla_args <- rlang::enquos(...)
 
   # number of regions
   geoms <- st_get_dimension_values(stdata, stnames[1])
@@ -36,7 +36,7 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
 
   # check if correction is required
   if (correction) {
-    if (length(correction_required(inla_args[["formula"]])) == 0) {
+    if (length(correction_required(rlang::eval_tidy(inla_args[["formula"]]))) == 0) {
       correction <- FALSE
       warning("Log marginal-likelihood correction not required.", immediate. = TRUE)
     }
