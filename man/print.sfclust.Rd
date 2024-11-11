@@ -9,8 +9,12 @@
 \arguments{
 \item{x}{An object of class 'sfclust'.}
 
-\item{...}{Additional arguments (currently unused).}
+\item{...}{Additional arguments passed to \code{print.default}.}
 }
 \description{
-This function prints details of an sfclust object, including the formula, counts, hyperparameter q, and the final log marginal likelihood.
+Prints details of an sfclust object, including the (i) within-cluster formula;
+(ii) hyperparameters used for the MCMC sample such as the number of clusters penalty
+(q) and the movement probabilities (move_prob); (iii) the number of movement type dones
+during the MCMC sampling; and (iv) the log marginal likelihood of the model of the last
+clustering sample.
 }

@@ -1,15 +1,19 @@
 #' Print method for sfclust objects
 #'
-#' This function prints details of an sfclust object, including the formula, counts, hyperparameter q, and the final log marginal likelihood.
+#' Prints details of an sfclust object, including the (i) within-cluster formula;
+#' (ii) hyperparameters used for the MCMC sample such as the number of clusters penalty
+#' (q) and the movement probabilities (move_prob); (iii) the number of movement type dones
+#' during the MCMC sampling; and (iv) the log marginal likelihood of the model of the last
+#' clustering sample.
 #'
 #' @param x An object of class 'sfclust'.
-#' @param ... Additional arguments (currently unused).
+#' @param ... Additional arguments passed to `print.default`.
 #' @export
 print.sfclust <- function(x, ...) {
   cat("Within-cluster formula:\n")
   print(attr(x, "inla_args")$formula, ...)
 
-  cat("\nHyperparameters:\n")
+  cat("\nClustering hyperparameters:\n")
   hypernames <- c("q", "birth", "death", "change", "hyper")
   print(setNames(c(attr(x, "args")$q, attr(x, "args")$move_prob), hypernames), ...)
 
@@ -24,26 +28,30 @@ print.sfclust <- function(x, ...) {
 
 #' Summary method for sfclust objects
 #'
-#' This function summarizes the cluster assignments from the a-th row of the cluster matrix.
+#' This function summarizes the cluster assignments from the i-th clustering sample.
 #'
 #' @param x An object of class 'sfclust'.
-#' @param a An integer specifying the row of the cluster matrix to summarize (default is the last row).
+#' @param i An integer specifying the clustering sample number to be summarized (default
+#' is the last sample).
+#' @param ... Additional arguments passed to `print.default`.
 #' @export
-summary.sfclust <- function(x, ind = nrow(x$membership)) {
-  if (ind < 1 || ind > nrow(x$membership)) {
-    stop("`ind` must be between 1 and the number of memberships.")
+summary.sfclust <- function(x, i = nrow(x$membership), ...) {
+  if (i < 1 || i > nrow(x$membership)) {
+    stop("`i` must be between 1 and the number of memberships.")
   }
 
-  cat("Within-cluster formula:\n")
-  print(attr(x, "inla_args")$formula)
+  cat("Summary for clustering sample", i, "out of", nrow(x$membership), "\n")
 
-  membership <- x$membership[ind, ]
+  cat("\nWithin-cluster formula:\n")
+  print(attr(x, "inla_args")$formula, ...)
+
+  membership <- x$membership[i, ]
   cluster_summary <- table(membership, deparse.level = 0)
 
-  cat("\nMembership summary (row ", ind, "):\n", sep = "")
-  print(cluster_summary)
+  cat("\nCounts per cluster:")
+  print(cluster_summary, ...)
 
-  cat("\nLog marginal likelihood: ", x$log_mlike[length(x$log_mlike)], "\n")
+  cat("\nLog marginal likelihood: ", x$log_mlike[i], "\n")
   invisible(cluster_summary)
 }
 
