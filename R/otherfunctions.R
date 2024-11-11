@@ -28,33 +28,38 @@ print.sfclust <- function(x, ...) {
 
 #' Summary method for sfclust objects
 #'
-#' This function summarizes the cluster assignments from the i-th clustering sample.
+#' This function summarizes the cluster assignments from the desired clustering `sample`.
 #'
 #' @param x An object of class 'sfclust'.
-#' @param i An integer specifying the clustering sample number to be summarized (default
+#' @param sample An integer specifying the clustering sample number to be summarized (default
 #' is the last sample).
 #' @param ... Additional arguments passed to `print.default`.
 #' @export
-summary.sfclust <- function(x, i = nrow(x$membership), ...) {
-  if (i < 1 || i > nrow(x$membership)) {
-    stop("`i` must be between 1 and the number of memberships.")
+summary.sfclust <- function(x, sample = nrow(x$membership), sort = FALSE,...) {
+  if (sample < 1 || sample > nrow(x$membership)) {
+    stop("`sample` must be between 1 and the total number clustering (membership) samples.")
   }
 
-  cat("Summary for clustering sample", i, "out of", nrow(x$membership), "\n")
+  cat("Summary for clustering sample", sample, "out of", nrow(x$membership), "\n")
 
   cat("\nWithin-cluster formula:\n")
   print(attr(x, "inla_args")$formula, ...)
 
-  membership <- x$membership[i, ]
+  membership <- if (sort) sort_membership(x$membership[sample,]) else x$membership[sample,]
   cluster_summary <- table(membership, deparse.level = 0)
-
   cat("\nCounts per cluster:")
   print(cluster_summary, ...)
 
-  cat("\nLog marginal likelihood: ", x$log_mlike[i], "\n")
+  cat("\nLog marginal likelihood: ", x$log_mlike[sample], "\n")
   invisible(cluster_summary)
 }
 
+# relabel membership based on the frequency of each cluster
+sort_membership <- function(x) {
+  clusters_sorted <- order(table(x), decreasing = TRUE)
+  clusters_labels <- setNames(seq_along(clusters_sorted), clusters_sorted)
+  as.integer(clusters_labels[as.character(x)])
+}
 
 #' Plot function for sfclust objects with a conditional legend and log marginal likelihood
 #'
@@ -63,54 +68,42 @@ summary.sfclust <- function(x, i = nrow(x$membership), ...) {
 #'
 #' @param map An sf object provided by the user.
 #' @param output An sfclust object containing the clustering results.
-#' @param k The row of the cluster matrix to use for plotting (default is the last row).
+#' @param sample The row of the cluster matrix to use for plotting (default is the last row).
 #' @param title A title for the plot (default is "Estimated Clusters").
 #' @export
-plot.sfclust <- function(output, map,  k = nrow(output$cluster), title = "Estimated Clusters") {
+plot.sfclust <- function(x, sample = nrow(x$membership), which = c(1, 2), clusters = NULL, sort = TRUE, legend = FALSE, ...) {
 
-  # Ensure that output is an sfclust object
-  if (!inherits(output, "sfclust")) {
-    stop("The output must be an object of class 'sfclust'.")
+  if (sample < 1 || sample > nrow(x$membership)) {
+    stop("`sample` must be between 1 and the total number clustering (membership) samples.")
   }
 
-  # Ensure that map is an sf object
-  if (!inherits(map, "sf")) {
-    stop("The map must be an sf object.")
+  # get geometries, selected membership and clusters to plot
+  geoms <- st_get_dimension_values(attr(x, "args")$stdata, attr(out, "args")$stnames[1])
+  membership <- if (sort) sort_membership(x$membership[sample,]) else x$membership[sample,]
+  if (is.null(clusters)) clusters <- 1:max(membership)
+
+  # visualize
+  if (length(which) > 1) opar <- par(mfrow = c(1, length(which)))
+  if (1 %in% which) { # spatial clustering membership
+    membership[!(membership %in% clusters)] <- NA
+    membership <- factor(membership)
+    plot(geoms, col = membership,
+      main = paste("Clustering sample", sample, "out of", nrow(x$membership)),
+      xlab = "Longitude", ylab = "Latitude", border = "black", ...
+    )
+    if (legend) {
+      legend("topright", legend = levels(membership), fill = 1:length(levels(membership)),
+        border = "black", title = "Cluster", cex = 0.8, bty = "n")
+    }
   }
-
-  # Ensure that k is valid (within the range of available rows in the cluster matrix)
-  if (k < 1 || k > nrow(output$cluster)) {
-    stop("The value of k must be between 1 and the number of rows in the cluster matrix.")
+  if (2 %in% which) { # marginal likelihood convergence
+    plot(x$log_mlike, type = "l", main = "Log marginal likelihood convergence",
+      xlab = "Sample", ylab = "Log marginal likelihood", col = "blue", lwd = 2)
+    points(sample, x$log_mlike[sample], col = "red", pch = 19)
   }
-  # Extract the k-th row of the cluster matrix
-  cluster_estimated <- output$cluster[k, ]
+  if (length(which) > 1) par(opar)
 
-  # Get the unique clusters
-  unique_clusters <- sort(unique(cluster_estimated))
-
-  ## First Plot: The map with the estimated clusters
-  # Adjust the margins to prevent the "figure margins too large" error
-  par(mar = c(4, 4, 2, 2))
-
-  # Plot the map with the estimated clusters
-  plot(map$geometry, col = factor(cluster_estimated), main = title,
-       xlab = "Longitude", ylab = "Latitude", border = "black")
-
-  # Add a legend if the number of clusters is less than 10
-  if (length(unique_clusters) < 10) {
-    legend("topright", legend = paste("Cluster", unique_clusters),
-           fill = unique(factor(cluster_estimated)), border = "black",
-           title = "Legend", cex = 0.8, bty = "n")
-  }
-
-  ## Second Plot: The log marginal likelihood
-  par(mar = c(4, 4, 2, 2))  # Adjust margins again
-
-  # Plot the log marginal likelihood
-  plot(output$log_mlike, type = "l", main = "Log Marginal Likelihood",
-       xlab = "Iteration", ylab = "Log Marginal Likelihood", col = "blue", lwd = 2)
-
-  invisible(NULL)  # Return nothing, just plot
+  invisible(NULL)
 }
 
 #' Plot function for sfclustm objects
@@ -122,11 +115,6 @@ plot.sfclust <- function(output, map,  k = nrow(output$cluster), title = "Estima
 #' @param title A title for the plot (default is "Fitted Values").
 #' @export
 plot.sfclustm <- function(x, a = 1, title = "Fitted Values") {
-
-  # Ensure that x is an sfclustm object
-  if (!inherits(x, "sfclustm")) {
-    stop("The object must be of class 'sfclustm'.")
-  }
 
   # Ensure that a is valid (within the range of available models)
   if (a < 1 || a > length(x)) {

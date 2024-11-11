@@ -4,14 +4,22 @@
 \alias{plot.sfclust}
 \title{Plot function for sfclust objects with a conditional legend and log marginal likelihood}
 \usage{
-\method{plot}{sfclust}(output, map, k = nrow(output$cluster), title = "Estimated Clusters")
+\method{plot}{sfclust}(
+  x,
+  sample = nrow(x$membership),
+  which = c(1, 2),
+  clusters = NULL,
+  sort = TRUE,
+  legend = FALSE,
+  ...
+)
 }
 \arguments{
-\item{output}{An sfclust object containing the clustering results.}
+\item{sample}{The row of the cluster matrix to use for plotting (default is the last row).}
 
 \item{map}{An sf object provided by the user.}
 
-\item{k}{The row of the cluster matrix to use for plotting (default is the last row).}
+\item{output}{An sfclust object containing the clustering results.}
 
 \item{title}{A title for the plot (default is "Estimated Clusters").}
 }

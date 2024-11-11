@@ -4,16 +4,16 @@
 \alias{summary.sfclust}
 \title{Summary method for sfclust objects}
 \usage{
-\method{summary}{sfclust}(x, i = nrow(x$membership), ...)
+\method{summary}{sfclust}(x, sample = nrow(x$membership), sort = FALSE, ...)
 }
 \arguments{
 \item{x}{An object of class 'sfclust'.}
 
-\item{i}{An integer specifying the clustering sample number to be summarized (default
+\item{sample}{An integer specifying the clustering sample number to be summarized (default
 is the last sample).}
 
 \item{...}{Additional arguments passed to \code{print.default}.}
 }
 \description{
-This function summarizes the cluster assignments from the i-th clustering sample.
+This function summarizes the cluster assignments from the desired clustering \code{sample}.
 }
