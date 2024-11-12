@@ -11,7 +11,7 @@
 #' @export
 print.sfclust <- function(x, ...) {
   cat("Within-cluster formula:\n")
-  print(attr(x, "inla_args")$formula, ...)
+  print(rlang::eval_tidy(attr(x, "inla_args")$formula), showEnv = FALSE, ...)
 
   cat("\nClustering hyperparameters:\n")
   hypernames <- c("q", "birth", "death", "change", "hyper")
@@ -43,7 +43,7 @@ summary.sfclust <- function(x, sample = nrow(x$membership), sort = FALSE,...) {
   cat("Summary for clustering sample", sample, "out of", nrow(x$membership), "\n")
 
   cat("\nWithin-cluster formula:\n")
-  print(attr(x, "inla_args")$formula, ...)
+  print(rlang::eval_tidy(attr(x, "inla_args")$formula), showEnv = FALSE, ...)
 
   membership <- if (sort) sort_membership(x$membership[sample,]) else x$membership[sample,]
   cluster_summary <- table(membership, deparse.level = 0)
