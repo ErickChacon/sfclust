@@ -171,6 +171,7 @@ plot.sfclust <- function(x, sample = x$clustering$id, which = 1:3, clusters = NU
   if (is.null(clusters)) clusters <- 1:max(membership)
 
   # visualize
+  which <- which[which %in% 1:3]
   if (length(which) > 1) opar <- par(mfrow = c(1, length(which)))
   if (1 %in% which) { # spatial clustering membership
     membership[!(membership %in% clusters)] <- NA
