@@ -4,7 +4,7 @@
 \alias{summary.sfclust}
 \title{Summary method for sfclust objects}
 \usage{
-\method{summary}{sfclust}(x, sample = nrow(x$membership), sort = FALSE, ...)
+\method{summary}{sfclust}(x, sample = x$clustering$id, sort = FALSE, ...)
 }
 \arguments{
 \item{x}{An object of class 'sfclust'.}

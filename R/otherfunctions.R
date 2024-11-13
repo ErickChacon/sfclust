@@ -11,16 +11,17 @@
 #' @export
 print.sfclust <- function(x, ...) {
   cat("Within-cluster formula:\n")
-  print(rlang::eval_tidy(attr(x, "inla_args")$formula), showEnv = FALSE, ...)
+  print(eval(attr(x, "inla_args")$formula), showEnv = FALSE, ...)
 
   cat("\nClustering hyperparameters:\n")
   hypernames <- c("q", "birth", "death", "change", "hyper")
   print(setNames(c(attr(x, "args")$q, attr(x, "args")$move_prob), hypernames), ...)
 
   cat("\nClustering movement counts:\n")
-  print(x$counts, ...)
+  print(x$samples$move_counts, ...)
 
-  cat("\nLog marginal likelihood: ", x$log_mlike[length(x$log_mlike)], "\n")
+  cat("\nLog marginal likelihood (sample ", x$clustering$id, " out of ",
+        length(x$samples$log_mlike), "): ", x$samples$log_mlike[x$clustering$id], "\n", sep = "")
 
   invisible(x)
 }
@@ -35,22 +36,25 @@ print.sfclust <- function(x, ...) {
 #' is the last sample).
 #' @param ... Additional arguments passed to `print.default`.
 #' @export
-summary.sfclust <- function(x, sample = nrow(x$membership), sort = FALSE,...) {
-  if (sample < 1 || sample > nrow(x$membership)) {
+summary.sfclust <- function(x, sample = x$clustering$id, sort = FALSE,...) {
+
+  nsamples <- nrow(x$samples$membership)
+  if (sample < 1 || sample > nsamples) {
     stop("`sample` must be between 1 and the total number clustering (membership) samples.")
   }
 
-  cat("Summary for clustering sample", sample, "out of", nrow(x$membership), "\n")
+  cat("Summary for clustering sample", sample, "out of", nsamples, "\n")
 
   cat("\nWithin-cluster formula:\n")
-  print(rlang::eval_tidy(attr(x, "inla_args")$formula), showEnv = FALSE, ...)
+  print(eval(attr(x, "inla_args")$formula), showEnv = FALSE, ...)
 
-  membership <- if (sort) sort_membership(x$membership[sample,]) else x$membership[sample,]
-  cluster_summary <- table(membership, deparse.level = 0)
   cat("\nCounts per cluster:")
+  membership <- x$samples$membership[sample,]
+  if (sort) membership <- sort_membership(x$samples$membership[sample,])
+  cluster_summary <- table(membership, deparse.level = 0)
   print(cluster_summary, ...)
 
-  cat("\nLog marginal likelihood: ", x$log_mlike[sample], "\n")
+  cat("\nLog marginal likelihood: ", x$samples$log_mlike[sample], "\n")
   invisible(cluster_summary)
 }
 
@@ -59,6 +63,33 @@ sort_membership <- function(x) {
   clusters_sorted <- order(table(x), decreasing = TRUE)
   clusters_labels <- setNames(seq_along(clusters_sorted), clusters_sorted)
   as.integer(clusters_labels[as.character(x)])
+}
+
+#' Update method for `sfclust` Objects
+#'
+#' This function updates the `sfclust` object with the specified clustering sample
+#' and prepares the necessary arguments for further analysis.
+#'
+#' @param x An object of class 'sfclust'.
+#' @param sample An integer specifying the clustering sample number to be summarized.
+#'        The default is the last sample (i.e., `nrow(x$samples$membership)`).
+#' @param ... Additional arguments passed to `print.default`. These are not used directly
+#'        in this method but are retained for compatibility.
+#' @return The updated `sfclust` object with the modified clustering sample and associated
+#'         arguments.
+#' @export
+update.sfclust <- function(x, sample = nrow(x$samples$membership)) {
+  args <- attr(x, "inla_args")
+  args$membership <- x$samples$membership[sample,]
+  args$stdata <- attr(x, "args")$stdata
+  args$stnames <- attr(x, "args")$stnames
+  args$correction <- FALSE
+  args$detailed <- TRUE
+
+  call <- as.call(c(list(as.name("log_mlik_all")), args))
+  x$clustering$id <- sample
+  x$clustering$models <- eval(call, envir = parent.frame())
+  x
 }
 
 #' Plot function for sfclust objects with a conditional legend and log marginal likelihood
