@@ -172,7 +172,7 @@ plot.sfclust <- function(x, sample = x$clustering$id, which = 1:3, clusters = NU
   }
 
   # get geometries, selected membership and clusters to plot
-  geoms <- st_get_dimension_values(attr(x, "args")$stdata, attr(out, "args")$stnames[1])
+  geoms <- st_get_dimension_values(attr(x, "args")$stdata, attr(x, "args")$stnames[1])
   membership <- x$samples$membership[sample,]
   if (sort) membership <- sort_membership(x$samples$membership[sample,])
   if (is.null(clusters)) clusters <- 1:max(membership)
@@ -193,9 +193,9 @@ plot.sfclust <- function(x, sample = x$clustering$id, which = 1:3, clusters = NU
     }
   }
   if (3 %in% which) { # functional shapes
-    df <- fitted(out, sample = sample, sort = sort)
+    df <- fitted(x, sample = sample, sort = sort)
     df <- subset(df, cluster %in% clusters)
-    plot(df$time, df$linpred, col = df$cluster, main = "Cluster mean functions",
+    plot(df[[attr(x, "args")$stnames[2]]], df$linpred, col = df$cluster, main = "Cluster mean functions",
       xlab = "Time", ylab = "Cluster linear predictor", pch = 19)
   }
   if (2 %in% which) { # marginal likelihood convergence
