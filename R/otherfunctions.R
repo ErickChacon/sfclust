@@ -62,7 +62,9 @@ summary.sfclust <- function(x, sample = x$clustering$id, sort = FALSE,...) {
 sort_membership <- function(x) {
   clusters_sorted <- order(table(x), decreasing = TRUE)
   clusters_labels <- setNames(seq_along(clusters_sorted), clusters_sorted)
-  as.integer(clusters_labels[as.character(x)])
+  x <- as.integer(clusters_labels[as.character(x)])
+  attr(x, "order") <- clusters_sorted
+  x
 }
 
 #' Update method for `sfclust` Objects
@@ -119,13 +121,18 @@ update.sfclust <- function(x, sample = nrow(x$samples$membership)) {
 #' fitted_values <- fitted.sfclust(sfclust_obj, sample = 3)
 #'
 #' @export
-fitted.sfclust <- function(x, sample = x$clustering$id) {
+fitted.sfclust <- function(x, sample = x$clustering$id, sort = FALSE) {
   if (sample < 1 || sample > nrow(x$samples$membership)) {
     stop("`sample` must be between 1 and the total number clustering (membership) samples.")
   }
   if (sample != x$clustering$id) x <- update(x, sample = sample)
 
   membership <- x$samples$membership[sample,]
+  if (sort) {
+    membership <- sort_membership(x$samples$membership[sample,])
+    x$clustering$models <- x$clustering$models[attr(membership, "order")]
+  }
+
   clusters <- 1:max(membership)
   predlist <- lapply(
     1:max(membership), linpred_each, membership, x$clustering$models,
@@ -176,9 +183,9 @@ plot.sfclust <- function(x, sample = x$clustering$id, which = 1:3, clusters = NU
   if (1 %in% which) { # spatial clustering membership
     membership[!(membership %in% clusters)] <- NA
     membership <- factor(membership)
-    plot(geoms, col = membership,
+    plot(geoms, col = membership, border = "gray50",
       main = paste("Clustering sample", sample, "out of", nsamples),
-      xlab = "Longitude", ylab = "Latitude", border = "black", ...
+      xlab = "Longitude", ylab = "Latitude", ...
     )
     if (legend) {
       legend("topright", legend = levels(membership), fill = 1:length(levels(membership)),
@@ -186,8 +193,7 @@ plot.sfclust <- function(x, sample = x$clustering$id, which = 1:3, clusters = NU
     }
   }
   if (3 %in% which) { # functional shapes
-    # if (sample != x$clustering$id) x <- update(x, sample = sample)
-    df <- fitted(out, sample = sample)
+    df <- fitted(out, sample = sample, sort = sort)
     df <- subset(df, cluster %in% clusters)
     plot(df$time, df$linpred, col = df$cluster, main = "Cluster mean functions",
       xlab = "Time", ylab = "Cluster linear predictor", pch = 19)
