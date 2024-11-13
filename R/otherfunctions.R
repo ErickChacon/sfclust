@@ -207,34 +207,3 @@ plot.sfclust <- function(x, sample = x$clustering$id, which = 1:3, clusters = NU
 
   invisible(NULL)
 }
-
-#' Plot function for sfclustm objects
-#'
-#' This function plots the fitted values (mean) from the a-th model in an sfclustm object.
-#'
-#' @param x An sfclustm object containing the models for each cluster.
-#' @param a The index of the model to plot (default is 1).
-#' @param title A title for the plot (default is "Fitted Values").
-#' @export
-plot.sfclustm <- function(x, a = 1, title = "Fitted Values") {
-
-  # Ensure that a is valid (within the range of available models)
-  if (a < 1 || a > length(x)) {
-    stop("The value of a must be between 1 and the number of models in the sfclustm object.")
-  }
-
-  # Extract the fitted values (mean) from the a-th model
-  fitted_values <- x[[a]]$summary.fitted.values$mean
-
-  # Ensure that fitted_values exists
-  if (is.null(fitted_values)) {
-    stop("Fitted values not found in the selected model.")
-  }
-
-  # Plot the fitted values
-  plot(fitted_values, type = "l", col = "blue", lwd = 2,
-       xlab = "Index", ylab = "Fitted Mean",
-       main = paste(title, "- Model", a))
-
-  invisible(NULL)  # Return nothing, just plot
-}
