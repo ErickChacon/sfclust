@@ -6,10 +6,10 @@
 \usage{
 \method{plot}{sfclust}(
   x,
-  sample = nrow(x$membership),
-  which = c(1, 2),
+  sample = x$clustering$id,
+  which = 1:3,
   clusters = NULL,
-  sort = TRUE,
+  sort = FALSE,
   legend = FALSE,
   ...
 )
