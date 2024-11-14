@@ -1,26 +1,40 @@
-#' Generate clusters for spatial clustering
+#' Generate Clusters for Spatial Clustering
 #'
-#' Creates a undirected graph from spatial polygonal data, computes its minimum spanning
-#' tree (MST) and generate `nclust` clusters.
+#' Creates an undirected graph from spatial polygonal data, computes its minimum spanning
+#' tree (MST), and generates `nclust` clusters. This function is used to initialize
+#' cluster membership in a clustering algorithm, such as `sfclust`.
 #'
-#' @param x An `sf` or `sfc` object representing the spatial polygonal data. Additionally,
-#' it can also be a `matrix` or `Matrix` object with non-zero values representing the
-#' weighted connectivity between units.
-#' @param nclust Integer, the initial number of clusters.
+#' @param x An `sf` or `sfc` object representing spatial polygonal data. It can also be
+#'   a `matrix` or `Matrix` object with non-zero values representing weighted
+#'   connectivity between units.
+#' @param nclust Integer, specifying the initial number of clusters.
 #' @param weights Optional `numeric` vector or `matrix` of weights between units in `x`.
-#' It should be of dimension `n^2`, where `n` is the number of units in `x`. If NULL,
-#' random weights are assigned.
+#'   It should have dimensions `n^2`, where `n` is the number of units in `x`. If NULL,
+#'   random weights are assigned.
 #'
-#' @return A list with three elements: 'graph' containing the initial undirected graph
-#' object, 'mst' containing the initial minimum spanning tree, and 'membership' containing
-#' the membership of `x`.
+#' @return A list with three elements:
+#'   - `graph`: The undirected graph object representing spatial contiguity.
+#'   - `mst`: The minimum spanning tree.
+#'   - `membership`: The cluster membership for elements in `x`.
 #'
 #' @examples
+#' library(sf)
+#' x <- st_make_grid(cellsize = c(1, 1), offset = c(0, 0), n = c(3, 2))
 #'
-#'   librar(sf)
-#'   x <- st_make_grid(cellsize = c(1, 1), offset = c(0, 0), n = c(3, 2))
-#'   cluster_ini <- genclust(x, nclust = 3, weights = 1:6))
-#'   print(cluster_ini)
+#' # using distance between geometries
+#' clust <- genclust(x, nclust = 3, weights = st_distance(st_centroid(x)))
+#' print(clust)
+#' plot(st_sf(x, cluster = factor(clust$membership)))
+#'
+#' # using increasing weights
+#' cluster_ini <- genclust(x, nclust = 3, weights = 1:36)
+#' print(cluster_ini)
+#' plot(st_sf(x, cluster = factor(cluster_ini$membership)))
+#'
+#' # using on random weights
+#' cluster_ini <- genclust(x, nclust = 3, weights = runif(36))
+#' print(cluster_ini)
+#' plot(st_sf(x, cluster = factor(cluster_ini$membership)))
 #'
 #' @export
 genclust <- function(x, nclust = 10, weights = NULL){
