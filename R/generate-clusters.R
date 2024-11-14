@@ -1,4 +1,4 @@
-#' Generate Clusters for Spatial Clustering
+#' Generate clusters for spatial clustering
 #'
 #' Creates an undirected graph from spatial polygonal data, computes its minimum spanning
 #' tree (MST), and generates `nclust` clusters. This function is used to initialize
