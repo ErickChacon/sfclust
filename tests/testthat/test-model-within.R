@@ -24,6 +24,13 @@ test_that('filter stars object and convert to long format', {
   expect_equal(stdata_k$idt, rep(1:nt, each = nk))
   expect_equal(stdata_k$cases, as.numeric(outer(which(membership == k), ns * (1:nt - 1), `+`)))
 
+  stdata_long <- data_all(stdata)
+  expect_equal(stdata_long$id, 1:(ns*nt))
+  expect_equal(stdata_long$ids, rep(1:ns, nt))
+  expect_equal(stdata_long$idt, rep(1:nt, each = ns))
+  expect_equal(stdata_long$time, rep(time, each = ns))
+  expect_equal(stdata_long$cases, 1:(ns*nt))
+
   ## additional third dimension
   stdata <- st_as_stars(
     cases = array(1:(ns * nt), dim = c(ns, nt, 1)),
@@ -32,6 +39,7 @@ test_that('filter stars object and convert to long format', {
 
   xk_aux <- data_each(k = k, membership, stdata)
   expect_equal(stdata_k, subset(xk_aux, select = - band))
+  expect_equal(stdata_long, subset(data_all(stdata), select = - band))
 
   # time dimension on rows and space dimension on columns
   stdata <- st_as_stars(
@@ -46,6 +54,12 @@ test_that('filter stars object and convert to long format', {
   expect_equal(stdata_k$idt, rep(1:nt, nk))
   expect_equal(stdata_k$cases, as.numeric(outer(ns * (1:nt-1), which(membership == k), `+`)))
 
+  stdata_long <- data_all(stdata)
+  expect_equal(stdata_long$id, 1:(ns*nt))
+  expect_equal(stdata_long$ids, rep(1:ns, each = nt))
+  expect_equal(stdata_long$idt, rep(1:nt, ns))
+  expect_equal(stdata_long$time, rep(time, ns))
+  expect_equal(stdata_long$cases, as.numeric(outer(ns * (1:nt-1), 1:ns, `+`)))
 })
 
 test_that('compute log marginal correction', {
