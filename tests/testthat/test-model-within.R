@@ -2,6 +2,7 @@ library(stars)
 library(INLA)
 
 test_that('filter stars object and convert to long format', {
+
   space <- st_sfc(lapply(1:10, function(i) st_point(c(i, i))))
   time <- seq(as.Date("2024-10-01"), by = "1 day", length.out = 3)
   ns <- length(space)
@@ -18,9 +19,10 @@ test_that('filter stars object and convert to long format', {
 
   stdata_k <- data_each(k = k, membership, stdata)
   expect_equal(nrow(stdata_k), nk * nt)
-  expect_equal(stdata_k$ids, rep(1:nk, nt))
+  expect_equal(stdata_k$id, as.numeric(outer(which(membership == k), ns * (1:nt - 1), `+`)))
+  expect_equal(stdata_k$ids, rep(which(membership == k), nt))
   expect_equal(stdata_k$idt, rep(1:nt, each = nk))
-  expect_equal(stdata_k$cases, as.numeric(outer(c(1, 4, 7, 10), 10 * (0:2), `+`)))
+  expect_equal(stdata_k$cases, as.numeric(outer(which(membership == k), ns * (1:nt - 1), `+`)))
 
   ## additional third dimension
   stdata <- st_as_stars(
@@ -39,9 +41,11 @@ test_that('filter stars object and convert to long format', {
 
   stdata_k <- data_each(k = k, membership, stdata)
   expect_equal(nrow(stdata_k), nk * nt)
-  expect_equal(stdata_k$ids, rep(1:nk, each = nt))
+  expect_equal(stdata_k$id, as.numeric(outer(1:nt, nt * (which(membership == k) - 1), `+`)))
+  expect_equal(stdata_k$ids, rep(which(membership == k), each = nt))
   expect_equal(stdata_k$idt, rep(1:nt, nk))
-  expect_equal(stdata_k$cases, as.numeric(outer(10 * (0:2), c(1, 4, 7, 10), `+`)))
+  expect_equal(stdata_k$cases, as.numeric(outer(ns * (1:nt-1), which(membership == k), `+`)))
+
 })
 
 test_that('compute log marginal correction', {

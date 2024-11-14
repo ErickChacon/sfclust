@@ -138,6 +138,51 @@ correction_required <- function (formula) {
   sapply(effects, all.vars)[need_correction]
 }
 
+#' Prepare data in long format
+#'
+#' Convert spatio-temporal data to long format with indices for time and spatial location.
+#'
+#' @param stdata A stars object containing spatial-temporal dimensions defined in `stnames`.
+#' @param stnames The names of the `spatial` and `temporal` dimensions.
+#'
+#' @return A long-format data frame with ids for spatial and time indexing.
+#'
+#' @examples
+#'
+#' library(stars)
+#'
+#' dims <- st_dimensions(
+#'   geometry = st_sfc(lapply(1:5, function(i) st_point(c(i, i)))),
+#'   time = seq(as.Date("2024-01-01"), by = "1 day", length.out = 3)
+#' )
+#' stdata <- st_as_stars(cases = array(1:15, dim = c(5, 3)), dimensions = dims)
+#'
+#' data_all(stdata, k = 2, membership = c(1, 1, 1, 2, 2))
+#'
+#' @export
+data_all <- function(stdata, stnames = c("geometry", "time")) {
+  # check if the input is a stars object and dimension names
+  if (!inherits(stdata, "stars")) {
+    stop("Argument `stdata` must be a `stars` object.")
+  }
+  if (any(!(stnames %in% dimnames(stdata)))) {
+    stop("Provided dimension names in `stnames` not found in stars object `stdata`.")
+  }
+
+  stdata[["id"]] <- 1:prod(dim(stdata))
+
+  # spatio-temporal dimension in long format
+  dims <- expand_dimensions(stdata)
+  dims[[stnames[1]]] <- seq_along(dims[[stnames[1]]])
+  dims[[stnames[2]]] <- order(dims[[stnames[2]]])
+  dims <- setNames(do.call(expand.grid, dims)[stnames], c("ids", "idt"))
+
+  # merge dimensions and dataframe
+  stdata <- as.data.frame(stdata)
+  stdata[[stnames[1]]] <- NULL
+  cbind(stdata["id"], dims, subset(stdata, select = - id))
+}
+
 #' Prepare data for a cluster
 #'
 #' Subset a spatio-temporal dataset for a cluster and convert it to a long format with
@@ -160,7 +205,7 @@ correction_required <- function (formula) {
 #' )
 #' stdata <- st_as_stars(cases = array(1:15, dim = c(5, 3)), dimensions = dims)
 #'
-#' data_each(stdata, k = 2, membership = c(1, 1, 1, 2, 2))
+#' data_each(k = 2, membership = c(1, 1, 1, 2, 2), stdata)
 #'
 #' @import cubelyr stars
 #' @importFrom dplyr filter
@@ -175,18 +220,20 @@ data_each <- function(k, membership, stdata, stnames = c("geometry", "time")) {
     stop("Provided dimension names in `stnames` not found in stars object `stdata`.")
   }
 
-  # subset cluster k
-  cluster <- which(membership == k)
-  stdata <- filter(stdata, !!as.name(stnames[1]) %in% cluster)
+  stdata[["id"]] <- 1:prod(dim(stdata))
 
-  # spatio-temporal dimenstion in long format
+  # subset cluster k
+  cluster_elements <- which(membership == k)
+  stdata <- filter(stdata, !!as.name(stnames[1]) %in% cluster_elements)
+
+  # spatio-temporal dimension in long format
   dims <- expand_dimensions(stdata)
-  dims[[stnames[1]]] <- seq_along(dims[[stnames[1]]])
+  dims[[stnames[1]]] <- cluster_elements
   dims[[stnames[2]]] <- order(dims[[stnames[2]]])
   dims <- setNames(do.call(expand.grid, dims)[stnames], c("ids", "idt"))
 
   # merge dimensions and dataframe
   stdata <- as.data.frame(stdata)
   stdata[[stnames[1]]] <- NULL
-  cbind(list(id = 1:nrow(dims)), dims, stdata)
+  cbind(stdata["id"], dims, subset(stdata, select = - id))
 }

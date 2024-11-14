@@ -2,7 +2,7 @@
 % Please edit documentation in R/generate-clusters.R
 \name{genclust}
 \alias{genclust}
-\title{Generate Clusters for Spatial Clustering}
+\title{Generate clusters for spatial clustering}
 \usage{
 genclust(x, nclust = 10, weights = NULL)
 }
