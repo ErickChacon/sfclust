@@ -145,7 +145,8 @@ correction_required <- function (formula) {
 #' @param stdata A stars object containing spatial-temporal dimensions defined in `stnames`.
 #' @param stnames The names of the `spatial` and `temporal` dimensions.
 #'
-#' @return A long-format data frame with ids for spatial and time indexing.
+#' @return A long-format data frame with ids for each observation and  for spatial and
+#'         time indexing.
 #'
 #' @examples
 #'
@@ -157,7 +158,7 @@ correction_required <- function (formula) {
 #' )
 #' stdata <- st_as_stars(cases = array(1:15, dim = c(5, 3)), dimensions = dims)
 #'
-#' data_all(stdata, k = 2, membership = c(1, 1, 1, 2, 2))
+#' data_all(stdata)
 #'
 #' @export
 data_all <- function(stdata, stnames = c("geometry", "time")) {
@@ -193,7 +194,8 @@ data_all <- function(stdata, stnames = c("geometry", "time")) {
 #' @param stdata A stars object containing spatial-temporal dimensions defined in `stnames`.
 #' @param stnames The names of the `spatial` and `temporal` dimensions.
 #'
-#' @return A long-format data frame with ids for spatial and time indexing.
+#' @return A long-format data frame with ids for each observation and  for spatial and
+#'         time indexing.
 #'
 #' @examples
 #'

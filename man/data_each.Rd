@@ -16,7 +16,8 @@ data_each(k, membership, stdata, stnames = c("geometry", "time"))
 \item{stnames}{The names of the \code{spatial} and \code{temporal} dimensions.}
 }
 \value{
-A long-format data frame with ids for spatial and time indexing.
+A long-format data frame with ids for each observation and  for spatial and
+time indexing.
 }
 \description{
 Subset a spatio-temporal dataset for a cluster and convert it to a long format with

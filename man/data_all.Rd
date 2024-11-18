@@ -12,7 +12,8 @@ data_all(stdata, stnames = c("geometry", "time"))
 \item{stnames}{The names of the \code{spatial} and \code{temporal} dimensions.}
 }
 \value{
-A long-format data frame with ids for spatial and time indexing.
+A long-format data frame with ids for each observation and  for spatial and
+time indexing.
 }
 \description{
 Convert spatio-temporal data to long format with indices for time and spatial location.
@@ -27,6 +28,6 @@ dims <- st_dimensions(
 )
 stdata <- st_as_stars(cases = array(1:15, dim = c(5, 3)), dimensions = dims)
 
-data_all(stdata, k = 2, membership = c(1, 1, 1, 2, 2))
+data_all(stdata)
 
 }
