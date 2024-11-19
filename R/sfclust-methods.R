@@ -133,17 +133,30 @@ fitted.sfclust <- function(x, sample = x$clustering$id, sort = FALSE) {
     x$clustering$models <- x$clustering$models[attr(membership, "order")]
   }
 
+  # obtain fitted values
   clusters <- 1:max(membership)
-  predlist <- lapply(
+  pred <- lapply(
     1:max(membership), linpred_each, membership, x$clustering$models,
     attr(x, "args")$stdata, attr(x, "args")$stnames
   )
-  do.call(rbind, predlist)
+  pred <- do.call(rbind, pred)
+  pred <- subset(pred[order(pred$id), ], select = - id)
+
+  # save as stars object
+  stars_obj <- attr(x, "args")$stdata[0]
+  for (var_name in names(pred)) stars_obj[[var_name]] <- pred[[var_name]]
+  stars_obj
 }
 
 linpred_each <- function(k, membership, models, stdata, stnames){
-  df <- data_each(k, membership, stdata, stnames)
-  df$linpred <- linpred_each_corrected(models[[k]])
+  # df <- data_each(k, membership, stdata, stnames)[c("id", "ids", "idt", stnames[2])]
+  df <- data_each(k, membership, stdata, stnames)[c("id")]
+  # df$cluster <- k
+  # df$linear_predictor_cluster <- linpred_each_corrected(models[[k]])
+  # df$linear_predictor <- models[[k]]$summary.linear.predictor$mean
+  # df
+  df <- cbind(df, subset(models[[k]]$summary.linear.predictor, select = - kld))
+  df$mean_cluster <- linpred_each_corrected(models[[k]])
   df$cluster <- k
   df
 }
@@ -194,9 +207,13 @@ plot.sfclust <- function(x, sample = x$clustering$id, which = 1:3, clusters = NU
   }
   if (3 %in% which) { # functional shapes
     df <- fitted(x, sample = sample, sort = sort)
-    df <- subset(df, cluster %in% clusters)
-    plot(df[[attr(x, "args")$stnames[2]]], df$linpred, col = df$cluster, main = "Cluster mean functions",
-      xlab = "Time", ylab = "Cluster linear predictor", pch = 19)
+    df <- filter(df, !!as.name(attr(x, "args")$stnames[1]) %in% which(membership %in% clusters))
+    df <- st_set_dimensions(df[c("cluster", "mean_cluster")], attr(x, "args")$stnames[1],
+      values = seq_len(length(st_get_dimension_values(df, attr(x, "args")$stnames[1])))) |>
+        as.data.frame()
+    plot(df[[attr(x, "args")$stnames[2]]], df$mean_cluster, col = df$cluster,
+      main = "Cluster mean functions", xlab = "Time", ylab = "Cluster linear predictor",
+      pch = 19)
   }
   if (2 %in% which) { # marginal likelihood convergence
     plot(x$samples$log_mlike, type = "l", main = "Log marginal likelihood convergence",

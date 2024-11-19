@@ -1,7 +1,7 @@
 library(stars)
 library(INLA)
 
-test_that('filter stars object and convert to long format', {
+test_that('convert stars object to long format', {
 
   space <- st_sfc(lapply(1:10, function(i) st_point(c(i, i))))
   time <- seq(as.Date("2024-10-01"), by = "1 day", length.out = 3)
