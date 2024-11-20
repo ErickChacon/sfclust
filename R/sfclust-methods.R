@@ -67,20 +67,59 @@ sort_membership <- function(x) {
   x
 }
 
-#' Update method for `sfclust` Objects
+#' Update MCMC Clustering Procedure
 #'
-#' This function updates the `sfclust` object with the specified clustering sample
-#' and prepares the necessary arguments for further analysis.
+#' This function continues the MCMC sampling of a `sfclust` object based on previous results or
+#' update the model fitting for a specified sample clustering if the argument `sample` is
+#' provided.
 #'
-#' @param x An object of class 'sfclust'.
-#' @param sample An integer specifying the clustering sample number to be summarized.
+#' @param x A `sfclust` object.
+#' @param niter An integer specifying the number of additional MCMC iterations to perform.
+#' @param burnin An integer specifying the number of burn-in iterations to discard.
+#' @param thin An integer specifying the thinning interval for recording results.
+#' @param nmessage An integer specifying the number of messages to display during the process.
+#' @param sample An integer specifying the clustering sample number to be executed.
 #'        The default is the last sample (i.e., `nrow(x$samples$membership)`).
-#' @param ... Additional arguments passed to `print.default`. These are not used directly
-#'        in this method but are retained for compatibility.
-#' @return The updated `sfclust` object with the modified clustering sample and associated
-#'         arguments.
+#' @param path_save A character string specifying the file path to save the results. If
+#'        `NULL`, results are not saved.
+#' @param nsave An integer specifying how often to save results. Defaults to `nmessage`.
+#'
+#' @details This function takes the last state of the Markov chain from a previous
+#'          `sfclust` execution and uses it as the starting point for additional MCMC
+#'          iterations. If `sample` is provided, it simply udpates the within-cluster
+#'          models for the specified clustering `sample`.
+#'
+#' @method update sfclust
 #' @export
-update.sfclust <- function(x, sample = nrow(x$samples$membership)) {
+update.sfclust <- function(x, niter = 100, burnin = 0, thin = 1, nmessage = 10, sample = NULL,
+                           path_save = NULL, nsave = nmessage) {
+  if (!is.null(sample)) {
+    update_within(x, nrow(x$samples$membership))
+  } else {
+    update_sfclust(x, niter, burnin, thin, nmessage, path_save, nsave)
+  }
+}
+
+update_sfclust <- function(x, niter = 100, burnin = 0, thin = 1, nmessage = 10,
+                           path_save = NULL, nsave = nmessage) {
+  nsamples <- nrow(x$samples$membership)
+
+  args <- c(attr(x, "args"), attr(x, "inla_args"))
+  args$graphdata$mst <- attr(x, "mst")[[nsamples]]
+  args$graphdata$membership <- x$samples$membership[nsamples,]
+
+  args$niter <- niter
+  args$burnin <- burnin
+  args$thin <- thin
+  args$nmessage <- nmessage
+  args$path_save <- path_save
+  args$nsave <- nsave
+
+  call <- as.call(c(list(as.name("sfclust")), args))
+  eval(call, envir = parent.frame())
+}
+
+update_within <- function(x, sample = nrow(x$samples$membership)) {
   args <- attr(x, "inla_args")
   args$membership <- x$samples$membership[sample,]
   args$stdata <- attr(x, "args")$stdata
@@ -125,7 +164,7 @@ fitted.sfclust <- function(x, sample = x$clustering$id, sort = FALSE, aggregate 
   if (sample < 1 || sample > nrow(x$samples$membership)) {
     stop("`sample` must be between 1 and the total number clustering (membership) samples.")
   }
-  if (sample != x$clustering$id) x <- update(x, sample = sample)
+  if (sample != x$clustering$id) x <- fit(x, sample = sample)
 
   membership <- x$samples$membership[sample,]
   if (sort) {

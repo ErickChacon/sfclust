@@ -2,24 +2,46 @@
 % Please edit documentation in R/sfclust-methods.R
 \name{update.sfclust}
 \alias{update.sfclust}
-\title{Update method for \code{sfclust} Objects}
+\title{Update MCMC Clustering Procedure}
 \usage{
-update.sfclust(x, sample = nrow(x$samples$membership))
+\method{update}{sfclust}(
+  x,
+  niter = 100,
+  burnin = 0,
+  thin = 1,
+  nmessage = 10,
+  sample = NULL,
+  path_save = NULL,
+  nsave = nmessage
+)
 }
 \arguments{
-\item{x}{An object of class 'sfclust'.}
+\item{x}{A \code{sfclust} object.}
 
-\item{sample}{An integer specifying the clustering sample number to be summarized.
+\item{niter}{An integer specifying the number of additional MCMC iterations to perform.}
+
+\item{burnin}{An integer specifying the number of burn-in iterations to discard.}
+
+\item{thin}{An integer specifying the thinning interval for recording results.}
+
+\item{nmessage}{An integer specifying the number of messages to display during the process.}
+
+\item{sample}{An integer specifying the clustering sample number to be executed.
 The default is the last sample (i.e., \code{nrow(x$samples$membership)}).}
 
-\item{...}{Additional arguments passed to \code{print.default}. These are not used directly
-in this method but are retained for compatibility.}
-}
-\value{
-The updated \code{sfclust} object with the modified clustering sample and associated
-arguments.
+\item{path_save}{A character string specifying the file path to save the results. If
+\code{NULL}, results are not saved.}
+
+\item{nsave}{An integer specifying how often to save results. Defaults to \code{nmessage}.}
 }
 \description{
-This function updates the \code{sfclust} object with the specified clustering sample
-and prepares the necessary arguments for further analysis.
+This function continues the MCMC sampling of a \code{sfclust} object based on previous results or
+update the model fitting for a specified sample clustering if the argument \code{sample} is
+provided.
+}
+\details{
+This function takes the last state of the Markov chain from a previous
+\code{sfclust} execution and uses it as the starting point for additional MCMC
+iterations. If \code{sample} is provided, it simply udpates the within-cluster
+models for the specified clustering \code{sample}.
 }

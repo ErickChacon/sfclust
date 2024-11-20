@@ -27,7 +27,7 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
                     move_prob = c(0.425, 0.425, 0.1, 0.05), q = 0.5, correction = TRUE,
                     niter = 100, burnin = 0, thin = 1, nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
 
-  args <- list(stdata = stdata, stnames = stnames, move_prob = move_prob, q = q, correction = correction)
+  # args <- list(stdata = stdata, stnames = stnames, move_prob = move_prob, q = q, correction = correction)
   # inla_args <- rlang::enquos(...)
   inla_args <- match.call(expand.dots = FALSE)$...
 
@@ -49,6 +49,9 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
   graph <- graphdata[["graph"]]
   mstgraph <- graphdata[["mst"]]
   membership <- graphdata[["membership"]]
+
+  args <- list(stdata = stdata, graphdata = graphdata, stnames = stnames,
+    move_prob = move_prob, q = q, correction = correction)
 
   nclust <- max(membership)
   edge_status <- getEdgeStatus(membership, mstgraph) # edge is within or between clusters
@@ -226,55 +229,4 @@ log_mlik_ratio <- function(move_type, move, log_mlike_vec, stdata, stnames = c("
   }
 
   return(list(ratio = llratio, log_mlike_vec = log_like_vec_new))
-}
-
-#' Continue MCMC Clustering Procedure
-#'
-#' This function continues a Bayesian spatial fusion clustering (sfclust) process based on a previous result.
-#' It is specifically designed to extend the MCMC iterations from a stopping point using the prior state
-#' of cluster assignments and graphical model parameters.
-#'
-#' @param result List containing results from a previous sfclust function, expected to include
-#'        a minimum spanning tree (`mst`) and cluster assignments.
-#' @param data A stars object containing spatial data, including covariates and response variables.
-#' @param graph Igraph object, a full graph to create MST.
-#' @param formula An object of class \code{\link[stats]{formula}}, specifying the model used in the analysis.
-#' @param family Character string specifying the family of distributions to use for the model.
-#'        Defaults to "normal".
-#' @param q q is the penalty of the number of cluster.
-#' @param correction Logical indicating whether correction for overdispersion or other factors
-#'        should be applied. Defaults to `FALSE`.
-#' @param niter Integer specifying the number of additional MCMC iterations to perform.
-#' @param burnin Integer specifying the number of burn-in iterations to discard in this continuation.
-#' @param thin Integer specifying the thinning interval for recording the results.
-#' @param path_save Character string specifying the file path to save the continuation results.
-#'        If `NULL`, results may not be saved to file.
-#' @param time_var The name of the time variable in the stars object.
-#' @param N_var The name of the variable used as exposure or trials (for Poisson, binomial, etc.).
-#' @param move_prob Numeric vector specifying the probabilities for different move types in the MCMC process.
-#' @param ... Additional arguments passed to the underlying `sfclust` function.
-#'
-#' @details The function takes the last state of the Markov chain from a previous `sfclust` execution and
-#'          uses it as the starting point for additional MCMC iterations. This is useful for extending
-#'          the analysis without restarting the process, thereby saving computational resources and time.
-#'
-#' @return The function does not return a value within R but may output results to files if `path_save`
-#'         is specified. The results include updated cluster assignments and model parameters after
-#'         the additional MCMC iterations.
-#'
-#' @export
-continue_sfclust <- function(result, data, graph,
-                          formula, family = "normal", q = 0.5,
-                          correction = FALSE, niter = 100, burnin = 0, thin = 1, path_save = NULL, nsave = 10,
-                          time_var, N_var = NULL, move_prob = c(0.425, 0.425, 0.1), ...) {
-  n <- length(result[["mst"]])
-  cluster <- result[['cluster']][n,]
-  mst <- result[["mst"]][[n]]
-  c = q
-  sfclust(data = data,
-          graphdata = list(graph = graph, mst = mst, cluster = cluster),
-          formula = formula, family = family, q = c,
-          correction = correction, niter = niter, burnin = burnin, thin = thin,
-          path_save = path_save, nsave = nsave, time_var = time_var, N_var = N_var, move_prob = move_prob, ...
-  )
 }
