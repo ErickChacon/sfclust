@@ -1,15 +1,20 @@
 #' @title sfclust: Bayesian Spatial Functional Clustering
 #'
-#' @docType package
-#' @name sfclust
-#'
 #' @description
-#' The \code{sfclust} package
+#' The \code{sfclust} package implements the clustering algorithm proposed in *"Bayesian
+#' Spatial Functional Data Clustering: Applications in Disease Surveillance"*, available
+#' at <https://arxiv.org/abs/2407.12633>. The package provides tools for performing
+#' Bayesian spatial functional clustering, as well as methods for diagnostic analysis,
+#' visualization, and summarization of results.
 #'
-#' @author Ruiman Zhong, \email{ruiman.zhong@kaust.edu.sa}
-#' @author Erick A. Chacon-Montalvan \email{erick.chaconmontalvan@kaust.edu.sa}
-#' @author Paula Moraga, \email{paula.moraga@kaust.edu.sa}
+#' @author
+#' Ruiman Zhong \email{ruiman.zhong@kaust.edu.sa},
+#' Erick A. Chacón-Montalván \email{erick.chaconmontalvan@kaust.edu.sa},
+#' Paula Moraga \email{paula.moraga@kaust.edu.sa}
 #'
+#' @docType package
+#' @keywords internal
+#' @aliases sfclust-package
 "_PACKAGE"
 
 #' US COVID-19 Data
@@ -27,6 +32,3 @@
 #' @name us_covid
 #' @docType data
 "us_covid"
-
-
-

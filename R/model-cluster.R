@@ -1,8 +1,9 @@
-#' Spatial functional clustering based on bayesian spanning trees
+#' Bayesian spatial functional clustering
 #'
-#' This function implements a Markov Chain Monte Carlo (MCMC) algorithm for detecting
-#' spatial functional clusters based on a Bayesian analysis of spanning trees and latent
-#' Gaussian models using `INLA`.
+#' Bayesian detection of neighboring spatial regions with similar functional shapes using
+#' spanning trees and latent Gaussian models. It ensures spatial contiguity in the
+#' clusters, handles a large family of latent Gaussian models supported by `inla`, and
+#' allows to work with non-Gaussian likelihoods.
 #'
 #' @param stdata A stars object containing response variables, covariates, and other necessary data.
 #' @param graphdata A list containing the initial graph used for the Bayesian model.
@@ -46,15 +47,21 @@
 #' Chacón-Montalván, Paula Moraga:
 #' - The paper: <https://arxiv.org/abs/2407.12633>
 #'
-#' @return An `sfclust` object containing two main lists: `samples` and `clust`.
-#'         - The `samples` list includes details from the sampling process, such as:
-#'           - `membership`: The cluster membership assignments for each sample.
-#'           - `log_marginal_likelihood`: The log marginal likelihood for each sample.
-#'           - `move_counts`: The counts of each type of move during the MCMC process.
-#'         - The `clust` list contains information about the selected clustering, including:
-#'           - `id`: The identifier of the selected sample (default is the last sample).
-#'           - `membership`: The cluster assignments for the selected sample.
-#'           - `models`: The fitted models for each cluster in the selected sample.
+#' @return
+#' An `sfclust` object containing two main lists: `samples` and `clust`.
+#' - The `samples` list includes details from the sampling process, such as:
+#'   - `membership`: The cluster membership assignments for each sample.
+#'   - `log_marginal_likelihood`: The log marginal likelihood for each sample.
+#'   - `move_counts`: The counts of each type of move during the MCMC process.
+#' - The `clust` list contains information about the selected clustering, including:
+#'   - `id`: The identifier of the selected sample (default is the last sample).
+#'   - `membership`: The cluster assignments for the selected sample.
+#'   - `models`: The fitted models for each cluster in the selected sample.
+#'
+#' @author
+#' Ruiman Zhong \email{ruiman.zhong@kaust.edu.sa},
+#' Erick A. Chacón-Montalván \email{erick.chaconmontalvan@kaust.edu.sa},
+#' Paula Moraga \email{paula.moraga@kaust.edu.sa}
 #'
 #' @examples
 #'
