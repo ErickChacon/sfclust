@@ -2,7 +2,7 @@
 % Please edit documentation in R/sfclust-methods.R
 \name{plot.sfclust}
 \alias{plot.sfclust}
-\title{Plot function for sfclust objects with a conditional legend and log marginal likelihood}
+\title{Plot function for \code{sfclust} objects}
 \usage{
 \method{plot}{sfclust}(
   x,
@@ -15,15 +15,30 @@
 )
 }
 \arguments{
-\item{sample}{The row of the cluster matrix to use for plotting (default is the last row).}
+\item{x}{An \code{sfclust} object containing the clustering results, including the cluster assignments and model parameters.}
 
-\item{map}{An sf object provided by the user.}
+\item{sample}{Integer specifying the clustering sample number to summarize. Defaults to the last sample.}
 
-\item{output}{An sfclust object containing the clustering results.}
+\item{which}{Integer vector indicating which plot to display. Options are:
+- 1: Map of regions colored by cluster assignment.
+- 2: Functional shapes of the linear predictors for each cluster.
+- 3: Traceplot of the log marginal likelihood.}
 
-\item{title}{A title for the plot (default is "Estimated Clusters").}
+\item{clusters}{Optional vector specifying which clusters to plot. If \code{NULL}, all clusters are included.}
+
+\item{sort}{Logical value indicating whether clusters should be relabeled based on the number of elements. Default is \code{FALSE}.}
+
+\item{legend}{Logical value indicating whether a legend should be included in the plot. Default is \code{FALSE}.}
+
+\item{...}{Additional arguments passed to the underlying plotting functions.}
+}
+\value{
+A plot displaying the selected subgraphs as specified by \code{which}.
 }
 \description{
-This function plots the map with estimated clusters from an sfclust object and adds a legend if the number of clusters is less than 10.
-It also plots the log marginal likelihood.
+This function visualizes the estimated clusters from an \code{sfclust} object. It can display:
+(1) a map of regions colored by their assigned cluster,
+(2) the functional shapes of the linear predictors for each cluster,
+and (3) a traceplot of the log marginal likelihood.
+A conditional legend is added if the number of clusters is less than 10.
 }

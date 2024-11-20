@@ -12,6 +12,9 @@
 \item{sample}{An integer specifying the clustering sample number to be summarized (default
 is the last sample).}
 
+\item{sort}{Logical value indicating if clusters should be relabel based on number of
+elements.}
+
 \item{...}{Additional arguments passed to \code{print.default}.}
 }
 \description{

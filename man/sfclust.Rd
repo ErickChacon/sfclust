@@ -4,7 +4,7 @@
 \name{sfclust}
 \alias{sfclust-package}
 \alias{sfclust}
-\title{Detect Spatial Functional Clusters Based on Bayesian Spanning Tree}
+\title{Spatial functional clustering based on bayesian spanning trees}
 \usage{
 sfclust(
   stdata,
@@ -23,43 +23,104 @@ sfclust(
 )
 }
 \arguments{
-\item{move_prob}{a vector of probabilities for birth, death, change and hyper moves}
+\item{stdata}{A stars object containing response variables, covariates, and other necessary data.}
 
-\item{q}{q is the penalty of the cluster number.}
+\item{graphdata}{A list containing the initial graph used for the Bayesian model.
+It should include components like \code{graph}, \code{mst}, and \code{membership} (default is \code{NULL}).}
 
-\item{niter}{MCMC Integer, number of MCMC iterations to perform.}
+\item{stnames}{A character vector specifying the spatio-temporal dimension names of
+\code{stdata} that represent spatial geometry and time, respectively (default is
+\code{c("geometry", "time")}).}
 
-\item{burnin}{Integer, number of burn-in iterations to discard.}
+\item{move_prob}{A numeric vector of probabilities for different types of moves in the MCMC process:
+birth, death, change, and hyperparameter moves (default is \code{c(0.425, 0.425, 0.1, 0.05)}).}
 
-\item{thin}{Integer, thinning interval for recording the results.}
+\item{q}{A numeric value representing the penalty for the number of clusters (default is \code{0.5}).}
 
-\item{path_save}{Character, the path where results should be saved.}
+\item{correction}{A logical indicating whether correction to compute the marginal
+likelihoods should be applied (default is \code{TRUE}). This depend of the type of
+effect inclused in the \code{INLA} model.}
 
-\item{nsave}{the number of the gap of saved results in the chain.}
+\item{niter}{An integer specifying the number of MCMC iterations to perform (default is \code{100}).}
 
-\item{data}{A stars object contains response, covariates, and other needed data}
+\item{burnin}{An integer specifying the number of burn-in iterations to discard (default is \code{0}).}
 
-\item{graph}{Initial spanning tree used for the Bayesian model, list(graph = NULL, mst = NULL, cluster = NULL).}
+\item{thin}{An integer specifying the thinning interval for recording the results (default is \code{1}).}
 
-\item{init_val}{List of initial values for parameters 'trees', 'beta', and 'cluster'.}
+\item{nmessage}{An integer specifying how often progress messages should be printed (default is \code{10}).}
 
-\item{time_var}{the variable name of the time dimension in the data.}
+\item{path_save}{A character string specifying the file path to save the results (default is \code{NULL}).}
 
-\item{N_var}{the variable name of the N dimension in the data when the it is necessary.}
+\item{nsave}{An integer specifying the number of iterations between saved results in the chain
+(default is \code{nmessage}).}
 
-\item{formula}{A formula object representing the model to be fitted.
-respectively.}
+\item{...}{Additional arguments such as \code{formula}, \code{family}, and others that are passed
+to the \code{inla} function.}
 }
 \value{
-NULL The function primarily outputs results to a specified path and does not return anything.
+An \code{sfclust} object containing two main lists: \code{samples} and \code{clust}.
+- The \code{samples} list includes details from the sampling process, such as:
+- \code{membership}: The cluster membership assignments for each sample.
+- \code{log_marginal_likelihood}: The log marginal likelihood for each sample.
+- \code{move_counts}: The counts of each type of move during the MCMC process.
+- The \code{clust} list contains information about the selected clustering, including:
+- \code{id}: The identifier of the selected sample (default is the last sample).
+- \code{membership}: The cluster assignments for the selected sample.
+- \code{models}: The fitted models for each cluster in the selected sample.
 }
 \description{
-This function implements a Reversible Jump Markov Chain Monte Carlo (RJMCMC) algorithm
-for detecting spatial functional clusters based on a Bayesian analysis of spanning trees.
-It handles various types of moves including birth, death, change, and hyperparameter updates
-to explore the space of possible cluster configurations.
+This function implements a Markov Chain Monte Carlo (MCMC) algorithm for detecting
+spatial functional clusters based on a Bayesian analysis of spanning trees and latent
+Gaussian models using \code{INLA}.
 
 The \code{sfclust} package
+}
+\details{
+This implementation draws inspiration from the methods described in the paper:
+\emph{"Bayesian Clustering of Spatial Functional Data with Application to a Human Mobility
+Study During COVID-19"} by Bohai Zhang, Huiyan Sang, Zhao Tang Luo, and Hui Huang,
+published in \emph{The Annals of Applied Statistics}, 2023. For further details on the
+methodology, please refer to:
+\itemize{
+\item The paper: \url{https://doi.org/10.1214/22-AOAS1643}
+\item Supplementary material: \url{https://doi.org/10.1214/22-AOAS1643SUPPB}
+}
+
+The MCMC algorithm in this implementation is largely based on the supplementary
+material provided in the paper. However, we have generalized the computation of the
+marginal likelihood ratio by leveraging INLA (Integrated Nested Laplace Approximation).
+This generalization enables integration over all parameters and hyperparameters,
+allowing for inference within a broader family of distribution functions and model
+terms, thereby extending the scope and flexibility of the original approach.
+Further details of our approach can be found in our paper \emph{"Bayesian spatial functional
+data clustering: applications in disease surveillance"} by Ruiman Zhong, Erick A.
+Chacón-Montalván, Paula Moraga:
+\itemize{
+\item The paper: \url{https://arxiv.org/abs/2407.12633}
+}
+}
+\examples{
+
+\dontrun{
+
+library(stars)
+
+# Gaussian model
+out <- sfclust(stdata, formula = cases ~ temperature, niter = 100)
+print(out)
+summary(out)
+plot(out)
+
+
+# Poisson model
+out <- sfclust(stdata, formula = cases ~ temperature + f(id, model = 'iid'),
+    family = "poisson", E = expected, niter = 100)
+print(out)
+summary(out)
+plot(out)
+
+}
+
 }
 \author{
 Ruiman Zhong, \email{ruiman.zhong@kaust.edu.sa}

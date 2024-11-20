@@ -33,7 +33,9 @@ print.sfclust <- function(x, ...) {
 #'
 #' @param x An object of class 'sfclust'.
 #' @param sample An integer specifying the clustering sample number to be summarized (default
-#' is the last sample).
+#'        is the last sample).
+#' @param sort Logical value indicating if clusters should be relabel based on number of
+#'        elements.
 #' @param ... Additional arguments passed to `print.default`.
 #' @export
 summary.sfclust <- function(x, sample = x$clust$id, sort = FALSE,...) {
@@ -213,15 +215,27 @@ linpred_each_corrected <- function(x){
   x$summary.linear.predictor$mean - aux
 }
 
-#' Plot function for sfclust objects with a conditional legend and log marginal likelihood
+#' Plot function for `sfclust` objects
 #'
-#' This function plots the map with estimated clusters from an sfclust object and adds a legend if the number of clusters is less than 10.
-#' It also plots the log marginal likelihood.
+#' This function visualizes the estimated clusters from an `sfclust` object. It can display:
+#' (1) a map of regions colored by their assigned cluster,
+#' (2) the functional shapes of the linear predictors for each cluster,
+#' and (3) a traceplot of the log marginal likelihood.
+#' A conditional legend is added if the number of clusters is less than 10.
 #'
-#' @param map An sf object provided by the user.
-#' @param output An sfclust object containing the clustering results.
-#' @param sample The row of the cluster matrix to use for plotting (default is the last row).
-#' @param title A title for the plot (default is "Estimated Clusters").
+#' @param x An `sfclust` object containing the clustering results, including the cluster assignments and model parameters.
+#' @param sample Integer specifying the clustering sample number to summarize. Defaults to the last sample.
+#' @param which Integer vector indicating which plot to display. Options are:
+#'        - 1: Map of regions colored by cluster assignment.
+#'        - 2: Functional shapes of the linear predictors for each cluster.
+#'        - 3: Traceplot of the log marginal likelihood.
+#' @param clusters Optional vector specifying which clusters to plot. If `NULL`, all clusters are included.
+#' @param sort Logical value indicating whether clusters should be relabeled based on the number of elements. Default is `FALSE`.
+#' @param legend Logical value indicating whether a legend should be included in the plot. Default is `FALSE`.
+#' @param ... Additional arguments passed to the underlying plotting functions.
+#'
+#' @return A plot displaying the selected subgraphs as specified by `which`.
+#'
 #' @export
 plot.sfclust <- function(x, sample = x$clust$id, which = 1:3, clusters = NULL, sort = FALSE, legend = FALSE, ...) {
 

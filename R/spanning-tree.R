@@ -1,7 +1,15 @@
-# https://doi.org/10.1214/22-AOAS1643
-# https://doi.org/10.1214/22-AOAS1643SUPPB
-
-###################### For spanning-tree operations
+# Functions adapted from the supporting materials of:
+# "Bayesian Clustering of Spatial Functional Data with Application to a Human Mobility
+# Study During COVID-19"
+#
+# Authors: Bohai Zhang, Huiyan Sang, Zhao Tang Luo, and Hui Huang
+# Published in: *The Annals of Applied Statistics*, 2023
+#
+# References:
+#   - Paper: https://doi.org/10.1214/22-AOAS1643
+#   - Supplementary Material: https://doi.org/10.1214/22-AOAS1643SUPPB
+#
+# Note: These functions are used with acknowledgment to the original authors.
 
 # function to get whether an edge is within a cluster or bewteen two clusters
 getEdgeStatus <- function(membership, graph) {

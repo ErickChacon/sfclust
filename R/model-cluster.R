@@ -1,34 +1,88 @@
-#' Detect Spatial Functional Clusters Based on Bayesian Spanning Tree
+#' Spatial functional clustering based on bayesian spanning trees
 #'
-#' This function implements a Reversible Jump Markov Chain Monte Carlo (RJMCMC) algorithm
-#' for detecting spatial functional clusters based on a Bayesian analysis of spanning trees.
-#' It handles various types of moves including birth, death, change, and hyperparameter updates
-#' to explore the space of possible cluster configurations.
+#' This function implements a Markov Chain Monte Carlo (MCMC) algorithm for detecting
+#' spatial functional clusters based on a Bayesian analysis of spanning trees and latent
+#' Gaussian models using `INLA`.
 #'
-#' @param data A stars object contains response, covariates, and other needed data
-#' @param graph Initial spanning tree used for the Bayesian model, list(graph = NULL, mst = NULL, cluster = NULL).
-#' @param init_val List of initial values for parameters 'trees', 'beta', and 'cluster'.
-#' @param q q is the penalty of the cluster number.
-#' @param niter MCMC Integer, number of MCMC iterations to perform.
-#' @param burnin Integer, number of burn-in iterations to discard.
-#' @param thin Integer, thinning interval for recording the results.
-#' @param path_save Character, the path where results should be saved.
-#' @param nsave the number of the gap of saved results in the chain.
-#' @param time_var the variable name of the time dimension in the data.
-#' @param N_var the variable name of the N dimension in the data when the it is necessary.
-#' @param move_prob a vector of probabilities for birth, death, change and hyper moves
-#' @param formula A formula object representing the model to be fitted.
-#' respectively.
+#' @param stdata A stars object containing response variables, covariates, and other necessary data.
+#' @param graphdata A list containing the initial graph used for the Bayesian model.
+#'        It should include components like `graph`, `mst`, and `membership` (default is `NULL`).
+#' @param stnames A character vector specifying the spatio-temporal dimension names of
+#'        `stdata` that represent spatial geometry and time, respectively (default is
+#'        `c("geometry", "time")`).
+#' @param move_prob A numeric vector of probabilities for different types of moves in the MCMC process:
+#'        birth, death, change, and hyperparameter moves (default is `c(0.425, 0.425, 0.1, 0.05)`).
+#' @param q A numeric value representing the penalty for the number of clusters (default is `0.5`).
+#' @param correction A logical indicating whether correction to compute the marginal
+#'        likelihoods should be applied (default is `TRUE`). This depend of the type of
+#'        effect inclused in the `INLA` model.
+#' @param niter An integer specifying the number of MCMC iterations to perform (default is `100`).
+#' @param burnin An integer specifying the number of burn-in iterations to discard (default is `0`).
+#' @param thin An integer specifying the thinning interval for recording the results (default is `1`).
+#' @param nmessage An integer specifying how often progress messages should be printed (default is `10`).
+#' @param path_save A character string specifying the file path to save the results (default is `NULL`).
+#' @param nsave An integer specifying the number of iterations between saved results in the chain
+#'        (default is `nmessage`).
+#' @param ... Additional arguments such as `formula`, `family`, and others that are passed
+#'        to the `inla` function.
 #'
-#' @return NULL The function primarily outputs results to a specified path and does not return anything.
+#' @details
+#' This implementation draws inspiration from the methods described in the paper:
+#' *"Bayesian Clustering of Spatial Functional Data with Application to a Human Mobility
+#' Study During COVID-19"* by Bohai Zhang, Huiyan Sang, Zhao Tang Luo, and Hui Huang,
+#' published in *The Annals of Applied Statistics*, 2023. For further details on the
+#' methodology, please refer to:
+#' - The paper: <https://doi.org/10.1214/22-AOAS1643>
+#' - Supplementary material: <https://doi.org/10.1214/22-AOAS1643SUPPB>
+#'
+#' The MCMC algorithm in this implementation is largely based on the supplementary
+#' material provided in the paper. However, we have generalized the computation of the
+#' marginal likelihood ratio by leveraging INLA (Integrated Nested Laplace Approximation).
+#' This generalization enables integration over all parameters and hyperparameters,
+#' allowing for inference within a broader family of distribution functions and model
+#' terms, thereby extending the scope and flexibility of the original approach.
+#' Further details of our approach can be found in our paper *"Bayesian spatial functional
+#' data clustering: applications in disease surveillance"* by Ruiman Zhong, Erick A.
+#' Chacón-Montalván, Paula Moraga:
+#' - The paper: <https://arxiv.org/abs/2407.12633>
+#'
+#' @return An `sfclust` object containing two main lists: `samples` and `clust`.
+#'         - The `samples` list includes details from the sampling process, such as:
+#'           - `membership`: The cluster membership assignments for each sample.
+#'           - `log_marginal_likelihood`: The log marginal likelihood for each sample.
+#'           - `move_counts`: The counts of each type of move during the MCMC process.
+#'         - The `clust` list contains information about the selected clustering, including:
+#'           - `id`: The identifier of the selected sample (default is the last sample).
+#'           - `membership`: The cluster assignments for the selected sample.
+#'           - `models`: The fitted models for each cluster in the selected sample.
+#'
+#' @examples
+#'
+#' \dontrun{
+#'
+#' library(stars)
+#'
+#' # Gaussian model
+#' out <- sfclust(stdata, formula = cases ~ temperature, niter = 100)
+#' print(out)
+#' summary(out)
+#' plot(out)
+#'
+#'
+#' # Poisson model
+#' out <- sfclust(stdata, formula = cases ~ temperature + f(id, model = 'iid'),
+#'     family = "poisson", E = expected, niter = 100)
+#' print(out)
+#' summary(out)
+#' plot(out)
+#'
+#' }
 #'
 #' @export
 sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
                     move_prob = c(0.425, 0.425, 0.1, 0.05), q = 0.5, correction = TRUE,
                     niter = 100, burnin = 0, thin = 1, nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
 
-  # args <- list(stdata = stdata, stnames = stnames, move_prob = move_prob, q = q, correction = correction)
-  # inla_args <- rlang::enquos(...)
   inla_args <- match.call(expand.dots = FALSE)$...
 
   # number of regions
