@@ -121,7 +121,7 @@ update.sfclust <- function(x, sample = nrow(x$samples$membership)) {
 #' fitted_values <- fitted.sfclust(sfclust_obj, sample = 3)
 #'
 #' @export
-fitted.sfclust <- function(x, sample = x$clustering$id, sort = FALSE) {
+fitted.sfclust <- function(x, sample = x$clustering$id, sort = FALSE, aggregate = FALSE) {
   if (sample < 1 || sample > nrow(x$samples$membership)) {
     stop("`sample` must be between 1 and the total number clustering (membership) samples.")
   }
@@ -145,16 +145,23 @@ fitted.sfclust <- function(x, sample = x$clustering$id, sort = FALSE) {
   # save as stars object
   stars_obj <- attr(x, "args")$stdata[0]
   for (var_name in names(pred)) stars_obj[[var_name]] <- pred[[var_name]]
+
+  # aggregate if required
+  if (aggregate) {
+    geom_clusters <- lapply(
+      split(st_geometry(attr(x, "args")$stdata), membership),
+      function(x) st_union(st_geometry(x))
+    )
+    geom_clusters <- do.call(c, geom_clusters)
+    stars_obj <- aggregate(stars_obj[c("mean", "mean_cluster")], geom_clusters,
+      join = st_within, FUN = mean)
+  }
+
   stars_obj
 }
 
 linpred_each <- function(k, membership, models, stdata, stnames){
-  # df <- data_each(k, membership, stdata, stnames)[c("id", "ids", "idt", stnames[2])]
   df <- data_each(k, membership, stdata, stnames)[c("id")]
-  # df$cluster <- k
-  # df$linear_predictor_cluster <- linpred_each_corrected(models[[k]])
-  # df$linear_predictor <- models[[k]]$summary.linear.predictor$mean
-  # df
   df <- cbind(df, subset(models[[k]]$summary.linear.predictor, select = - kld))
   df$mean_cluster <- linpred_each_corrected(models[[k]])
   df$cluster <- k
