@@ -20,8 +20,8 @@ print.sfclust <- function(x, ...) {
   cat("\nClustering movement counts:\n")
   print(x$samples$move_counts, ...)
 
-  cat("\nLog marginal likelihood (sample ", x$clustering$id, " out of ",
-        length(x$samples$log_mlike), "): ", x$samples$log_mlike[x$clustering$id], "\n", sep = "")
+  cat("\nLog marginal likelihood (sample ", x$clust$id, " out of ",
+        length(x$samples$log_mlike), "): ", x$samples$log_mlike[x$clust$id], "\n", sep = "")
 
   invisible(x)
 }
@@ -36,7 +36,7 @@ print.sfclust <- function(x, ...) {
 #' is the last sample).
 #' @param ... Additional arguments passed to `print.default`.
 #' @export
-summary.sfclust <- function(x, sample = x$clustering$id, sort = FALSE,...) {
+summary.sfclust <- function(x, sample = x$clust$id, sort = FALSE,...) {
 
   nsamples <- nrow(x$samples$membership)
   if (sample < 1 || sample > nsamples) {
@@ -128,8 +128,8 @@ update_within <- function(x, sample = nrow(x$samples$membership)) {
   args$detailed <- TRUE
 
   call <- as.call(c(list(as.name("log_mlik_all")), args))
-  x$clustering$id <- sample
-  x$clustering$models <- eval(call, envir = parent.frame())
+  x$clust$id <- sample
+  x$clust$models <- eval(call, envir = parent.frame())
   x
 }
 
@@ -160,22 +160,22 @@ update_within <- function(x, sample = nrow(x$samples$membership)) {
 #' fitted_values <- fitted.sfclust(sfclust_obj, sample = 3)
 #'
 #' @export
-fitted.sfclust <- function(x, sample = x$clustering$id, sort = FALSE, aggregate = FALSE) {
+fitted.sfclust <- function(x, sample = x$clust$id, sort = FALSE, aggregate = FALSE) {
   if (sample < 1 || sample > nrow(x$samples$membership)) {
     stop("`sample` must be between 1 and the total number clustering (membership) samples.")
   }
-  if (sample != x$clustering$id) x <- fit(x, sample = sample)
+  if (sample != x$clust$id) x <- fit(x, sample = sample)
 
   membership <- x$samples$membership[sample,]
   if (sort) {
     membership <- sort_membership(x$samples$membership[sample,])
-    x$clustering$models <- x$clustering$models[attr(membership, "order")]
+    x$clust$models <- x$clust$models[attr(membership, "order")]
   }
 
   # obtain fitted values
   clusters <- 1:max(membership)
   pred <- lapply(
-    1:max(membership), linpred_each, membership, x$clustering$models,
+    1:max(membership), linpred_each, membership, x$clust$models,
     attr(x, "args")$stdata, attr(x, "args")$stnames
   )
   pred <- do.call(rbind, pred)
@@ -223,7 +223,7 @@ linpred_each_corrected <- function(x){
 #' @param sample The row of the cluster matrix to use for plotting (default is the last row).
 #' @param title A title for the plot (default is "Estimated Clusters").
 #' @export
-plot.sfclust <- function(x, sample = x$clustering$id, which = 1:3, clusters = NULL, sort = FALSE, legend = FALSE, ...) {
+plot.sfclust <- function(x, sample = x$clust$id, which = 1:3, clusters = NULL, sort = FALSE, legend = FALSE, ...) {
 
   nsamples <- nrow(x$samples$membership)
   if (sample < 1 || sample > nsamples) {

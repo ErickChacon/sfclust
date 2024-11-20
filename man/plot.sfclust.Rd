@@ -6,7 +6,7 @@
 \usage{
 \method{plot}{sfclust}(
   x,
-  sample = x$clustering$id,
+  sample = x$clust$id,
   which = 1:3,
   clusters = NULL,
   sort = FALSE,

@@ -4,7 +4,7 @@
 \alias{fitted.sfclust}
 \title{Fitted Values for \code{sfclust} Objects}
 \usage{
-\method{fitted}{sfclust}(x, sample = x$clustering$id, sort = FALSE, aggregate = FALSE)
+\method{fitted}{sfclust}(x, sample = x$clust$id, sort = FALSE, aggregate = FALSE)
 }
 \arguments{
 \item{x}{An object of class 'sfclust', containing clustering results and models.}

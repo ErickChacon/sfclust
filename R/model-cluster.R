@@ -37,7 +37,6 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
 
   # check if correction is required
   if (correction) {
-    # if (length(correction_required(rlang::eval_tidy(inla_args[["formula"]]))) == 0) {
     if (length(correction_required(eval(inla_args$formula))) == 0) {
       correction <- FALSE
       warning("Log marginal-likelihood correction not required.", immediate. = TRUE)
@@ -176,26 +175,39 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
     # save to file
     if (iter > burnin & (iter - burnin - 1) %% nsave == 0) {
       if (!is.null(path_save)) {
-        saveRDS(
-          list(
-            membership = membership_out, log_mlike = log_mlike_out, mst = mst_out,
-            counts = c(births = birth_cnt, deaths = death_cnt, changes = change_cnt, hypers = hyper_cnt)
-          ),
-          file = path_save
-        )
+        output <- list(
+           samples = list(
+             membership = membership_out,
+             log_mlike = log_mlike_out,
+             move_counts = c(births = birth_cnt, deaths = death_cnt, changes = change_cnt, hypers = hyper_cnt)
+           ),
+           clust = list(
+             id = isample,
+             membership = membership,
+             models = NULL
+           )
+         )
+         attr(output, "mst") <- mst_out
+         attr(output, "args") <- args
+         attr(output, "inla_args") <- inla_args
+         class(output) <- "sfclust"
+
+        saveRDS(output, file = path_save)
       }
     }
   }
 
   # final outcome
+  membership <- membership_out[nrow(membership_out),]
   output <- list(
     samples = list(
       membership = membership_out,
       log_mlike = log_mlike_out,
       move_counts = c(births = birth_cnt, deaths = death_cnt, changes = change_cnt, hypers = hyper_cnt)
     ),
-    clustering = list(
+    clust = list(
       id = nrow(membership_out),
+      membership = membership,
       models = log_mlik_all(membership, stdata, stnames, correction = FALSE, detailed = TRUE, ...)
     )
   )
