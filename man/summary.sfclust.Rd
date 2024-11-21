@@ -4,10 +4,10 @@
 \alias{summary.sfclust}
 \title{Summary method for sfclust objects}
 \usage{
-\method{summary}{sfclust}(x, sample = x$clust$id, sort = FALSE, ...)
+\method{summary}{sfclust}(object, sample = object$clust$id, sort = FALSE, ...)
 }
 \arguments{
-\item{x}{An object of class 'sfclust'.}
+\item{object}{An object of class 'sfclust'.}
 
 \item{sample}{An integer specifying the clustering sample number to be summarized (default
 is the last sample).}

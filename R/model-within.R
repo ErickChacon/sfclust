@@ -89,6 +89,7 @@ log_mlik_each <- function(k, membership, stdata, stnames = c("geometry", "time")
   }
 }
 
+#' @importFrom Matrix diag
 log_mlik_correction <- function(model) {
   Slist <- get_structure_matrix(model)
   if (!length(Slist) == 0) {
@@ -132,6 +133,7 @@ get_structure_matrix <- function(model) {
   return(out)
 }
 
+#' @importFrom stats terms
 correction_required <- function (formula) {
   effects <- as.list(attr(terms(formula), "variables"))[c(-1, -2)]
   need_correction <- grepl("model\\s*=\\s*\"c{0,1}rw", sapply(effects, deparse1))
@@ -180,8 +182,7 @@ data_all <- function(stdata, stnames = c("geometry", "time")) {
 
   # merge dimensions and dataframe
   stdata <- as.data.frame(stdata)
-  stdata[[stnames[1]]] <- NULL
-  cbind(stdata["id"], dims, subset(stdata, select = - id))
+  cbind(stdata["id"], dims, stdata[, !names(stdata) %in% c("id", stnames[1])])
 }
 
 #' Prepare data for a cluster
@@ -236,6 +237,5 @@ data_each <- function(k, membership, stdata, stnames = c("geometry", "time")) {
 
   # merge dimensions and dataframe
   stdata <- as.data.frame(stdata)
-  stdata[[stnames[1]]] <- NULL
-  cbind(stdata["id"], dims, subset(stdata, select = - id))
+  cbind(stdata["id"], dims, stdata[, !names(stdata) %in% c("id", stnames[1])])
 }

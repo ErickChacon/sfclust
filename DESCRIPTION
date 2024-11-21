@@ -20,7 +20,9 @@ Imports:
     sf,
     SparseM,
     stars,
-    dplyr
+    dplyr,
+    methods,
+    Matrix
 Suggests:
     class,
     INLA,

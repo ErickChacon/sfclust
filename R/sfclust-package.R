@@ -12,6 +12,9 @@
 #' Erick A. Chacón-Montalván \email{erick.chaconmontalvan@kaust.edu.sa},
 #' Paula Moraga \email{paula.moraga@kaust.edu.sa}
 #'
+#' @importFrom stats runif setNames
+#' @importFrom sf st_touches st_geometry
+#'
 #' @docType package
 #' @keywords internal
 #' @aliases sfclust-package

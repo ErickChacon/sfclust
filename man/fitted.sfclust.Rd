@@ -4,10 +4,10 @@
 \alias{fitted.sfclust}
 \title{Fitted Values for \code{sfclust} Objects}
 \usage{
-\method{fitted}{sfclust}(x, sample = x$clust$id, sort = FALSE, aggregate = FALSE)
+\method{fitted}{sfclust}(object, sample = object$clust$id, sort = FALSE, aggregate = FALSE, ...)
 }
 \arguments{
-\item{x}{An object of class 'sfclust', containing clustering results and models.}
+\item{object}{An object of class 'sfclust', containing clustering results and models.}
 
 \item{sample}{An integer specifying the clustering sample number for which
 the fitted values should be computed. The default is the \code{id} of the
@@ -19,6 +19,8 @@ elements.}
 
 \item{aggregate}{Logical value indicating if fitted values are desired at cluster
 level.}
+
+\item{...}{Additional arguments, currently not used.}
 }
 \value{
 A \code{stars} object with linear predictor fitted values at regions levels. In case

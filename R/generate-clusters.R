@@ -37,7 +37,8 @@
 #' plot(st_sf(x, cluster = factor(cluster_ini$membership)))
 #'
 #' @import igraph
-#'
+#' @importFrom methods as
+#' @importFrom sf st_touches
 #' @export
 genclust <- function(x, nclust = 10, weights = NULL){
 

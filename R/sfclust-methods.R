@@ -31,16 +31,16 @@ print.sfclust <- function(x, ...) {
 #'
 #' This function summarizes the cluster assignments from the desired clustering `sample`.
 #'
-#' @param x An object of class 'sfclust'.
+#' @param object An object of class 'sfclust'.
 #' @param sample An integer specifying the clustering sample number to be summarized (default
 #'        is the last sample).
 #' @param sort Logical value indicating if clusters should be relabel based on number of
 #'        elements.
 #' @param ... Additional arguments passed to `print.default`.
 #' @export
-summary.sfclust <- function(x, sample = x$clust$id, sort = FALSE,...) {
+summary.sfclust <- function(object, sample = object$clust$id, sort = FALSE,...) {
 
-  nsamples <- nrow(x$samples$membership)
+  nsamples <- nrow(object$samples$membership)
   if (sample < 1 || sample > nsamples) {
     stop("`sample` must be between 1 and the total number clustering (membership) samples.")
   }
@@ -48,15 +48,15 @@ summary.sfclust <- function(x, sample = x$clust$id, sort = FALSE,...) {
   cat("Summary for clustering sample", sample, "out of", nsamples, "\n")
 
   cat("\nWithin-cluster formula:\n")
-  print(eval(attr(x, "inla_args")$formula), showEnv = FALSE, ...)
+  print(eval(attr(object, "inla_args")$formula), showEnv = FALSE, ...)
 
   cat("\nCounts per cluster:")
-  membership <- x$samples$membership[sample,]
-  if (sort) membership <- sort_membership(x$samples$membership[sample,])
+  membership <- object$samples$membership[sample,]
+  if (sort) membership <- sort_membership(object$samples$membership[sample,])
   cluster_summary <- table(membership, deparse.level = 0)
   print(cluster_summary, ...)
 
-  cat("\nLog marginal likelihood: ", x$samples$log_mlike[sample], "\n")
+  cat("\nLog marginal likelihood: ", object$samples$log_mlike[sample], "\n")
   invisible(cluster_summary)
 }
 
@@ -142,7 +142,7 @@ update_within <- function(x, sample = nrow(x$samples$membership)) {
 #' values are computed using the membership assignments and model parameters
 #' associated with the selected clustering sample.
 #'
-#' @param x An object of class 'sfclust', containing clustering results and models.
+#' @param object An object of class 'sfclust', containing clustering results and models.
 #' @param sample An integer specifying the clustering sample number for which
 #'        the fitted values should be computed. The default is the `id` of the
 #'        current clustering. The value must be between 1 and the total number
@@ -151,6 +151,7 @@ update_within <- function(x, sample = nrow(x$samples$membership)) {
 #'        elements.
 #' @param aggregate Logical value indicating if fitted values are desired at cluster
 #'        level.
+#' @param ... Additional arguments, currently not used.
 #' @return A `stars` object with linear predictor fitted values at regions levels. In case
 #'         `aggregate = TRUE`, the `output` produces an `stars` objecto at cluster levels.
 #'
@@ -179,36 +180,38 @@ update_within <- function(x, sample = nrow(x$samples$membership)) {
 #'
 #' }
 #'
+#' @importFrom stats fitted
+#' @importFrom sf st_within st_union
 #' @export
-fitted.sfclust <- function(x, sample = x$clust$id, sort = FALSE, aggregate = FALSE) {
-  if (sample < 1 || sample > nrow(x$samples$membership)) {
+fitted.sfclust <- function(object, sample = object$clust$id, sort = FALSE, aggregate = FALSE, ...) {
+  if (sample < 1 || sample > nrow(object$samples$membership)) {
     stop("`sample` must be between 1 and the total number clustering (membership) samples.")
   }
-  if (sample != x$clust$id) x <- fit(x, sample = sample)
+  if (sample != object$clust$id) object <- update_within(object, sample = sample)
 
-  membership <- x$samples$membership[sample,]
+  membership <- object$samples$membership[sample,]
   if (sort) {
-    membership <- sort_membership(x$samples$membership[sample,])
-    x$clust$models <- x$clust$models[attr(membership, "order")]
+    membership <- sort_membership(object$samples$membership[sample,])
+    object$clust$models <- object$clust$models[attr(membership, "order")]
   }
 
   # obtain fitted values
   clusters <- 1:max(membership)
   pred <- lapply(
-    1:max(membership), linpred_each, membership, x$clust$models,
-    attr(x, "args")$stdata, attr(x, "args")$stnames
+    1:max(membership), linpred_each, membership, object$clust$models,
+    attr(object, "args")$stdata, attr(object, "args")$stnames
   )
   pred <- do.call(rbind, pred)
-  pred <- subset(pred[order(pred$id), ], select = - id)
+  pred <- pred[order(pred$id), setdiff(names(pred), "id")]
 
   # save as stars object
-  stars_obj <- attr(x, "args")$stdata[0]
+  stars_obj <- attr(object, "args")$stdata[0]
   for (var_name in names(pred)) stars_obj[[var_name]] <- pred[[var_name]]
 
   # aggregate if required
   if (aggregate) {
     geom_clusters <- lapply(
-      split(st_geometry(attr(x, "args")$stdata), membership),
+      split(st_geometry(attr(object, "args")$stdata), membership),
       function(x) st_union(st_geometry(x))
     )
     geom_clusters <- do.call(c, geom_clusters)
@@ -221,7 +224,8 @@ fitted.sfclust <- function(x, sample = x$clust$id, sort = FALSE, aggregate = FAL
 
 linpred_each <- function(k, membership, models, stdata, stnames){
   df <- data_each(k, membership, stdata, stnames)[c("id")]
-  df <- cbind(df, subset(models[[k]]$summary.linear.predictor, select = - kld))
+  df <- cbind(df, models[[k]]$summary.linear.predictor)
+  df$lkd <- NULL
   df$mean_cluster <- linpred_each_corrected(models[[k]])
   df$cluster <- k
   df
@@ -254,6 +258,7 @@ linpred_each_corrected <- function(x){
 #'
 #' @return A plot displaying the selected subgraphs as specified by `which`.
 #'
+#' @importFrom graphics par points
 #' @export
 plot.sfclust <- function(x, sample = x$clust$id, which = 1:3, clusters = NULL, sort = FALSE, legend = FALSE, ...) {
 
