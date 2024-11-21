@@ -47,7 +47,7 @@ The function `initial_cluster() ` is to build a initial partition parameters (Gr
 
 ```{r warning=FALSE, fig.width=6, fig.height=4}
 # Initialize the graph data using Minimum Spanning Tree (MST)
-geodata <- initial_cluster (map, nclust = 10)
+geodata <- genclust (map, nclust = 15)
 coords <- st_coordinates(st_centroid(map))
 plot(geodata$graph, layout = coords)
 ```
@@ -69,12 +69,12 @@ $$f_{c,1} \mid v_{c}, \rho_{c}, \boldsymbol{\theta}_{T} \sim N(0, v_{c}^{-1}(1-\
 $$f_{c, t} = \rho_{c} f_{c, t-1} + \varepsilon_{c,t} ~\text{for}~ t = 2, \dots, T~\text{where}~ \varepsilon_{c,t} \mid \boldsymbol{\theta}_{T} \sim N(0, v_{c}^{-1})$$
 ```{r}
 # Define the formula for the Bayesian spatial functional model
-formula <- Y ~ 1+ f(idt, model = "ar", order = 1) + f(id, model = "iid")
+formula <- Y ~ 1+ f(idt, model = "ar", order = 1,hyper = list(prec = list(prior="normal",param=c(4,1)))) + f(id, model = "iid")
 ```
  
  `sfclust()` is the main functions to implement Bayesian spatial functional clustering based on bayesian spanning tree.  `Y` is the response, here is the Covid cases in the US. `idt` is the index of the time, created by our function. 
 ```{r}
-data <- preprocess_data_each(us_covid, 3, geodata$cluster, time_var = "time")
+data <- data_all(us_covid, stnames = c("space","time"))
 head(data)
 ```
  
@@ -84,14 +84,13 @@ head(data)
  The results of the function is saved in the path_res.rds. Please define a valid address and name before running the function. The function also return the results. 
  
 ```{r eval=FALSE}
-# define the path to save the final results, runs for one hour
-path <- '~/Documents/project3'
-path_res <- file.path(path, "data", "result","US_cluster.rds")
+set.seed(1234)
+c
 # Run the bsfc algorithm with the defined parameters
-result <- sfclust(us_covid, graphdata = geodata, N_var = 'E', formula = formula, 
-     family = "poisson", q = 0.5, 
-     correction = FALSE, niter = 1000, burnin = 0, 
-     thin = 1, path_save = path_res)
+result <- sfclust(us_covid, graphdata = geodata,stnames = c("space", "time"),
+                  move_prob = c(0.425, 0.425, 0.1, 0.05),q = 0.5, correction = F, 
+                  niter = 1000, burnin = 0, thin = 1, formula = formula,family = "poisson", E = E,
+                  path_save = path_res) 
 ```
 
 # Analyzing the Results
@@ -101,99 +100,26 @@ After running the model, we can analyze the results, including the final model a
 Let's start by loading the initial results and analyzing the MCMC chain to assess convergence.
 ```{r include=FALSE}
 path <- '~/Documents/project3'
-path_res <- file.path(path, "data", "result","US_cluster.rds")
+path_res <- file.path(path, "data", "result","US_cluster_update.rds")
 # Load the results from the saved file
-result <- readRDS(path_res)
+results <- readRDS(path_res)
 ```
-```{r fig.width=6, fig.height=4}
-plot(result, map)
+```{r fig.width=8, fig.height=4}
+plot(results)
 ```
 
 
 The plot above shows the marginal likelihoods across iterations. If the plot indicates that the chain has not converged, we can continue the MCMC process.
 
 # Continuing the MCMC Process
-Next, we'll use the continue_bsfc function to extend the MCMC process by adding 2000 more iterations.
+Next, we'll use the `continue_sfclust()` function to extend the MCMC process by adding 2000 more iterations.
 ```{r include=FALSE}
 # Define the additional MCMC settings
-path_res <- file.path(path, "data", "result","US_cluster2.rds")
+path_res <- file.path(path, "data", "result","US_cluster2_update.rds")
 ```
 Run the continuation of the BSFC process
 ```{r eval=FALSE}
-niter_additional <- 4000
+niter <- 2000
 # the function runs for one hour
-result_continue <- continue_sfclust(result,
-  us_covid, graph = geodata$graph,
-  formula = formula, family = "poisson", q = 0.5,
-  correction = FALSE, niter = niter_additional, burnin = 0, thin = 1,time_var = "time", N_var = "E",
-  path_save = path_res
-)
+result_continue <- continue_sfclust(result, us_covid, graph = geodata$graph, stnames = c("space", "time"), q = 0.5, correction = F, niter = niter, burnin = 0, thin = 1, nmessage = 10, path_save = path_res, formula, family = "poisson", E = E)
 ```
-# Analyzing the Continued Results
-
-After running the additional MCMC iterations, we can load and analyze the updated results to check for convergence.
-```{r, fig.width=6, fig.height=4}
-result_continue <- readRDS(path_res)  # Load the continued results into the workspace
-mlik <- c(result$log_mlike, result_continue$log_mlike)
-# Plot the updated marginal likelihoods
-plot(mlik, type = "l", main = "Marginal Likelihoods After Continued MCMC Run",
-     xlab = "Iteration", ylab = "Marginal Likelihood")
-```
-
-Print the final cluster_membership and plot.
-
-```{r fig.width=6, fig.height=4}
-clust_res <- result_continue$cluster[length(result_continue$mst),]
-clust_res
-plot(result_continue, map)
-```
-
-### Check the fitted curves and time series of each cluster
-```{r warning=FALSE, fig.width=6, fig.height=4}
-library(dplyr)
-start_date <- as.Date('2020-01-20')
-end_date <- as.Date('2021-01-04')
-
-# Generate a sequence of weekly dates
-time <- seq.Date(from = start_date, to = end_date, by = "week")
-final_model = result_continue$model
-
-level <- as.numeric(levels(as.factor(clust_res)))
-  ydf = setNames(as.data.frame(Y / E), 1:ns) |>
-    mutate(time = time) |>
-    tidyr::pivot_longer(1:ns, names_to = "region", names_transform = as.numeric) |>
-    mutate(cluster = clust_res[region])
-  cluster2 = rep(level, table(clust_res))
-  preddf = purrr::map(level, function(x) final_model[[x]]$summary.fitted.values$mean / exp(final_model[[x]]$summary.random[['id']]$mean)) %>%
-    purrr::map(~ matrix(., nrow = length(time))) %>%
-    do.call(cbind, .) |>
-    as.data.frame() |>
-    setNames(1:49) |>
-    mutate(time =  time) |>
-    tidyr::pivot_longer(1:49, names_to = "newregion", names_transform = as.numeric) |>
-    mutate(cluster = factor(cluster2[newregion]))
-  # Define the custom labeller function
-  custom_labeller <- function(cluster) {
-    return(paste("Cluster", cluster))
-  }
-
-  # Apply the custom labeller to the facets
-  p <- ggplot(ydf) +
-    geom_line(aes(x = time, y = value, group = region), color = "gray", linewidth = 0.2) +
-    geom_line(data = preddf, aes(x = time, y = value, group = newregion),
-              color = "red", linewidth = 0.3) +
-    facet_wrap(~ cluster, ncol = 4, scales = "free_y", labeller = labeller(cluster = as_labeller(custom_labeller))) +
-    theme_bw() +
-    theme(legend.position = "none", legend.text = element_text(size = 7)) +
-    labs(color = "Cluster", y = "Relative Risk", x = "Time")
-
-custom_breaks <- seq.Date(from = start_date, to = end_date, by = "8 weeks")
-
-g = p  +
-  scale_x_date(date_labels = "%b %d", breaks = custom_breaks) +  # Format x-axis labels to show month and day
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-g
-```
-
-
-
