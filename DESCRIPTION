@@ -1,6 +1,6 @@
 Package: sfclust
-Title: Bayesian spatial functional data clustering 
-Version: 0.0.14
+Title: Bayesian spatial functional clustering
+Version: 0.0.16
 Authors@R: c(
     person("Ruiman", "Zhong", ,"ruiman.zhong@kaust.edu.sa", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-4681-9199")),
@@ -15,13 +15,13 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 Imports:
+    cubelyr,
     igraph,
     sf,
     SparseM,
+    stars,
+    dplyr
 Suggests:
-    gridExtra,
-    deldir,
-    grid,
     class,
     INLA,
     knitr,

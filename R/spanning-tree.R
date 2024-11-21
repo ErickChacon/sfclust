@@ -1,52 +1,15 @@
-# https://doi.org/10.1214/22-AOAS1643
-# https://doi.org/10.1214/22-AOAS1643SUPPB
-
-## The auxiliary functions for building spanning tree
-
-################################################################################
-################################################################################
-###################### For spanning-tree operations
-
-#### Generate clusters for the simulation data
-
-GenerateClust <- function(coord, clustsize) {
-  ns <- nrow(coord)
-  graph0 <- ConstructGraph0(coord, method = "knn", 10)
-  E(graph0)$weights <- runif(length(E(graph0)))
-  mstgraph <- mst(graph0)
-
-  ### For balanced clusters
-  bsize <- floor(ns / clustsize / 2)
-  membership <- 1:ns
-  while (min(table(membership)) < bsize) {
-    delid <- sample(1:(vcount(mstgraph) - 1), clustsize - 1)
-    mstgraph2 <- delete.edges(mstgraph, delid)
-    membership <- components(mstgraph2)$membership
-  }
-
-  return(list(graph0 = graph0, truemst = mstgraph, membership = components(mstgraph2)$membership))
-}
-
-### Unbalanced clusters
-
-GenerateClust_unbalanced <- function(coord, clustsize) {
-  ns <- nrow(coord)
-  graph0 <- ConstructGraph0(coord, method = "knn", 10)
-  E(graph0)$weights <- runif(length(E(graph0)))
-  mstgraph <- mst(graph0)
-
-  ### For balanced clusters
-  ### bsize=floor(ns/clustsize/2)
-  bsize <- 6
-  membership <- 1:ns
-  while (min(table(membership)) > bsize | min(table(membership)) < 2) {
-    delid <- sample(1:(vcount(mstgraph) - 1), clustsize - 1)
-    mstgraph2 <- delete.edges(mstgraph, delid)
-    membership <- components(mstgraph2)$membership
-  }
-
-  return(list(graph0 = graph0, truemst = mstgraph, membership = components(mstgraph2)$membership))
-}
+# Functions adapted from the supporting materials of:
+# "Bayesian Clustering of Spatial Functional Data with Application to a Human Mobility
+# Study During COVID-19"
+#
+# Authors: Bohai Zhang, Huiyan Sang, Zhao Tang Luo, and Hui Huang
+# Published in: *The Annals of Applied Statistics*, 2023
+#
+# References:
+#   - Paper: https://doi.org/10.1214/22-AOAS1643
+#   - Supplementary Material: https://doi.org/10.1214/22-AOAS1643SUPPB
+#
+# Note: These functions are used with acknowledgment to the original authors.
 
 # function to get whether an edge is within a cluster or bewteen two clusters
 getEdgeStatus <- function(membership, graph) {
@@ -59,7 +22,6 @@ getEdgeStatus <- function(membership, graph) {
 }
 
 # function to split an existing cluster given MST
-
 splitCluster <- function(mstgraph, k, membership) {
   tcluster <- table(membership)
   clust.split <- sample.int(k, 1, prob = tcluster - 1, replace = TRUE)
@@ -70,18 +32,15 @@ splitCluster <- function(mstgraph, k, membership) {
   connect_comp <- components(mst_subgraph)
   cluster_new <- connect_comp$membership
   vid_new <- (V(mst_subgraph)$vid)[cluster_new == 2] # vid for vertices belonging to new cluster
-  cluster <- membership
-  cluster[vid_new] <- k + 1
+  membership[vid_new] <- k + 1
   return(list(
-    cluster = cluster, vid_new = vid_new,
-    clust_old = clust.split
+    membership = membership, vid_new = vid_new,
+    cluster_old = clust.split,
+    cluster_new = k + 1
   ))
 }
 
-
-
 # function to merge two existing clusters
-
 mergeCluster <- function(mstgraph, edge_status, membership) {
   # candidate edges for merging
   ecand <- E(mstgraph)[edge_status == "b"]
@@ -91,35 +50,31 @@ mergeCluster <- function(mstgraph, edge_status, membership) {
   v1 <- head_of(mstgraph, edge_merge)
   v2 <- tail_of(mstgraph, edge_merge)
   # clusters that v1, v2 belonging to
-  cluster <- membership
 
-  c1 <- cluster[v1]
-  c2 <- cluster[v2]
+  c1 <- membership[v1]
+  c2 <- membership[v2]
 
   ### merge the cluster with a larger label into the one with a smaller label
   if (c1 < c2) {
     c_rm <- c2
-    c_mer <- c1
+    c_new <- c1
   } else {
     c_rm <- c1
-    c_mer <- c2
+    c_new <- c2
   }
 
-  idx_rm <- (cluster == c_rm)
+  idx_rm <- (membership == c_rm)
 
   # vid of vertices in c_rm
   vid_old <- (V(mstgraph))[idx_rm]
 
   # now drop c_rm
-  cluster[idx_rm] <- c_mer
-  cluster[cluster > c_rm] <- cluster[cluster > c_rm] - 1
-
-  cluster_newid <- c_mer
+  membership[idx_rm] <- c_new
+  membership[membership > c_rm] <- membership[membership > c_rm] - 1
 
   # return the membership, the indices of the merged vertices
-  return(list(cluster = cluster, vid_old = vid_old, cluster_rm = c_rm, cluster_comb = c_mer, cluster_newid = cluster_newid))
+  return(list(membership = membership, vid_old = vid_old, cluster_rm = c_rm, cluster_new = c_new))
 }
-
 
 # function to propose a new MST
 proposeMST <- function(graph0, edge_status_G) {
@@ -131,15 +86,4 @@ proposeMST <- function(graph0, edge_status_G) {
   weight[edge_status_G == "b"] <- runif(nb, 100, 200)
   mstgraph <- mst(graph0, weights = weight)
   return(mstgraph)
-}
-
-ord.mat <- function(M, decr = F, cols = NULL) {
-  if (is.null(cols)) {
-    cols <- 1:ncol(M)
-  }
-  out <- do.call("order", as.data.frame(M[, cols]))
-  if (decr) {
-    out <- rev(out)
-  }
-  return(M[out, ])
 }

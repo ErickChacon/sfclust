@@ -1,337 +1,305 @@
-#' Detect Spatial Functional Clusters Based on Bayesian Spanning Tree
+#' Bayesian spatial functional clustering
 #'
-#' This function implements a Reversible Jump Markov Chain Monte Carlo (RJMCMC) algorithm
-#' for detecting spatial functional clusters based on a Bayesian analysis of spanning trees.
-#' It handles various types of moves including birth, death, change, and hyperparameter updates
-#' to explore the space of possible cluster configurations.
+#' Bayesian detection of neighboring spatial regions with similar functional shapes using
+#' spanning trees and latent Gaussian models. It ensures spatial contiguity in the
+#' clusters, handles a large family of latent Gaussian models supported by `inla`, and
+#' allows to work with non-Gaussian likelihoods.
 #'
-#' @param data A list containing data matrices 'Y' and 'X', and 'N' for the number of trials or cases.
-#' @param formula A formula object representing the model to be fitted.
-#' @param graph Initial spanning tree used for the Bayesian model.
-#' @param init_val List of initial values for parameters 'trees', 'beta', and 'cluster'.
-#' @param q q is the penalty of the cluster number.
-#' @param MCMC Integer, number of MCMC iterations to perform.
-#' @param burnin Integer, number of burn-in iterations to discard.
-#' @param thin Integer, thinning interval for recording the results.
-#' @param path_save Character, the path where results should be saved.
+#' @param stdata A stars object containing response variables, covariates, and other necessary data.
+#' @param graphdata A list containing the initial graph used for the Bayesian model.
+#'        It should include components like `graph`, `mst`, and `membership` (default is `NULL`).
+#' @param stnames A character vector specifying the spatio-temporal dimension names of
+#'        `stdata` that represent spatial geometry and time, respectively (default is
+#'        `c("geometry", "time")`).
+#' @param move_prob A numeric vector of probabilities for different types of moves in the MCMC process:
+#'        birth, death, change, and hyperparameter moves (default is `c(0.425, 0.425, 0.1, 0.05)`).
+#' @param q A numeric value representing the penalty for the number of clusters (default is `0.5`).
+#' @param correction A logical indicating whether correction to compute the marginal
+#'        likelihoods should be applied (default is `TRUE`). This depend of the type of
+#'        effect inclused in the `INLA` model.
+#' @param niter An integer specifying the number of MCMC iterations to perform (default is `100`).
+#' @param burnin An integer specifying the number of burn-in iterations to discard (default is `0`).
+#' @param thin An integer specifying the thinning interval for recording the results (default is `1`).
+#' @param nmessage An integer specifying how often progress messages should be printed (default is `10`).
+#' @param path_save A character string specifying the file path to save the results (default is `NULL`).
+#' @param nsave An integer specifying the number of iterations between saved results in the chain
+#'        (default is `nmessage`).
+#' @param ... Additional arguments such as `formula`, `family`, and others that are passed
+#'        to the `inla` function.
 #'
-#' @return NULL The function primarily outputs results to a specified path and does not return anything.
+#' @details
+#' This implementation draws inspiration from the methods described in the paper:
+#' *"Bayesian Clustering of Spatial Functional Data with Application to a Human Mobility
+#' Study During COVID-19"* by Bohai Zhang, Huiyan Sang, Zhao Tang Luo, and Hui Huang,
+#' published in *The Annals of Applied Statistics*, 2023. For further details on the
+#' methodology, please refer to:
+#' - The paper: <https://doi.org/10.1214/22-AOAS1643>
+#' - Supplementary material: <https://doi.org/10.1214/22-AOAS1643SUPPB>
+#'
+#' The MCMC algorithm in this implementation is largely based on the supplementary
+#' material provided in the paper. However, we have generalized the computation of the
+#' marginal likelihood ratio by leveraging INLA (Integrated Nested Laplace Approximation).
+#' This generalization enables integration over all parameters and hyperparameters,
+#' allowing for inference within a broader family of distribution functions and model
+#' terms, thereby extending the scope and flexibility of the original approach.
+#' Further details of our approach can be found in our paper *"Bayesian spatial functional
+#' data clustering: applications in disease surveillance"* by Ruiman Zhong, Erick A.
+#' Chacón-Montalván, Paula Moraga:
+#' - The paper: <https://arxiv.org/abs/2407.12633>
+#'
+#' @return
+#' An `sfclust` object containing two main lists: `samples` and `clust`.
+#' - The `samples` list includes details from the sampling process, such as:
+#'   - `membership`: The cluster membership assignments for each sample.
+#'   - `log_marginal_likelihood`: The log marginal likelihood for each sample.
+#'   - `move_counts`: The counts of each type of move during the MCMC process.
+#' - The `clust` list contains information about the selected clustering, including:
+#'   - `id`: The identifier of the selected sample (default is the last sample).
+#'   - `membership`: The cluster assignments for the selected sample.
+#'   - `models`: The fitted models for each cluster in the selected sample.
+#'
+#' @author
+#' Ruiman Zhong \email{ruiman.zhong@kaust.edu.sa},
+#' Erick A. Chacón-Montalván \email{erick.chaconmontalvan@kaust.edu.sa},
+#' Paula Moraga \email{paula.moraga@kaust.edu.sa}
 #'
 #' @examples
-#' # Example setup (note: actual data and parameters need to be defined)
-#' \dontrun{
-#' data <- list(Y = matrix(rnorm(100), ncol = 10), X = matrix(rnorm(100), ncol = 10))
-#' formula <- Y ~ X1 + X2
-#' inla.extra <- list(correction = TRUE)
-#' graph <- matrix(sample(0:1, 100, replace = TRUE), ncol = 10)
-#' init_val <- list(trees = graph, beta = runif(10), cluster = sample(1:5, 10, replace = TRUE))
-#' hyperpar <- list(c = 0.5)
-#' path_save <- "path/to/save/results/"
 #'
-#' bsfc(data, family, formula, graph, init_val, hyperpar, MCMC, burnin, THIN, path_save)
+#' \dontrun{
+#'
+#' library(stars)
+#'
+#' # Gaussian model
+#' out <- sfclust(stdata, formula = cases ~ temperature, niter = 100)
+#' print(out)
+#' summary(out)
+#' plot(out)
+#'
+#'
+#' # Poisson model
+#' out <- sfclust(stdata, formula = cases ~ temperature + f(id, model = 'iid'),
+#'     family = "poisson", E = expected, niter = 100)
+#' print(out)
+#' summary(out)
+#' plot(out)
+#'
 #' }
+#'
 #' @export
-bsfc <- function(Y, graphdata = list(graph = NULL, mst = NULL, cluster = NULL), X = NULL, N = NULL,
-                 formula = Yk ~ 1 + Xk, family = "normal",q = 0.5,
-                 correction = NULL, niter = 100, burnin = 0, thin = 1, path_save = NULL, nsave = 10,  ...) {
-  ## Setup
-  # apply correction if rw effect is used
+sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
+                    move_prob = c(0.425, 0.425, 0.1, 0.05), q = 0.5, correction = TRUE,
+                    niter = 100, burnin = 0, thin = 1, nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
 
-  # dimensions
-  ns <- ncol(Y)
+  inla_args <- match.call(expand.dots = FALSE)$...
 
-  # initial values
+  # number of regions
+  geoms <- st_get_dimension_values(stdata, stnames[1])
+  ns <- length(geoms)
+
+  # check if correction is required
+  if (correction) {
+    if (length(correction_required(eval(inla_args$formula))) == 0) {
+      correction <- FALSE
+      warning("Log marginal-likelihood correction not required.", immediate. = TRUE)
+    }
+  }
+
+  # initial clustering
+  if (is.null(graphdata)) graphdata <- genclust(geoms)
   graph <- graphdata[["graph"]]
   mstgraph <- graphdata[["mst"]]
-  cluster <- graphdata[["cluster"]]
-  k <- max(cluster)
+  membership <- graphdata[["membership"]]
 
-  # hyperparameters
-  c <- q
+  args <- list(stdata = stdata, graphdata = graphdata, stnames = stnames,
+    move_prob = move_prob, q = q, correction = correction)
 
-  # movement counts
-  hyper_cnt <- 0
-  birth_cnt <- 0
-  death_cnt <- 0
-  change_cnt <- 0
-  
-  formula_str <- as.character(formula)
-  
-  # Replace Y and X with Yk and Xk
-  formula_str <- gsub("Y", paste0("Y", k), formula_str)
-  formula_str <- gsub("X", paste0("X", k), formula_str)
-  
-  # Convert the string back to a formula
-  new_formula <- as.formula(formula_str)
-
-  ## Initialize
-
-  # initialize log likelihood vector
-  log_mlike_vec <- log_mlik_all(Y, cluster, X, N, formula, family, correction,...)
+  nclust <- max(membership)
+  edge_status <- getEdgeStatus(membership, mstgraph) # edge is within or between clusters
+  log_mlike_vec <- log_mlik_all(membership, stdata, stnames, correction, detailed = FALSE, ...)
   log_mlike <- sum(log_mlike_vec)
 
-  # whether an edge in graph is within a cluster or bewteen two clusters
-  # n*p matrix
-  edge_status <- getEdgeStatus(cluster, mstgraph)
+  # output objects
+  niter <- floor((niter - burnin - 1) / thin) * thin + 1 + burnin
+  nsamples <- (niter - burnin - 1) / thin + 1
 
-  ## Prepare output
-
-  cluster_out <- array(0, dim = c((niter - burnin) / thin, ns))
+  membership_out <- array(0, dim = c(nsamples, ns))
+  log_mlike_out <- numeric(nsamples)
   mst_out <- list()
-  log_mlike_out <- numeric((niter - burnin) / thin)
 
-  ## MCMC sampling
+  birth_cnt <- death_cnt <- change_cnt <- hyper_cnt <- 0
 
+  # MCMC sampling
   for (iter in 1:niter) {
-    rhy <- 0.05
-    if (k == 1) {
-      rb <- 0.95
+    rhy <- move_prob[4]
+    if (nclust == 1) {
+      rb <- 1 - rhy
       rd <- 0
       rc <- 0
-    } else if (k == ns) {
+    } else if (nclust == ns) {
       rb <- 0
-      rd <- 0.85
+      rd <- 0.9 - rhy
       rc <- 0.1
     } else {
-      rb <- 0.425
-      rd <- 0.425
-      rc <- 0.1
+      rb <- move_prob[1]
+      rd <- move_prob[2]
+      rc <- move_prob[3]
     }
 
-    move <- sample(4, 1, prob = c(rb, rd, rc, rhy))
+    move_choice <- sample(4, 1, prob = c(rb, rd, rc, rhy))
 
-    if (move == 1) { ## Birth move
+    if (move_choice == 1) { # birth move
+      split_res <- splitCluster(mstgraph, nclust, membership)
 
-      ## Propose a split movement c1 -> (c1, c2)
-      split_res <- splitCluster(mstgraph, k, cluster)
-      split_res$k <- k + 1
-      membership_new <- split_res$cluster
-
-      ## Compute log-ratios for probability of acceptance
-
-      # movement ratio
-      if (k == ns - 1) {
-        rd_new <- 0.85
+      if (nclust == ns - 1) {
+        rd_new <-  0.9 - rhy
       } else {
-        rd_new <- 0.425
+        rd_new <- move_prob[2]
       }
-      # if(k_m == n-1) {
-      #   rd_new = 0.6
-      # } else {rd_new = 0.3}
       log_P <- log(rd_new) - log(rb)
+      log_A <- log(1 - q)
+      log_L_new <- log_mlik_ratio("split", split_res, log_mlike_vec, stdata, stnames, correction, ...)
+      acc_prob <- exp(min(0, log_A + log_P + log_L_new$ratio))
 
-      # prior ratio
-      log_A <- log(1 - c)
-
-      # marginal likelihood ratio
-      log_L_new <- log_mlik_ratio("split", log_mlike_vec, split_res, Y, X, N, formula, family, correction, FALSE, ...)
-      log_L <- log_L_new$ratio
-
-      ## Accept with probability
-      acc_prob <- min(0, log_A + log_P + log_L)
-      acc_prob <- exp(acc_prob)
       if (runif(1) < acc_prob) {
-        cluster <- membership_new
-        k <- k + 1
-
+        membership <- split_res$membership
+        edge_status <- getEdgeStatus(membership, mstgraph)
+        nclust <- nclust + 1
         log_mlike_vec <- log_L_new$log_mlike_vec
         log_mlike <- sum(log_mlike_vec)
-
-        edge_status <- getEdgeStatus(cluster, mstgraph)
         birth_cnt <- birth_cnt + 1
       }
     }
 
-    if (move == 2) { ## Death move
+    if (move_choice == 2) { # death move
+      merge_res <- mergeCluster(mstgraph, edge_status, membership)
 
-      ## Propose a merge movement (c1, c2) -> c2
-      merge_res <- mergeCluster(mstgraph, edge_status, cluster)
-      membership_new <- merge_res$cluster
-      cid_rm <- merge_res$cluster_rm
-
-      ## Compute log-ratios for probability of acceptance
-
-      # movement ratio
-      if (k == 2) {
-        rb_new <- 0.85
+      if (nclust == 2) {
+        rb_new <- 1 - rhy
       } else {
-        rb_new <- 0.425
+        rb_new <- move_prob[1]
       }
       log_P <- log(rb_new) - log(rd)
+      log_A <- -log(1 - q)
+      log_L_new <- log_mlik_ratio("merge", merge_res, log_mlike_vec, stdata, stnames, correction, ...)
+      acc_prob <- exp(min(0, log_A + log_P + log_L_new$ratio))
 
-      # prior ratio
-      log_A <- -log(1 - c)
-
-      # marginal likelihood ratio
-      log_L_new <- log_mlik_ratio("merge", log_mlike_vec, merge_res, Y, X, N, formula, family, correction, FALSE, ...)
-      log_L <- log_L_new$ratio
-
-      ## Accept with probability
-      acc_prob <- min(0, log_A + log_P + log_L)
-      acc_prob <- exp(acc_prob)
       if (runif(1) < acc_prob) {
-        cluster <- membership_new
-        k <- k - 1
-
+        membership <- merge_res$membership
+        edge_status <- getEdgeStatus(membership, mstgraph)
+        nclust <- nclust - 1
         log_mlike_vec <- log_L_new$log_mlike_vec
         log_mlike <- sum(log_mlike_vec)
-
-        edge_status <- getEdgeStatus(cluster, mstgraph)
         death_cnt <- death_cnt + 1
       }
     }
 
+    if (move_choice == 3) { # change move
+      merge_res <- mergeCluster(mstgraph, edge_status, membership)
+      split_res <- splitCluster(mstgraph, nclust - 1, merge_res$membership)
 
-    if (move == 3) { ## change move
+      log_L_new_merge <- log_mlik_ratio("merge", merge_res, log_mlike_vec, stdata, stnames, correction, ...)
+      log_L_new <- log_mlik_ratio("split", split_res, log_L_new_merge$log_mlike_vec, stdata, stnames, correction, ...)
+      acc_prob <- exp(min(0, log_L_new_merge$ratio + log_L_new$ratio))
 
-      ## First: Propose a merge movement (c1, c2) -> c2
-      merge_res <- mergeCluster(mstgraph, edge_status, cluster)
-      membership_new <- merge_res$cluster
-      cid_rm <- merge_res$cluster_rm
-      k <- k - 1
-
-      log_L_new_merge <- log_mlik_ratio("merge", log_mlike_vec, merge_res, Y, X, N, formula, family, correction, FALSE, ...)
-
-      ## Second: Propose a split movement c1 -> (c1, c2)
-      split_res <- splitCluster(mstgraph, k, merge_res$cluster)
-      split_res$k <- k + 1
-      membership_new <- split_res$cluster
-      k <- k + 1
-
-      log_L_new <- log_mlik_ratio(
-        "split", log_L_new_merge$log_mlike_vec, split_res, Y, X, N,
-        formula, family, correction, FALSE, ...
-      )
-      log_L <- log_L_new$ratio + log_L_new_merge$ratio
-
-      ## Accept with probability
-      acc_prob <- min(0, log_L)
-      acc_prob <- exp(acc_prob)
       if (runif(1) < acc_prob) {
-        cluster <- membership_new
-
+        membership <- split_res$membership
+        edge_status <- getEdgeStatus(membership, mstgraph)
         log_mlike_vec <- log_L_new$log_mlike_vec
         log_mlike <- sum(log_mlike_vec)
-
-        edge_status <- getEdgeStatus(cluster, mstgraph)
         change_cnt <- change_cnt + 1
       }
     }
 
-    if (move == 4) { ## Hyper move
-
-      ## Update MST
-      edge_status_G <- getEdgeStatus(cluster, graph)
-      mstgraph <- proposeMST(graph, edge_status_G)
+    if (move_choice == 4) { ## hyper move
+      mstgraph <- proposeMST(graph, getEdgeStatus(membership, graph))
       V(mstgraph)$vid <- 1:ns
-      edge_status <- getEdgeStatus(cluster, mstgraph)
-
+      edge_status <- getEdgeStatus(membership, mstgraph)
       hyper_cnt <- hyper_cnt + 1
     }
 
-    ## Store estimates
-
-    if (iter %% 10 == 0) {
-      # cat("Iteration ", iter, ": clusters = ", k, ", births = ", birth_cnt, ", deaths = ",
-      #   death_cnt, ", changes = ", change_cnt, ", hypers = ", hyper_cnt, ", log_mlike = ", log_mlike, "\n",
-      #   sep = ""
-      # )
-      message("Iteration ", iter, ": clusters = ", k, ", births = ", birth_cnt, ", deaths = ",
+    # report status
+    if (iter %% nmessage == 0) {
+      message("Iteration ", iter, ": clusters = ", nclust, ", births = ", birth_cnt, ", deaths = ",
         death_cnt, ", changes = ", change_cnt, ", hypers = ", hyper_cnt, ", log_mlike = ", log_mlike, "\n",
         sep = ""
       )
     }
 
-    if (iter > burnin & (iter - burnin) %% thin == 0) {
-      mst_out[[(iter - burnin) / thin]] <- mstgraph
-      cluster_out[(iter - burnin) / thin, ] <- cluster
-      log_mlike_out[(iter - burnin) / thin] <- log_mlike
+    # store estimates
+    if (iter > burnin & (iter - burnin - 1) %% thin == 0) {
+      isample <- (iter - burnin - 1) / thin + 1
+      membership_out[isample, ] <- membership
+      log_mlike_out[isample] <- log_mlike
+      mst_out[[isample]] <- mstgraph
     }
 
-    if (iter %% nsave == 0) {
+    # save to file
+    if (iter > burnin & (iter - burnin - 1) %% nsave == 0) {
       if (!is.null(path_save)) {
-        saveRDS(
-          list(
-            cluster = cluster_out, log_mlike = log_mlike_out, mst = mst_out,
-            counts = c(births = birth_cnt, deaths = death_cnt, changes = change_cnt, hypers = hyper_cnt)
-          ),
-          file = path_save
-        )
+        output <- list(
+           samples = list(
+             membership = membership_out,
+             log_mlike = log_mlike_out,
+             move_counts = c(births = birth_cnt, deaths = death_cnt, changes = change_cnt, hypers = hyper_cnt)
+           ),
+           clust = list(
+             id = isample,
+             membership = membership,
+             models = NULL
+           )
+         )
+         attr(output, "mst") <- mst_out
+         attr(output, "args") <- args
+         attr(output, "inla_args") <- inla_args
+         class(output) <- "sfclust"
+
+        saveRDS(output, file = path_save)
       }
     }
   }
 
-  p <- max(cluster)
-  sorted_cluster <- as.numeric(names(sort(table(cluster), decreasing = TRUE)))
-  
-  final_model <- lapply(1:p, log_mlik_each, Y, sorted_cluster, X, N, formula, family, correction = F, detailed = T, ...)
-  # Final result
+  # final outcome
+  membership <- membership_out[nrow(membership_out),]
   output <- list(
-    cluster = cluster_out, log_mlike = log_mlike_out, mst = mst_out,
-    counts = c(births = birth_cnt, deaths = death_cnt, changes = change_cnt, hypers = hyper_cnt),
-    model = final_model,
-    formula = formula,
-    q = q
+    samples = list(
+      membership = membership_out,
+      log_mlike = log_mlike_out,
+      move_counts = c(births = birth_cnt, deaths = death_cnt, changes = change_cnt, hypers = hyper_cnt)
+    ),
+    clust = list(
+      id = nrow(membership_out),
+      membership = membership,
+      models = log_mlik_all(membership, stdata, stnames, correction = FALSE, detailed = TRUE, ...)
+    )
   )
-  if (!is.null(path_save)) saveRDS(output, file = path_save)
+  attr(output, "mst") <- mst_out
+  attr(output, "args") <- args
+  attr(output, "inla_args") <- inla_args
   class(output) <- "sfclust"
+
+  if (!is.null(path_save)) saveRDS(output, file = path_save)
   return(output)
 }
 
-#' Continue MCMC Clustering Procedure
-#'
-#' This function continues a Bayesian spatial fusion clustering (BSFC) process based on a previous result.
-#' It is specifically designed to extend the MCMC iterations from a stopping point using the prior state
-#' of cluster assignments and graphical model parameters.
-#'
-#' @param result List containing results from a previous BSFC clustering, expected to include
-#'        a minimum spanning tree (`mst`) and cluster assignments.
-#' @param Y Numeric vector or matrix of response variables used in the initial clustering.
-#' @param X Optional numeric vector or matrix of covariates used in the model (default is `NULL`).
-#' @param N Optional numeric vector specifying the number of trials or cases, relevant for
-#'        families like binomial (default is `NULL`).
-#' @param formula An object of class \code{\link[stats]{formula}}, specifying the model used in the analysis.
-#' @param family Character string specifying the family of distributions to use for the model.
-#'        Defaults to "normal".
-#' @param q q is the penalty of the number of cluster
-#' @param correction Logical indicating whether correction for overdispersion or other factors
-#'        should be applied. Defaults to `FALSE`.
-#' @param niter Integer specifying the number of additional MCMC iterations to perform.
-#' @param burnin Integer specifying the number of burn-in iterations to discard in this continuation.
-#' @param thin Integer specifying the thinning interval for recording the results.
-#' @param path_save Character string specifying the file path to save the continuation results.
-#'        If `NULL`, results may not be saved to file.
-#' @param ... Additional arguments passed to the underlying `bsfc` function.
-#'
-#' @details The function takes the last state of the Markov chain from a previous `bsfc` execution and
-#'          uses it as the starting point for additional MCMC iterations. This is useful for extending
-#'          the analysis without restarting the process, thereby saving computational resources and time.
-#'
-#' @return The function does not return a value within R but may output results to files if `path_save`
-#'         is specified. The results include updated cluster assignments and model parameters after
-#'         the additional MCMC iterations.
-#'
-#' @examples
-#' # Assuming `result` is already obtained from a previous bsfc run:
-#' \dontrun{
-#' continue_bsfc(result,
-#'   Y = data$response, X = data$covariates, N = data$trials,
-#'   formula = Yk ~ 1 + Xk, family = "normal", q = 0.5,
-#'   correction = TRUE, niter = 500, burnin = 50, thin = 5,
-#'   path_save = "path/to/continue_results/"
-#' )
-#' }
-#' @export
-continue_bsfc <- function(result, Y, X = NULL, N = NULL, graph,
-                          formula = Yk ~ 1 + Xk, family = "normal", q = 0.5,
-                          correction = FALSE, niter = 100, burnin = 0, thin = 1, path_save = NULL,nsave = 10, ...) {
-  n <- length(result[["mst"]])
-  cluster <- result[['cluster']][n,]
-  mst <- result[["mst"]][[n]]
-  c = q
-  bsfc(Y,
-    graphdata = list(graph = graph, mst = mst, cluster = cluster), X = X, N = N,
-    formula, family = family, q = c,
-    correction , niter = niter, burnin = burnin, thin = thin, path_save = path_save, nsave = nsave
-  )
+log_mlik_ratio <- function(move_type, move, log_mlike_vec, stdata, stnames = c("geometry", "time"),
+                           correction = TRUE, ...) {
+  # update local marginal likelihoods for split move
+  if (move_type == "split") {
+    log_like_vec_new <- log_mlike_vec
+    M1 <- log_mlik_each(move$cluster_old, move$membership, stdata, stnames, correction, detailed = FALSE, ...)
+    M2 <- log_mlik_each(move$cluster_new, move$membership, stdata, stnames, correction, detailed = FALSE, ...)
+    log_like_vec_new[move$cluster_old] <- M1
+    log_like_vec_new[move$cluster_new] <- M2
+    llratio <- M1 + M2 - log_mlike_vec[move$cluster_old]
+  }
+
+  # update local marginal likelihoods for merge move
+  if (move_type == "merge") {
+    log_like_vec_new <- log_mlike_vec[- move$cluster_rm]
+    M <- log_mlik_each(move$cluster_new, move$membership, stdata, stnames, correction, detailed = FALSE, ...)
+    log_like_vec_new[move$cluster_new] <- M
+    llratio <- M - sum(log_mlike_vec[c(move$cluster_rm, move$cluster_new)])
+  }
+
+  return(list(ratio = llratio, log_mlike_vec = log_like_vec_new))
 }

@@ -34,8 +34,8 @@ vignette: >
 <div class="main-content">
 
 # Installation
-To install the development version of the `bsfclust` package from GitHub, you can use the following command:
-```{r warning=FALSE}
+To install the development version of the `sfclust` package from GitHub, you can use the following command:
+```{r eval=FALSE, warning=FALSE, include=FALSE}
 # Install development version from GitHub
 devtools::install_github("RuimanZhong/sfclust")
 ```
@@ -55,18 +55,13 @@ install.packages("INLA", repos = c(getOption("repos"),
 We begin by loading the required packages. These packages will assist with data manipulation, visualization, and running the `bsfc` algorithm.
 
 ```{r warning=FALSE, include=FALSE}
-packages <- c("gridExtra", "deldir", "fields", "igraph", 
-              "ggplot2", "grid", "class", 
-              "spdep", 'sf', 'sfclust','cccd','ggraph','dplyr')
-
-package.check <- lapply(packages, FUN = function(x) {
-  if (!require(x, character.only = TRUE)) {
-    install.packages(x, dependencies = TRUE, repos = "http://cran.us.r-project.org")
-    library(x, character.only = TRUE)
-  } else {
-    library(x, character.only = TRUE)
-  }
-})
+library(igraph)
+library(sf)
+library(sfclust)
+library(INLA)
+library(ggplot2)
+library(stars)
+library(dplyr)
 ```
 
 We use Voronoi tesselation to simulate a spatial domain that will be used in our simulation
@@ -75,7 +70,8 @@ later obtain MST. Finally, We can create n clusters by removing n-1 edges of the
 this case, we will create 10 clusters. Firstly, we will create the areas inside the domain.
 ```{r warning=FALSE}
 set.seed(7)
-box <- st_as_sfc(st_bbox(c(xmin = 0, ymin = 0, xmax = 1, ymax = 1))) # Define a bounding box
+bbox <- st_bbox(c(xmin = 0, ymin = 0, xmax = 1, ymax = 1))
+box <- st_as_sfc(bbox) # Define a bounding box
 n <- 100
 points <- st_union(st_sample(box, size = n))
 vor <- st_voronoi(points, box)
@@ -95,6 +91,8 @@ adj_mat_weighted <- adj_mat * runif(length(adj_mat))
 graph <- graph_from_adjacency_matrix(adj_mat_weighted, mode = "upper", weighted
 = TRUE)
 mstgraph <- mst(graph)
+coords <- st_coordinates(st_centroid(geodata))
+plot(mstgraph, layout = coords)
 ```
 We can create `n` clusters by removing `n-1` edges of the MST. In this case, we will create `10` clusters.
 ```{r fig.height=4, warning=FALSE, , fig.width=6}
@@ -105,7 +103,7 @@ graph_comp <- components(delete_edges(mstgraph, edgeid_rm))
 membership <- graph_comp$membership
 geodata$cluster <- membership
 geodata$ID <- 1:100
-plot(delete_edges(mstgraph, edgeid_rm), vertex.color = hcl.colors(n, palette = "Set 2")[membership])
+plot(delete_edges(mstgraph, edgeid_rm), vertex.color = hcl.colors(n, palette = "Set 2")[membership], layout = coords)
 ```
 Let's visualize the clusters we created.
 ```{r fig.height=4, fig.width=6, warning=FALSE}
@@ -152,14 +150,28 @@ matplot(time, Y, type = "l", lty = 1, xlab = "time", ylab = "Obervations")
 # Modeling
 <a id="modeling"></a>
 
-In this section, we show how to use Bsfclust algorithm to find the spatial clusters.
+In this section, we show how to use sfclust algorithm to find the spatial clusters. First we will create a stars object.
 
 ```{r warning=FALSE}
+coords <- st_centroid(geodata)
+time_seq <- time
 nt=dim(Y)[1]; ns=dim(Y)[2]  
 ## build design matrix
-time = 1:nt
+time = seq(0,1, length.out = 100)
 # compute fixed effects
 X = poly(time, 2, raw = TRUE, simple = TRUE)
+X1 <- X[, 1]
+X2 <- X[, 2]
+
+# Expand X1 and X2 to match the space-time dimensions (100 time points, 100 space points)
+# Replicate X1 and X2 across space
+X1_expanded <- matrix(rep(X1, time = 100), nrow = 100, ncol = 100)
+X2_expanded <- matrix(rep(X2, time = 100), nrow = 100, ncol = 100)
+
+
+# Combine X1, X2, and Y into a single stars object
+data <- st_as_stars(Y = Y, X1 = X1_expanded, X2 = X2_expanded)
+st_dimensions(data) <- st_dimensions(time = time_seq,space = coords$geometry)
 map <- geodata
 ```
 
@@ -192,15 +204,14 @@ k =15
 set.seed(43)
 # create graph
 geodata <- initial_cluster(map, nclust = 15)
-coords <- st_coordinates(st_centroid(map)[, 3])
-plotGraph(map,coords,geodata$graph,"Initial graph")
+coords <- st_coordinates(st_centroid(map))
 ```
 
 In this example, with the number of clusters (`nclust`) set to 15. The output, geodata, contains both the initial graph $G$ (graph0) and the MST $T$ ($mstgraph\_ini$), which are essential for subsequent clustering steps.
 We could also check the initial MST and cluster memberships, by
 
 ```{r fig.width=6, fig.height=4}
-plotMST(map,coords,geodata$mst,geodata$cluster, "Initial MST")
+plot(geodata$mst, layout = coords, vertex.color = hcl.colors(n, palette = "Set 2")[geodata$cluster],)
 ```
 
 The following example demonstrates how to use the `bsfc()` function to perform spatial functional clustering with a normal likelihood model. The number of the clusters follows 
@@ -208,36 +219,34 @@ $$
 \pi(C = n_{init})(1-c)^{n_{init}}
 $$
 ```{r}
-formula <- Y ~ 1+ X
+formula <- Y ~ 1 + X1 + X2
 ```
 
 We set the parameter $q = 0.5$. We executed our algorithm with 2000 iterations for the simulated data.
 ```{r eval=FALSE, warning=FALSE}
-result <- bsfc(Y, graphdata = geodata, X = X, N = NULL,
+result <- sfclust(data = data, graphdata = geodata,
                 formula, family = "normal", q = 0.5,
-                correction = F, niter = 100, burnin = 0, thin = 1,  path_save = NULL, nsave = 50) 
+                correction = F, niter = 2000, burnin = 0, thin = 1,  path_save = '~/Documents/project3/data/simu_result.rds', nsave = 50) 
 ```
-
-We could check the basic information of the result by following summary function `summary.sfclust`, we summary the model of the first `a` clusters.
+```{r include=FALSE}
+result <- readRDS('~/Documents/project3/data/simu_result.rds')
+```
+We could check the basic information of the result by following summary function `summary()`, we summary the model of the first `a` clusters.
 
 ```{r}
 class(result)
 summary(result, a = 1)
 print(result)
-plot(result,map,k = 100)
 ```
 
 We need a correction when using random walk model as the computing of the mariginal likelihod is based on `R-INLA`.
 
-Formula defines the model where Yk is the response variable, Xk is a covariate, and f(id, model = "iid") adds a random effect for the id variable using an IID structure.
+Formula defines the model where Y is the response variable, X1 and X2 are covariates, and f(id, model = "iid") adds a random effect for the id variable using an IID structure.
 The bsfc function is applied to the data, with Y representing the observed response data, geodata containing the graph structure, and X representing the covariate matrix.
 We specify the family as "normal", set the hyperparameter q to 0.5, and disable bias correction by setting correction = FALSE.
 The MCMC sampling process runs for 2000 iterations without burn-in, with thinning set to 1.
 
 ## Evaluation of the convergency and continuation of the process
-```{r include=FALSE}
-result <- readRDS('~/Documents/project3/data/simu_result.rds')
-```
 Because the runtime of the whole process, we provide the results here. 
 ```{r fig.width=6, fig.height=4}
 plot(result$log_mlike, type = "l", main = "Marginal Likelihoods of the Initial MCMC Run",
@@ -250,7 +259,8 @@ By plotting the final cluster map in space domain and temporal domain, we find t
 ```{r fig.height=4, fig.width=6, warning=FALSE}
 clust_res <- result$cluster[length(result$mst),]
 table(clust_res,geodata$cluster)
-plotClusterMap(clust_res, geodata$cluster, map, NULL,title = "(B) Estimated Cluster",fill = "Cluster", filepath = NULL)
+par(mfrow = c(1,2))
+plot(result, map)
 ```
 
 Plot the estimated curves
