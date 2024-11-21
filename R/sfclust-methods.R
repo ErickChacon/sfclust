@@ -147,8 +147,13 @@ update_within <- function(x, sample = nrow(x$samples$membership)) {
 #'        the fitted values should be computed. The default is the `id` of the
 #'        current clustering. The value must be between 1 and the total number
 #'        of clustering (membership) samples.
-#' @return A matrix of fitted values, where each row corresponds to a data point
-#'         and each column corresponds to a cluster.
+#' @param sort Logical value indicating if clusters should be relabel based on number of
+#'        elements.
+#' @param aggregate Logical value indicating if fitted values are desired at cluster
+#'        level.
+#' @return A `stars` object with linear predictor fitted values at regions levels. In case
+#'         `aggregate = TRUE`, the `output` produces an `stars` objecto at cluster levels.
+#'
 #' @details
 #' The function first checks if the provided `sample` value is valid (i.e., it is
 #' within the range of available clustering samples). If the specified `sample`
@@ -158,8 +163,21 @@ update_within <- function(x, sample = nrow(x$samples$membership)) {
 #' and combines them into a matrix of fitted values.
 #'
 #' @examples
-#' # Assuming 'sfclust_obj' is a pre-existing sfclust object
-#' fitted_values <- fitted.sfclust(sfclust_obj, sample = 3)
+#'
+#' \dontrun{
+#'
+#' # Assuming 'mod' is a pre-existing sfclust object
+#'
+#' # Estimated values ordering clusters by size
+#' df_est <- fitted(mod, order = TRUE)
+#'
+#' # Estimated values aggregated by cluster
+#' df_est <- fitted(mod, aggregate = TRUE)
+#'
+#' # Estimated values using a particular clustering sample
+#' df_est <- fitted(mod, sample = 3)
+#'
+#' }
 #'
 #' @export
 fitted.sfclust <- function(x, sample = x$clust$id, sort = FALSE, aggregate = FALSE) {

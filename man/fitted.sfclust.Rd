@@ -13,10 +13,16 @@
 the fitted values should be computed. The default is the \code{id} of the
 current clustering. The value must be between 1 and the total number
 of clustering (membership) samples.}
+
+\item{sort}{Logical value indicating if clusters should be relabel based on number of
+elements.}
+
+\item{aggregate}{Logical value indicating if fitted values are desired at cluster
+level.}
 }
 \value{
-A matrix of fitted values, where each row corresponds to a data point
-and each column corresponds to a cluster.
+A \code{stars} object with linear predictor fitted values at regions levels. In case
+\code{aggregate = TRUE}, the \code{output} produces an \code{stars} objecto at cluster levels.
 }
 \description{
 This function calculates the fitted values for a specific clustering sample in an
@@ -33,7 +39,20 @@ for the selected sample, calculates the linear predictions for each cluster,
 and combines them into a matrix of fitted values.
 }
 \examples{
-# Assuming 'sfclust_obj' is a pre-existing sfclust object
-fitted_values <- fitted.sfclust(sfclust_obj, sample = 3)
+
+\dontrun{
+
+# Assuming 'mod' is a pre-existing sfclust object
+
+# Estimated values ordering clusters by size
+df_est <- fitted(mod, order = TRUE)
+
+# Estimated values aggregated by cluster
+df_est <- fitted(mod, aggregate = TRUE)
+
+# Estimated values using a particular clustering sample
+df_est <- fitted(mod, sample = 3)
+
+}
 
 }

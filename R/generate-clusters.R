@@ -36,6 +36,8 @@
 #' print(cluster_ini)
 #' plot(st_sf(x, cluster = factor(cluster_ini$membership)))
 #'
+#' @import igraph
+#'
 #' @export
 genclust <- function(x, nclust = 10, weights = NULL){
 

@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/articles/special-files.html
 
 library(testthat)
-library(spfc)
+library(sfclust)
 
-test_check("spfc")
+test_check("sfclust")
