@@ -102,21 +102,22 @@ Let's start by loading the initial results and analyzing the MCMC chain to asses
 path <- '~/Documents/project3'
 path_res <- file.path(path, "data", "result","US_cluster_update.rds")
 # Load the results from the saved file
-results <- readRDS(path_res)
+result <- readRDS(path_res)
 ```
 ```{r fig.width=8, fig.height=4}
-plot(results)
+plot(result)
 ```
 
 
 The plot above shows the marginal likelihoods across iterations. If the plot indicates that the chain has not converged, we can continue the MCMC process.
 
-# Continuing the MCMC Process
-Next, we'll use the `continue_sfclust()` function to extend the MCMC process by adding 2000 more iterations.
-```{r include=FALSE}
-# Define the additional MCMC settings
-path_res <- file.path(path, "data", "result","US_cluster2_update.rds")
+We could also summary the information of the model at final iteration
+```{r}
+summary(result)
 ```
+# Continuing the MCMC Process
+If the MCMC chain is not converged, we'll use the `continue_sfclust()` function to extend the MCMC process by adding 2000 more iterations.
+
 Run the continuation of the BSFC process
 ```{r eval=FALSE}
 niter <- 2000
