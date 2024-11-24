@@ -1,0 +1,116 @@
+
+---
+title: "Basic Example of sfclust"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Basic Example of sfclust}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Data Preparation
+
+```{r warning=FALSE, include=FALSE}
+library(igraph)
+library(sf)
+library(sfclust)
+library(INLA)
+library(ggplot2)
+library(stars)
+library(dplyr)
+data("toy")
+```
+
+To demonstrate the basic usage of the `sfclust` package, we begin by preparing the data. In this example, we use spatial and functional data to create a spatial object using the `stars` package. The `st_as_stars` function is used to convert the data into a stars object, and spatial dimensions are assigned appropriately.
+
+```{r eval=FALSE, echo=TRUE, warning=FALSE}
+# Convert data into stars object
+stdata <- st_as_stars(Y = data$Y, X1 = data$X1, X2 = data$X2, E = data$E)
+map <- st_sf(data$map)
+time <- seq(from = Sys.Date(), by = "day", length.out = 100) 
+# Assign spatial dimensions
+st_dimensions(stdata) <- st_dimensions(time = time, geometry = data$map)
+```
+
+Here:
+- `Y` is a nt $\times$ ns matrix, represents the poisson distributed functional response variable.
+- `X1` and `X2` are covariates.
+- `data$map` is a sfc_POLYGON object, obtained from a sf object. It contains the spatial geometries (e.g., polygons or points).
+- `E` is the expected cases.
+
+The resulting `stdata` object contains the functional data aligned with spatial locations, with temporal dimension named `time`, spatial domian named `geometry`.
+
+Before clustering, we would like to do data visualization to explore the spatial and temporal patterns in the data. The code uses geom_stars to plot the spatial distribution of the variable Y across different time points. Each map in the facet grid represents the spatial data at a specific time step, with color indicating the values of Y.
+
+```{r fig.height=4, fig.width=10}
+library(ggthemes)
+ggplot() +
+  geom_stars(data = stdata[1]) +
+  facet_wrap(~time, ncol = 15) +
+  scale_fill_viridis_c(option = "plasma") +
+  coord_sf() +
+  theme_map() +
+   theme(legend.position = "bottom") +
+  theme(legend.key.width = unit(2, "cm"))
+```
+
+We could also explore the weekly patterns in the data through visualization. The code aggregates the spatial data into weekly intervals using the aggregate() function from the stars package, summing up the values of Y for each week.
+
+```{r}
+weekly_data <- aggregate(stdata, by = "1 week", FUN = sum, na.rm = TRUE)
+ggplot() +
+  geom_stars(data = weekly_data[1]) +
+  facet_wrap(~time, ncol = 5) +
+  scale_fill_viridis_c(option = "plasma") +
+  coord_sf() +
+  theme_map() +
+   theme(legend.position = "bottom") +
+  theme(legend.key.width = unit(2, "cm"))
+```
+# Clustering
+
+Once the data is prepared, we proceed to the clustering step. This involves building a Minimum Spanning Tree (MST) from the spatial data and applying the `sfclust` algorithm for spatial functional clustering.
+
+```{r echo=TRUE, warning=FALSE}
+# Build MST and perform clustering
+set.seed(43) # For reproducibility
+
+# Create graph from map data
+graphdata <- genclust(map, nclust = 15)
+
+# Define model formula
+formula <- Y ~ 1 + X1 + X2
+
+# Run sfclust algorithm
+set.seed(1234)
+result <- sfclust(stdata, graphdata = graphdata, q = 0.1, correction = FALSE,
+                  niter = 500, burnin = 0, thin = 1, formula = formula, family = "poisson", E = E)
+```
+
+Explanation:
+- `genclust` generates a graph (MST) from the spatial map, with the desired number of clusters (`nclust = 15`).
+- `formula` specifies the relationship between the response variable (`Y`) and covariates (`X1`, `X2`).
+- `sfclust` performs the Bayesian clustering. Key parameters include:
+  - `q`: Hyperparameter controlling the penalty on cluster size.
+  - `correction`: Whether to apply correction for preferential sampling (set to `FALSE` here).
+  - `niter`, `burnin`, `thin`: Parameters for the Markov Chain Monte Carlo (MCMC) procedure.
+  - `family` specifies the likelihood.
+  - `E` is the expceted cases for poisson regression.
+
+# Results Illustration
+
+Finally, we summarize and visualize the clustering results. The `summary` function provides a concise overview, and the `plot` function visualizes the cluster assignments over the spatial domain.
+
+```{r echo=TRUE}
+# Summarize the clustering results
+summary(result)
+```
+
+```{r fig.height=4, fig.width=8, warning=FALSE}
+# Visualize the clustering results
+plot(result, sample = 500, clusters = 1:5, sort = TRUE)
+```
+
+Key points:
+- `summary(result)` gives numerical details, such as the number of clusters and cluster sizes.
+- `plot(result)` displays the spatial distribution of clusters. Here, we visualize clusters 1 to 5 based on the 2000th sample of the MCMC process.
