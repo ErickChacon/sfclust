@@ -8,48 +8,6 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-  }
-
-  /* Main content that spans the full width */
-  .main-content {
-    margin: 0; /* Remove the margin for full-width content */
-    padding: 20px; /* Optional padding for better readability */
-    width: 100%; /* Take up 100% of the page width */
-    box-sizing: border-box; /* Ensure padding doesn’t cause overflow */
-  }
-
-  h1, h2, h3 {
-    margin-left: 0; /* Ensure headers are aligned properly */
-  }
-
-  .page-break {
-    page-break-after: always;
-  }
-</style>
-
-<div class="main-content">
-
-## Installation
-To install the development version of the `sfclust` package from GitHub, you can use the following command:
-```{r eval=FALSE, warning=FALSE, include=FALSE}
-# Install development version from GitHub
-devtools::install_github("RuimanZhong/sfclust")
-```
-Additionally, the package relies on INLA (Integrated Nested Laplace Approximations) for its computations. To install INLA, run the following:
-```{r eval = FALSE}
-# Install INLA
-install.packages("INLA", repos = c(getOption("repos"),
-                                   INLA = "https://inla.r-inla-download.org/R/stable"),
-                 dependencies = TRUE)
-```
-[Next: Simulation](#simulation)
-
-<div class="page-break"></div>
-
 ## Data Preparation
 <a id="simulation"></a>
 We begin by loading the required packages. These packages will assist with data manipulation, visualization, and running the `sfclust` algorithm. We load the a sftime dataset called `simu_data`. In the 3rd vignette, we introduce how to create a valid `stars` object as the input of the algorithm.
