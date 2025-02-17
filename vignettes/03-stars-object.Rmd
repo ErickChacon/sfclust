@@ -63,7 +63,7 @@ Let's visualize the clusters we created.
 ```{r fig.height=4, fig.width=6, warning=FALSE}
 ggplot() +
   geom_sf(data = geodata, aes(fill = factor(membership))) +  # Color by cluster and outline polygons
-  scale_fill_viridis_d(option = "plasma") +  # Use a color scale for the clusters
+  # scale_fill_viridis_d(option = "plasma") +  # Use a color scale for the clusters
   labs(title = "Voronoi Tessellation with MST-based Clusters", fill = "Cluster") +
   theme_minimal()
 ```
@@ -87,19 +87,26 @@ arima.sim(n = n, list(ar = theta), sd = sqrt(tau2))
 beta <- do.call(cbind, purrr::map(thetas, ~ as.numeric(simar(16, 0.1, .x))))
 beta0 <- - colMeans(X %*% beta)
 eta0 <- rep(beta0, each = 100) + X %*% beta
+
+matplot(time, eta0, xlab = "time", ylab = expression(X * beta))
 ```
 To simulate observed data that includes variability specific to each cluster, we add noise to the previously generated cluster trends. We start by defining a vector sigmas that contains the standard deviations for the noise associated with each cluster. These values are scaled by a factor of two to adjust the noise levels:
 ```{r}
 usigmas <- c(0.01, 0.05, 0.02, 0.05, 0.02) * 2
+sigmas = c(usigmas, usigmas)
 ```
 For each spatial unit in geodata, we retrieve the corresponding cluster trend from `eta0` using the cluster membership. We then add random noise drawn from a normal distribution with mean zero and a standard deviation specific to that cluster. We visualize the simulated observations over time using the matplot function:
 ```{r fig.height=4, fig.width=6, warning=FALSE}
 Y = purrr::map(
     1:nrow(geodata),
-    ~ eta0[, geodata$membership[.]] + rnorm(100, mean = 0, sd = usigmas[geodata$membership[.]])
+    ~ eta0[, geodata$membership[.]] + rnorm(100, mean = 0, sd = sigmas[geodata$membership[.]])
     )
 Y = do.call(cbind, Y)
 matplot(time, Y, type = "l", lty = 1, xlab = "time", ylab = "Obervations")
+
+auxcol <- hcl.colors(10, palette = "Dark 3")
+matplot(time, Y, type = "l", lty = 1, col = auxcol[geodata$membership],
+    xlab = "time", ylab = expression(eta), main = "Linear predictor")
 ```
 
 ## Create spatial-temporal response
