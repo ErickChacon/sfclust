@@ -1,0 +1,217 @@
+---
+title: "Additional features"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Additional features}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(fig.align = "center")
+knitr::opts_chunk$set(fig.height = 7, fig.width = 8, dpi = 150, out.width = '100%')
+knitr::opts_chunk$set(comment = "#>")
+```
+
+In this vignette we present additional features of the `sfclust` package.
+
+## Packages
+
+We begin by loading the required packages.
+
+```{r warning=FALSE, include=TRUE}
+devtools::load_all()
+# library(sfclust)
+library(stars)
+library(ggplot2)
+library(dplyr)
+```
+
+## Data
+
+The simulated dataset used in this vignette, `stgauss`, is included in our package. It is
+a `stars` object with one variable, `y`, and two dimensions: `geometry` and `time`. The
+dataset represents the number of cases in 100 regions, observed daily over 91 days,
+starting in January 2024.
+
+```{r}
+data("stgauss", package = "sfclust")
+stgauss
+```
+
+To gain some initial insights, we can aggregate the data weekly:
+
+```{r, fig.height = 9, fig.width = 8}
+stweekly <- aggregate(stgauss, by = "week", FUN = mean)
+ggplot() +
+    geom_stars(aes(fill = y), stweekly) +
+    facet_wrap(~ time) +
+    scale_fill_distiller(palette = "RdBu") +
+    theme_bw()
+```
+
+We can also examine the trends for each region:
+
+```{r, fig.height = 7, fig.width = 8}
+stgauss |>
+    st_set_dimensions("geometry", values = 1:nrow(stgauss)) |>
+    as_tibble() |>
+    ggplot() +
+    geom_line(aes(time, y, group = geometry, color = factor(geometry)), linewidth = 0.3) +
+    theme_bw() +
+    theme(legend.position = "none")
+```
+
+Some regions exhibit similar trends over time, but the overall patterns are more complex
+than polinomial functions. Our goal is to cluster these regions while accounting for
+spatial contiguity.
+
+## Clustering
+
+### Model
+
+We assume that the response variable \( Y_{it} \) for region \( i \) at time \( t \) follows a normal distribution given the partition \( M \):
+$$
+Y_{it} \mid \mu_{it}, M \stackrel{ind}{\sim} \text{Normal}(\mu_{it}, \sigma^2),
+$$
+where the mean \( \mu_{it} \) is modeled based on the cluster assignment \( c_i \):
+$$
+\mu_{it} = \alpha_{c_i} + f_{c_i,t},
+$$
+where \( \alpha_{c_i} \) is the intercept for cluster \( c_i \), and \( f_{c_i,t} \) is a latent random effect modeled as a random walk process. Specifically, we impose the condition:
+$$
+f_{c_i,t} - f_{c_i,t-1} \sim N(0, \nu^{-1}), \quad \text{for } t = 2, \dots, n.
+$$
+
+The prior for the hyperparameter \( \nu_c \) is defined as:
+$$
+\log(\nu_c) \sim \text{Normal}(-2, 1).
+$$
+
+### Initial clustering
+
+`sfclust` uses an undirected graph to represent connections between regions and proposes
+spatial clusters using this graph through minimum spanning trees (MST). By default,
+`sfclust` accepts the argument `graphdata`, which should include:
+
+- An undirected `igraph` object representing spatial connections,
+- An MST of that graph, and
+- A `membership` vector indicating the initial cluster assignments for each region.
+
+For simplicity, you can use the `genclust` function to generate an initial random
+partitioning with a specified number of clusters. In this example, we create a partition
+with 20 clusters:
+
+```{r}
+set.seed(123)
+initial_cluster <- genclust(st_geometry(stgauss), nclust = 20)
+names(initial_cluster)
+```
+
+Now, let's visualize how the regions were randomly clustered:
+
+```{r}
+st_sf(st_geometry(stgauss), cluster = factor(initial_cluster$membership)) |>
+  ggplot() +
+    geom_sf(aes(fill = cluster)) +
+    theme_bw()
+```
+
+### Sampling with `sfclust`
+
+We will initiate the Bayesian clustering algorithm using our generated partition
+(`initial_cluster`). Additionally, we use the capabilites of `INLA::inla` to define a
+model that includes a random walk process in the linear predictor, and custom priors for
+the scale hyperparameter. To begin, we will run the algorithm for only 50 iterations.
+
+```{r, eval = FALSE, echo = FALSE}
+# result <- sfclust(stgauss, graphdata = initial_cluster, niter = 50,
+#     formula = y ~ f(idt, model = "rw1", hyper = list(prec = list(prior = "normal", param = c(-2, 1)))),
+#   path_save = file.path("inst", "vigdata", "normal-mcmc1.rds"))
+# system.time(
+#   update(result, niter = 2000, path_save = file.path("inst", "vigdata", "normal-mcmc2.rds"))
+# )
+#      user    system   elapsed
+# 15953.007 11858.150  2781.883
+```
+
+```{r, eval = FALSE}
+result <- sfclust(stgauss, graphdata = initial_cluster, niter = 50,
+    formula = y ~ f(idt, model = "rw1", hyper = list(prec = list(prior = "normal", param = c(-2, 1)))))
+result
+```
+
+```{r, echo = FALSE}
+result <- readRDS(system.file("vigdata", "normal-mcmc1.rds", package = "sfclust"))
+result
+```
+
+The output indicates that after starting with 20 clusters, the algorithm created 11 new
+clusters (births), removed 6 clusters (deaths), changed the membership of 3 clusters, and
+modified the minimum spanning tree (MST) 3 times.
+
+The `plot` method allows us to select which graph to produce. For example, we can
+visualize only the log marginal likelihood to diagnose convergence. With just 50
+iterations, we can see that the log marginal likelihood has not yet achieved convergence.
+
+```{r}
+plot(result, which = 2)
+```
+
+### Continue sampling
+
+To achieve convergence, we can continue the sampling using the `update` function and
+specify the number of new iterations with the `niter` argument:
+
+```{r, eval = FALSE}
+result2 <- update(result, niter = 2000)
+result2
+```
+
+```{r, echo = FALSE}
+result2 <- readRDS(system.file("vigdata", "normal-mcmc2.rds", package = "sfclust"))
+result2
+```
+
+With 2000 additional iterations, there have been many clustering movements. Furthermore,
+when visualizing the results, we can observe that the log marginal likelihood has achieved
+convergence.
+
+```{r}
+plot(result2, which = 2)
+```
+
+## Results
+
+The final iteration indicates that the algorithm identified 10 clusters, with a log
+marginal likelihood of 12,708.35. The largest cluster consists of 27 regions, while the
+smallest contains only one region.
+
+```{r}
+summary(result2, sort = TRUE)
+```
+
+Let's visualize the regions grouped by cluster.
+
+```{r}
+stgauss$cluster <- fitted(result2, sort = TRUE)$cluster
+st_sf(st_geometry(stgauss), cluster = factor(stgauss$cluster)) |>
+  ggplot() +
+    geom_sf(aes(fill = cluster)) +
+    theme_bw()
+```
+
+Let's visualize the original data grouped by cluster.
+
+```{r, fig.height = 9.5}
+stgauss$cluster <- fitted(result2, sort = TRUE)$cluster
+stgauss |>
+  st_set_dimensions("geometry", values = 1:nrow(stgauss)) |>
+  as_tibble() |>
+  ggplot() +
+    geom_line(aes(time, y, group = geometry), linewidth = 0.3) +
+    facet_wrap(~ cluster, ncol = 2) +
+    theme_bw() +
+    labs(title = "Risk per cluster", y = "Risk", x = "Time")
+```
