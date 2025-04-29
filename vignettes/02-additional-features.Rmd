@@ -128,9 +128,9 @@ the scale hyperparameter. To begin, we will run the algorithm for only 50 iterat
 ```{r, eval = FALSE, echo = FALSE}
 # result <- sfclust(stgauss, graphdata = initial_cluster, niter = 50,
 #     formula = y ~ f(idt, model = "rw1", hyper = list(prec = list(prior = "normal", param = c(-2, 1)))),
-#   path_save = file.path("inst", "vigdata", "normal-mcmc1.rds"))
+#   path_save = file.path("inst", "vigdata", "gaussian-mcmc1.rds"))
 # system.time(
-#   update(result, niter = 2000, path_save = file.path("inst", "vigdata", "normal-mcmc2.rds"))
+#   update(result, niter = 2000, path_save = file.path("inst", "vigdata", "gaussian-mcmc2.rds"))
 # )
 #      user    system   elapsed
 # 15953.007 11858.150  2781.883
@@ -143,7 +143,7 @@ result
 ```
 
 ```{r, echo = FALSE}
-result <- readRDS(system.file("vigdata", "normal-mcmc1.rds", package = "sfclust"))
+result <- readRDS(system.file("vigdata", "gaussian-mcmc1.rds", package = "sfclust"))
 result
 ```
 
@@ -170,7 +170,7 @@ result2
 ```
 
 ```{r, echo = FALSE}
-result2 <- readRDS(system.file("vigdata", "normal-mcmc2.rds", package = "sfclust"))
+result2 <- readRDS(system.file("vigdata", "gaussian-mcmc2.rds", package = "sfclust"))
 result2
 ```
 

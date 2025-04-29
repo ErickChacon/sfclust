@@ -150,7 +150,7 @@ with 2000 iterations.
 # system.time(
 #   sfclust(stbinom, formula = cases ~ poly(time, 2) + f(id),
 #     family = "binomial", Ntrials = population,
-#     niter = 2000, path_save = file.path("inst", "vigdata", "binomial.rds")
+#     niter = 2000, path_save = file.path("inst", "vigdata", "binomial-mcmc.rds")
 #   )
 # )
 # #      user    system   elapsed
@@ -165,7 +165,7 @@ names(result)
 ```
 
 ```{r, echo = FALSE}
-result <- readRDS(system.file("vigdata", "binomial.rds", package = "sfclust"))
+result <- readRDS(system.file("vigdata", "binomial-mcmc.rds", package = "sfclust"))
 names(result)
 ```
 
