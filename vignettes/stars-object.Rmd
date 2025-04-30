@@ -18,6 +18,11 @@ Our package `sfclust` is designed to work with spatio-temporal data structured a
 `stars` object. In this vignette, we demonstrate how to create and manipulate a basic
 `stars` object.
 
+```{r warning=FALSE, include=TRUE}
+library(stars)
+library(ggplot2)
+```
+
 ## Simulated data
 
 To begin, we need data that varies across both regions and time. In this example, we

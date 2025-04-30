@@ -5,18 +5,19 @@
 \title{Update MCMC Clustering Procedure}
 \usage{
 \method{update}{sfclust}(
-  x,
+  object,
   niter = 100,
   burnin = 0,
   thin = 1,
   nmessage = 10,
   sample = NULL,
   path_save = NULL,
-  nsave = nmessage
+  nsave = nmessage,
+  ...
 )
 }
 \arguments{
-\item{x}{A \code{sfclust} object.}
+\item{object}{A \code{sfclust} object.}
 
 \item{niter}{An integer specifying the number of additional MCMC iterations to perform.}
 
@@ -33,6 +34,8 @@ The default is the last sample (i.e., \code{nrow(x$samples$membership)}).}
 \code{NULL}, results are not saved.}
 
 \item{nsave}{An integer specifying how often to save results. Defaults to \code{nmessage}.}
+
+\item{...}{Additional arguments (currently not used).}
 }
 \description{
 This function continues the MCMC sampling of a \code{sfclust} object based on previous results or

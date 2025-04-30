@@ -75,7 +75,7 @@ sort_membership <- function(x) {
 #' update the model fitting for a specified sample clustering if the argument `sample` is
 #' provided.
 #'
-#' @param x A `sfclust` object.
+#' @param object A `sfclust` object.
 #' @param niter An integer specifying the number of additional MCMC iterations to perform.
 #' @param burnin An integer specifying the number of burn-in iterations to discard.
 #' @param thin An integer specifying the thinning interval for recording results.
@@ -85,20 +85,22 @@ sort_membership <- function(x) {
 #' @param path_save A character string specifying the file path to save the results. If
 #'        `NULL`, results are not saved.
 #' @param nsave An integer specifying how often to save results. Defaults to `nmessage`.
+#' @param ... Additional arguments (currently not used).
 #'
 #' @details This function takes the last state of the Markov chain from a previous
 #'          `sfclust` execution and uses it as the starting point for additional MCMC
 #'          iterations. If `sample` is provided, it simply udpates the within-cluster
 #'          models for the specified clustering `sample`.
 #'
+#' @importFrom stats update
 #' @method update sfclust
 #' @export
-update.sfclust <- function(x, niter = 100, burnin = 0, thin = 1, nmessage = 10, sample = NULL,
-                           path_save = NULL, nsave = nmessage) {
+update.sfclust <- function(object, niter = 100, burnin = 0, thin = 1, nmessage = 10, sample = NULL,
+                           path_save = NULL, nsave = nmessage, ...) {
   if (!is.null(sample)) {
-    update_within(x, nrow(x$samples$membership))
+    update_within(object, nrow(object$samples$membership))
   } else {
-    update_sfclust(x, niter, burnin, thin, nmessage, path_save, nsave)
+    update_sfclust(object, niter, burnin, thin, nmessage, path_save, nsave)
   }
 }
 
