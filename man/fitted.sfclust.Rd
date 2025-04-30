@@ -47,7 +47,7 @@ and combines them into a matrix of fitted values.
 # Assuming 'mod' is a pre-existing sfclust object
 
 # Estimated values ordering clusters by size
-df_est <- fitted(mod, order = TRUE)
+df_est <- fitted(mod, sort = TRUE)
 
 # Estimated values aggregated by cluster
 df_est <- fitted(mod, aggregate = TRUE)

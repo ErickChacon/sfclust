@@ -24,8 +24,7 @@ We begin by loading the required packages. In particular, we load the `stars` pa
 our `sfclust` package works with spacio-temporal `stars` objects.
 
 ```{r warning=FALSE, include=TRUE}
-devtools::load_all()
-# library(sfclust)
+library(sfclust)
 library(stars)
 library(ggplot2)
 library(dplyr)
@@ -39,8 +38,7 @@ a `stars` object with two variables, `cases` and `population`, and two dimension
 daily over 91 days, starting in January 2024.
 
 ```{r}
-data("stbinom", package = "sfclust")
-stbinom
+data("stbinom")
 ```
 
 We can easily visualize the spatio-temporal risk using `ggplot` and `stars::geom_stars`.

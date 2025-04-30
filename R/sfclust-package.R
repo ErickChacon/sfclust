@@ -20,80 +20,46 @@
 #' @aliases sfclust-package
 "_PACKAGE"
 
-#' US COVID-19 Data
+#' Spatio-temporal Binomial data
 #'
-#' This dataset contains COVID-19 case counts and population data for different regions in the United States.
+#' A simulated `stars` object containing binomial response data with a functional clustering
+#' pattern defined by polynomial fixed effects. This dataset includes the variables `cases`
+#' and `population` observed across 100 simulated spatial regions over 91 time points.
 #'
-#' @format A list with the following components:
+#' @format A `stars` object with:
 #' \describe{
-#'   \item{Y}{Matrix of COVID-19 case counts.}
-#'   \item{N}{Matrix of population data.}
-#'   \item{map}{Spatial map of the regions.}
-#'   \item{E}{Matrix of expected cases data.}
-#' }
-#' @source Processed data from the US COVID-19 data
-#' @name us_covid
-#' @docType data
-"us_covid"
-
-#' Example Dataset: toy
-#'
-#' A synthetic dataset used to demonstrate the functionality of the `sfclust` package.
-#' This dataset contains spatially distributed functional data and associated attributes 
-#' for testing and illustrating spatial functional clustering methods.
-#'
-#' @format A list with 7 elements:
-#' \describe{
-#'   \item{Y}{A numeric matrix of observed functional responses. Each row represents a spatial location, and each column corresponds to a time point.}
-#'   \item{X1}{A numeric vector of the first covariate, representing spatially distributed explanatory data.}
-#'   \item{X2}{A numeric vector of the second covariate, representing additional spatial information.}
-#'   \item{map}{An `sf` object containing spatial geometries (e.g., polygons or points) that correspond to the locations of the data.}
-#'   \item{E}{A numeric vector representing the expected number of cases at each spatial location. This is used for modeling relative risk.}
-#'   \item{cluster}{An integer vector indicating the true cluster labels for each spatial location. Useful for validation and benchmarking.}
-#'   \item{eta}{A numeric vector representing the intensity parameter for `Y`. This characterizes the underlying process generating the functional responses.}
+#'   \item{cases}{Number of observed cases (integer)}
+#'   \item{population}{Population at risk (integer)}
+#'   \item{dimensions}{Two dimensions: \code{geometry} (spatial features) and \code{time} (daily observations)}
 #' }
 #'
-#' @usage data(toy)
+#' @usage data(stbinom)
 #'
 #' @examples
-#' data(toy)
-#' head(toy$Y)
-#' plot(st_sf(toy$map), main = "Spatial Map")
+#' data(stbinom)
+#' stbinom
+#' plot(stbinom["cases"])
 #'
-#' @keywords datasets
-#' @name toy
-NULL
+#' @name stbinom
+"stbinom"
 
-#' Simulated Spatiotemporal and Spatial Data
+#' Spatio-temporal Gaussian data
 #'
-#' A list containing two objects for demonstrating Bayesian spatial functional clustering:
+#' A simulated `stars` object containing Gaussian response data with a functional
+#' clustering pattern uging random walk processes. This dataset includes the response
+#' variable `y` observed across 100 simulated spatial regions over 91 time points.
 #'
-#' @format A list with two elements:
+#' @format A `stars` object with:
 #' \describe{
-#'   \item{\code{stdata}}{A `stars` object containing spatiotemporal observations.}
-#'   \item{\code{geodata}}{A `sf` object containing Voronoi polygons with cluster memberships.}
+#'   \item{y}{Response variable}
 #' }
 #'
-#' @details
-#' - \code{stdata} contains simulated spatiotemporal data where rows are time points and columns represent spatial units.
-#' - \code{geodata} includes spatial Voronoi polygons and their associated metadata, such as cluster memberships.
+#' @usage data(stgaus)
 #'
 #' @examples
-#' data(simu_data)
+#' data(stgaus)
+#' stgaus
+#' plot(stgaus["y"])
 #'
-#' # Access spatiotemporal data
-#' stdata <- simu_data$stdata
-#' plot(stdata)
-#'
-#' # Access spatial polygons
-#' geodata <- simu_data$geodata
-#' library(ggplot2)
-#' ggplot(geodata) +
-#'   geom_sf(aes(fill = factor(membership))) +
-#'   labs(title = "Spatial Clusters", fill = "Cluster") +
-#'   theme_minimal()
-#'
-#' @keywords datasets
-#' @name simu_data
-#' @docType data
-NULL
+#' @name stgaus
+"stgaus"

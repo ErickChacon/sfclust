@@ -21,8 +21,7 @@ In this vignette we present additional features of the `sfclust` package.
 We begin by loading the required packages.
 
 ```{r warning=FALSE, include=TRUE}
-devtools::load_all()
-# library(sfclust)
+library(sfclust)
 library(stars)
 library(ggplot2)
 library(dplyr)
@@ -30,20 +29,20 @@ library(dplyr)
 
 ## Data
 
-The simulated dataset used in this vignette, `stgauss`, is included in our package. It is
+The simulated dataset used in this vignette, `stgaus`, is included in our package. It is
 a `stars` object with one variable, `y`, and two dimensions: `geometry` and `time`. The
 dataset represents the number of cases in 100 regions, observed daily over 91 days,
 starting in January 2024.
 
 ```{r}
-data("stgauss", package = "sfclust")
-stgauss
+data("stgaus")
+stgaus
 ```
 
 To gain some initial insights, we can aggregate the data weekly:
 
 ```{r, fig.height = 9, fig.width = 8}
-stweekly <- aggregate(stgauss, by = "week", FUN = mean)
+stweekly <- aggregate(stgaus, by = "week", FUN = mean)
 ggplot() +
     geom_stars(aes(fill = y), stweekly) +
     facet_wrap(~ time) +
@@ -54,8 +53,8 @@ ggplot() +
 We can also examine the trends for each region:
 
 ```{r, fig.height = 7, fig.width = 8}
-stgauss |>
-    st_set_dimensions("geometry", values = 1:nrow(stgauss)) |>
+stgaus |>
+    st_set_dimensions("geometry", values = 1:nrow(stgaus)) |>
     as_tibble() |>
     ggplot() +
     geom_line(aes(time, y, group = geometry, color = factor(geometry)), linewidth = 0.3) +
@@ -105,14 +104,14 @@ with 20 clusters:
 
 ```{r}
 set.seed(123)
-initial_cluster <- genclust(st_geometry(stgauss), nclust = 20)
+initial_cluster <- genclust(st_geometry(stgaus), nclust = 20)
 names(initial_cluster)
 ```
 
 Now, let's visualize how the regions were randomly clustered:
 
 ```{r}
-st_sf(st_geometry(stgauss), cluster = factor(initial_cluster$membership)) |>
+st_sf(st_geometry(stgaus), cluster = factor(initial_cluster$membership)) |>
   ggplot() +
     geom_sf(aes(fill = cluster)) +
     theme_bw()
@@ -126,7 +125,7 @@ model that includes a random walk process in the linear predictor, and custom pr
 the scale hyperparameter. To begin, we will run the algorithm for only 50 iterations.
 
 ```{r, eval = FALSE, echo = FALSE}
-# result <- sfclust(stgauss, graphdata = initial_cluster, niter = 50,
+# result <- sfclust(stgaus, graphdata = initial_cluster, niter = 50,
 #     formula = y ~ f(idt, model = "rw1", hyper = list(prec = list(prior = "normal", param = c(-2, 1)))),
 #   path_save = file.path("inst", "vigdata", "gaussian-mcmc1.rds"))
 # system.time(
@@ -137,7 +136,7 @@ the scale hyperparameter. To begin, we will run the algorithm for only 50 iterat
 ```
 
 ```{r, eval = FALSE}
-result <- sfclust(stgauss, graphdata = initial_cluster, niter = 50,
+result <- sfclust(stgaus, graphdata = initial_cluster, niter = 50,
     formula = y ~ f(idt, model = "rw1", hyper = list(prec = list(prior = "normal", param = c(-2, 1)))))
 result
 ```
@@ -195,8 +194,8 @@ summary(result2, sort = TRUE)
 Let's visualize the regions grouped by cluster.
 
 ```{r}
-stgauss$cluster <- fitted(result2, sort = TRUE)$cluster
-st_sf(st_geometry(stgauss), cluster = factor(stgauss$cluster)) |>
+stgaus$cluster <- fitted(result2, sort = TRUE)$cluster
+st_sf(st_geometry(stgaus), cluster = factor(stgaus$cluster)) |>
   ggplot() +
     geom_sf(aes(fill = cluster)) +
     theme_bw()
@@ -205,9 +204,9 @@ st_sf(st_geometry(stgauss), cluster = factor(stgauss$cluster)) |>
 Let's visualize the original data grouped by cluster.
 
 ```{r, fig.height = 9.5}
-stgauss$cluster <- fitted(result2, sort = TRUE)$cluster
-stgauss |>
-  st_set_dimensions("geometry", values = 1:nrow(stgauss)) |>
+stgaus$cluster <- fitted(result2, sort = TRUE)$cluster
+stgaus |>
+  st_set_dimensions("geometry", values = 1:nrow(stgaus)) |>
   as_tibble() |>
   ggplot() +
     geom_line(aes(time, y, group = geometry), linewidth = 0.3) +

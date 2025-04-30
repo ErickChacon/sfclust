@@ -1,0 +1,76 @@
+---
+title: "Create stars dataset"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Create stars dataset}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(fig.align = "center", eval = TRUE)
+knitr::opts_chunk$set(fig.height = 7, fig.width = 8, dpi = 150, out.width = '100%')
+knitr::opts_chunk$set(comment = "#>")
+```
+
+Our package `sfclust` is designed to work with spatio-temporal data structured as a
+`stars` object. In this vignette, we demonstrate how to create and manipulate a basic
+`stars` object.
+
+## Simulated data
+
+To begin, we need data that varies across both regions and time. In this example, we
+simulate such data for illustrative purposes, but in practice, this would come from your
+study's specific regions and time periods.
+
+```{r}
+set.seed(10)
+space <- st_make_grid(cellsize = c(1, 1), offset = c(0, 0), n = c(3, 2))
+time <- seq(as.Date("2025-01-01"), by = "1 month", length.out = 5)
+```
+
+Next, we simulate variables associated with each region and time point. In this case, we
+create values for `cases`, `temperature`, and `precipitation`. Each variable is stored in
+a matrix where rows correspond to regions and columns to time points.
+
+```{r}
+cases <- matrix(rpois(30, 100), nrow = 6, ncol = 5)
+temperature <- matrix(rnorm(30), nrow = 6, ncol = 5)
+precipitation <- matrix(rnorm(30), nrow = 6, ncol = 5)
+```
+
+## Creating a `stars` object
+
+We now use the simulated data to construct a `stars` object. This object will contain
+spatial, temporal, and variable dimensions. While there are several ways to build such
+objects, the following method is commonly used:
+
+```{r}
+stdata <- st_as_stars(
+  cases = cases, temperature = temperature, precipitation = precipitation,
+  dimensions = st_dimensions(geometry = space, time = time)
+)
+stdata
+```
+
+## Manipulating a `stars` object
+
+Once the `stars` object is created, you can use any of the methods provided by the
+[`stars`](https://r-spatial.github.io/stars/index.html) package. For example, we can
+visualize the `cases` variable across time:
+
+```{r, fig.height = 5}
+ggplot() +
+    geom_stars(aes(fill = cases), data = stdata) +
+    facet_wrap(~ time) +
+    scale_fill_distiller(palette = "RdBu")
+```
+
+You can also add additional variables to the `stars` object. For instance, let’s add a
+`population` variable:
+
+```{r}
+stdata["population"] <- rep(rpois(6, 1000), each = 6)
+stdata
+```
