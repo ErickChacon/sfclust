@@ -7,36 +7,56 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-# Introduction
+## Introduction
 
-The `sfclust` package provides a Bayesian framework for spatial functional clustering. It
-is designed to analyze spatially distributed functional data and discover meaningful
-clusters. The package employs advanced statistical methods to integrate spatial and
-functional information, making it applicable in diverse domains such as environmental
-studies, crime analysis, and epidemiology. For more information, refer to the detailed
-methodology and case studies included in the package documentation.
+**sfclust** provides a Bayesian framework for clustering spatio-temporal data,
+supporting both Gaussian and non-Gaussian responses. The approach enforces spatial
+adjacency constraints, ensuring that clusters consist of neighboring regions with
+similar temporal dynamics.
 
-# Installation
+The package implements the methodology described in *"Bayesian Spatial Functional
+Data Clustering: Applications in Disease Surveillance"*, available at
+[arXiv:2407.12633](https://arxiv.org/abs/2407.12633). In addition to the core
+clustering algorithm, `sfclust` offers tools for model diagnostics, visualization,
+and result summarization.
 
-To install the development version of `sfclust` from GitHub, use the following commands:
+## Installation
 
-```{r eval=FALSE}
-# Install development version from GitHub
-devtools::install_github("RuimanZhong/sfclust")
+`sfclust` relies on the [`INLA`](https://www.r-inla.org/download-install) package for
+efficient Bayesian inference. Install it with:
+
+```r
+install.packages("INLA", dependencies = TRUE,
+  repos = c(getOption("repos"), INLA = "https://inla.r-inla-download.org/R/stable")
+)
 ```
 
-Additionally, the `sfclust` package relies on the `INLA` package for efficient Bayesian
-computation. You can install it as follows:
+Once `INLA` is installed, you can install the development version of `sfclust` from
+GitHub:
 
-```{r eval=FALSE}
-# Install INLA
-install.packages("INLA", repos = c(getOption("repos"),
-                                   INLA = "https://inla.r-inla-download.org/R/stable"),
-                 dependencies = TRUE)
+```r
+devtools::install_github("ErickChacon/sfclust")
 ```
 
-# Acknowledgement
+## Basic Usage
 
-The `sfclust` package is based on the methodology and code from the paper *Bayesian
-clustering of spatial functional data with application to a human mobility study during
-COVID-19*. We acknowledge the authors for their contributions and inspiration.
+Suppose you have a spatio-temporal `stars` object named `stars_object` that contains
+variables such as `cases` and `expected` (the expected number of cases). The
+following code fits a spatial functional clustering model, where each cluster’s mean
+trend is modeled with a temporal random walk and an unstructured random effect:
+
+```r
+form <- cases ~ f(idt, model = "rw1") + f(id, model = "iid")
+result <- sfclust(stars_object, formula = form, family = "poisson", E = expected, niter = 1000)
+result
+```
+
+## Acknowledgments
+
+We thank the authors of *"Bayesian Clustering of Spatial Functional Data with
+Application to a Human Mobility Study During COVID-19"*, by Bohai Zhang, Huiyan Sang,
+Zhao Tang Luo, and Hui Huang (*Annals of Applied Statistics*, 2023), for making their
+supplementary code publicly available
+([DOI:10.1214/22-AOAS1643SUPPB](https://doi.org/10.1214/22-AOAS1643SUPPB)). Our
+implementation builds upon their clustering algorithm and uses their code for
+generating spanning trees. We are grateful for their contributions and inspiration.

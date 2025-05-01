@@ -1,24 +1,53 @@
-# sfclust: Spatial Functional Data Clustering
+# sfclust: Bayesian Spatial Functional Clustering
 
-`sfclust` is an R package designed for clustering spatial functional data. This package facilitates the analysis of data where observations are functions or curves that are correlated across spatial locations. It extends ideas from the research paper "BAYESIAN CLUSTERING OF SPATIAL FUNCTIONAL DATA WITH APPLICATION TO A HUMAN MOBILITY STUDY DURING COVID-19" to the exponential family using Integrated Nested Laplace Approximations (INLA).
+**sfclust** provides a Bayesian framework for clustering spatio-temporal data,
+supporting both Gaussian and non-Gaussian responses. The approach enforces spatial
+adjacency constraints, ensuring that clusters consist of neighboring regions with
+similar temporal dynamics.
 
-
-## Features
-
-- **Broad Modeling Capabilities:** Implements various models for spatial clustering based on functional data.
-- **Exponential Family Support:** Extends the Bayesian clustering framework to accommodate the exponential family of distributions using INLA, enhancing flexibility and computational efficiency.
-- **Visualization Tools:** Provides built-in functions for visualizing clustering results, allowing users to effectively analyze and interpret the spatial patterns and groupings discovered by the model.
-
-## Background
-
-This package builds upon the methods introduced in the research paper "BAYESIAN CLUSTERING OF SPATIAL FUNCTIONAL DATA WITH APPLICATION TO A HUMAN MOBILITY STUDY DURING COVID-19". The original research utilized Bayesian clustering to analyze how human mobility patterns clustered across different regions during the early stages of the COVID-19 pandemic. By extending this framework to the exponential family and incorporating INLA, `sfclust` allows for faster and more scalable analyses, making it suitable for a wider range of applications beyond the initial study's scope. This includes complex models where traditional MCMC methods might be computationally prohibitive.
-
+The package implements the methodology described in *"Bayesian Spatial Functional
+Data Clustering: Applications in Disease Surveillance"*, available at
+[arXiv:2407.12633](https://arxiv.org/abs/2407.12633). In addition to the core
+clustering algorithm, `sfclust` offers tools for model diagnostics, visualization,
+and result summarization.
 
 ## Installation
 
-You can install the development version of `bsfc` from GitHub with:
+`sfclust` relies on the [`INLA`](https://www.r-inla.org/download-install) package for
+efficient Bayesian inference. Install it with:
 
 ```r
-# install.packages("devtools")
-devtools::install_github("ruimanzhong/sfclust")
+install.packages("INLA", dependencies = TRUE,
+  repos = c(getOption("repos"), INLA = "https://inla.r-inla-download.org/R/stable")
+)
+```
 
+Once `INLA` is installed, you can install the development version of `sfclust` from
+GitHub:
+
+```r
+devtools::install_github("ErickChacon/sfclust")
+```
+
+## Basic Usage
+
+Suppose you have a spatio-temporal `stars` object named `stars_object` that contains
+variables such as `cases` and `expected` (the expected number of cases). The
+following code fits a spatial functional clustering model, where each cluster’s mean
+trend is modeled with a temporal random walk and an unstructured random effect:
+
+```r
+form <- cases ~ f(idt, model = "rw1") + f(id, model = "iid")
+result <- sfclust(stars_object, formula = form, family = "poisson", E = expected, niter = 1000)
+result
+```
+
+## Acknowledgments
+
+We thank the authors of *"Bayesian Clustering of Spatial Functional Data with
+Application to a Human Mobility Study During COVID-19"*, by Bohai Zhang, Huiyan Sang,
+Zhao Tang Luo, and Hui Huang (*Annals of Applied Statistics*, 2023), for making their
+supplementary code publicly available
+([DOI:10.1214/22-AOAS1643SUPPB](https://doi.org/10.1214/22-AOAS1643SUPPB)). Our
+implementation builds upon their clustering algorithm and uses their code for
+generating spanning trees. We are grateful for their contributions and inspiration.
