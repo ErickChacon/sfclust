@@ -76,7 +76,7 @@ log_mlik_each <- function(k, membership, stdata, stnames = c("geometry", "time")
   model <- INLA::inla(
     data = inla_data,
     control.predictor = list(compute = TRUE),
-    control.compute = list(config = TRUE),
+    control.compute = list(config = correction),
     ...
   )
 

@@ -125,14 +125,14 @@ model that includes a random walk process in the linear predictor, and custom pr
 the scale hyperparameter. To begin, we will run the algorithm for only 50 iterations.
 
 ```{r, eval = FALSE, echo = FALSE}
-# result <- sfclust(stgaus, graphdata = initial_cluster, niter = 50,
-#     formula = y ~ f(idt, model = "rw1", hyper = list(prec = list(prior = "normal", param = c(-2, 1)))),
-#   path_save = file.path("inst", "vigdata", "gaussian-mcmc1.rds"))
-# system.time(
-#   update(result, niter = 2000, path_save = file.path("inst", "vigdata", "gaussian-mcmc2.rds"))
-# )
+result <- sfclust(stgaus, graphdata = initial_cluster, niter = 50,
+    formula = y ~ f(idt, model = "rw1", hyper = list(prec = list(prior = "normal", param = c(-2, 1)))),
+  path_save = file.path("inst", "vigdata", "gaussian-mcmc1.rds"))
+system.time(
+  update(result, niter = 2000, path_save = file.path("inst", "vigdata", "gaussian-mcmc2.rds"))
+)
 #      user    system   elapsed
-# 15953.007 11858.150  2781.883
+# 16010.960 11900.949  2794.096
 ```
 
 ```{r, eval = FALSE}

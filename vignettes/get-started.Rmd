@@ -141,24 +141,24 @@ accepts any argument of the `INLA::inla` function. Some main arguments are:
 - `E`: Expected number of cases for a Poisson response.
 
 The following code perform the Bayesian function clustering for the model explained above
-with 1000 iterations.
+with 2000 iterations.
 
 ```{r, eval = FALSE, echo = FALSE}
 # set.seed(7)
 # system.time(
 #   sfclust(stbinom, formula = cases ~ poly(time, 2) + f(id),
 #     family = "binomial", Ntrials = population,
-#     niter = 1000, path_save = file.path("inst", "vigdata", "binomial-mcmc.rds")
+#     niter = 2000, path_save = file.path("inst", "vigdata", "binomial-mcmc.rds")
 #   )
 # )
-# #     user   system  elapsed
-# # 5207.915  712.998  831.280
+# #      user    system   elapsed
+# # 10819.833  1417.088  1644.396
 ```
 
 ```{r, eval = FALSE}
 set.seed(7)
 result <- sfclust(stbinom, formula = cases ~ poly(time, 2) + f(id),
-  family = "binomial", Ntrials = population, niter = 1000)
+  family = "binomial", Ntrials = population, niter = 2000)
 names(result)
 ```
 
@@ -207,7 +207,7 @@ movements. The output summary indicates the following:
 - Clusters were simultaneously split and merged 17 times.
 - The minimum spanning tree was updated 90 times.
 
-Finally, the log marginal likelihood for the last iteration (1000) is reported as
+Finally, the log marginal likelihood for the last iteration (2000) is reported as
 -61,286.28.
 
 ### Plot
@@ -219,7 +219,7 @@ The `plot` method generates three main graphs:
 3. The marginal likelihood for each iteration.
 
 In our example, the left panel displays the regions grouped into the 10 clusters found in
-the 1000th (final) iteration. The middle panel shows the mean linear predictor curves for
+the 2000th (final) iteration. The middle panel shows the mean linear predictor curves for
 each cluster. Some clusters exhibit linear trends, while others follow quadratic trends.
 Although some clusters have similar mean trends, they are classified separately due to
 differences in other parameters, such as the variance of the random effects.
@@ -236,11 +236,11 @@ plot(result)
 
 Once convergence is observed in the clustering algorithm, we can summarize the results. By
 default, the summary is based on the last sample. The output of the `summary` method
-confirms that it corresponds to the 1000th sample out of a total of 1000. It also displays
+confirms that it corresponds to the 2000th sample out of a total of 2000. It also displays
 the model formula, similar to the `print` method.
 
 Additionally, the summary provides the number of members in each cluster. For example, in
-this case, Cluster 1 has 26 members, Cluster 2 has 12 members, and so on. Finally, it
+this case, Cluster 1 has 27 members, Cluster 2 has 12 members, and so on. Finally, it
 reports the associated log-marginal likelihood.
 
 ```{r}
