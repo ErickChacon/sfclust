@@ -9,8 +9,8 @@ Authors@R: c(
     person("Paula", "Moraga", ,"paula.moraga@kaust.edu.sa", role = c("aut"),
            comment = c(ORCID = "0000-0001-5266-0201"))
            )
-Description: Bayesian spatial functional clustering for Gaussian and non-Gaussian data
-    using spanning trees.
+Description: Bayesian spatial functional clustering using latent Gaussian models and
+    spanning trees.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
