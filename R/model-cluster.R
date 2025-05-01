@@ -33,8 +33,8 @@
 #' Study During COVID-19"* by Bohai Zhang, Huiyan Sang, Zhao Tang Luo, and Hui Huang,
 #' published in *The Annals of Applied Statistics*, 2023. For further details on the
 #' methodology, please refer to:
-#' - The paper: <https://doi.org/10.1214/22-AOAS1643>
-#' - Supplementary material: <https://doi.org/10.1214/22-AOAS1643SUPPB>
+#' - The paper: \doi{doi:10.1214/22-AOAS1643}
+#' - Supplementary material: \doi{doi:10.1214/22-AOAS1643SUPPB}
 #'
 #' The MCMC algorithm in this implementation is largely based on the supplementary
 #' material provided in the paper. However, we have generalized the computation of the

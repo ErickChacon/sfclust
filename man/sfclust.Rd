@@ -85,8 +85,8 @@ Study During COVID-19"} by Bohai Zhang, Huiyan Sang, Zhao Tang Luo, and Hui Huan
 published in \emph{The Annals of Applied Statistics}, 2023. For further details on the
 methodology, please refer to:
 \itemize{
-\item The paper: \url{https://doi.org/10.1214/22-AOAS1643}
-\item Supplementary material: \url{https://doi.org/10.1214/22-AOAS1643SUPPB}
+\item The paper: \doi{doi:10.1214/22-AOAS1643}
+\item Supplementary material: \doi{doi:10.1214/22-AOAS1643SUPPB}
 }
 
 The MCMC algorithm in this implementation is largely based on the supplementary
