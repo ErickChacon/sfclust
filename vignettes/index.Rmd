@@ -55,8 +55,9 @@ result
 
 We thank the authors of *"Bayesian Clustering of Spatial Functional Data with
 Application to a Human Mobility Study During COVID-19"*, by Bohai Zhang, Huiyan Sang,
-Zhao Tang Luo, and Hui Huang (*Annals of Applied Statistics*, 2023), for making their
-supplementary code publicly available
+Zhao Tang Luo, and Hui Huang
+([DOI:10.1214/22-AOAS1643](https://doi.org/10.1214/22-AOAS1643), *Annals of Applied
+Statistics*, 2023), for making their supplementary code publicly available
 ([DOI:10.1214/22-AOAS1643SUPPB](https://doi.org/10.1214/22-AOAS1643SUPPB)). Our
 implementation builds upon their clustering algorithm and uses their code for
 generating spanning trees. We are grateful for their contributions and inspiration.
