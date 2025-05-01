@@ -1,3 +1,7 @@
+<!-- badges: start -->
+  [![R-CMD-check](https://github.com/ErickChacon/sfclust/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ErickChacon/sfclust/actions/workflows/R-CMD-check.yaml)
+ <!-- badges: end -->
+
 # sfclust: Bayesian Spatial Functional Clustering
 
 **sfclust** provides a Bayesian framework for clustering spatio-temporal data,
