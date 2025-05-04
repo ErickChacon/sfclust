@@ -1,5 +1,4 @@
 library(stars)
-library(INLA)
 
 test_that('convert stars object to long format', {
 
@@ -63,6 +62,8 @@ test_that('convert stars object to long format', {
 })
 
 test_that('compute log marginal correction', {
+  skip_on_cran()
+
   # terms that require correction
   formula <- y ~ x + z
   expect_equal(correction_required(formula), character())
@@ -85,7 +86,7 @@ test_that('compute log marginal correction', {
 
   ## rw1
   formula <- y ~ f(time, model = "rw1")
-  model <- inla(formula, data = data, control.compute = list(config = TRUE))
+  model <- INLA::inla(formula, data = data, control.compute = list(config = TRUE))
 
   i <- c(1:n, 1:(n-1))
   j <- c(1:n, 2:n)
@@ -98,7 +99,7 @@ test_that('compute log marginal correction', {
 
   ## rw2
   formula <- y ~ f(time, model = "rw2")
-  model <- inla(formula, data = data, control.compute = list(config = TRUE))
+  model <- INLA::inla(formula, data = data, control.compute = list(config = TRUE))
 
   i <- c(1:n, 1:(n-1), 1:(n-2))
   j <- c(1:n, 2:n, 3:n)
