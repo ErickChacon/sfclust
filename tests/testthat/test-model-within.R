@@ -112,7 +112,7 @@ test_that('compute log marginal correction', {
 
   ## rw1 and rw2
   formula <- y ~ f(time, model = "rw1") +  f(time2, model = "rw2")
-  model <- inla(formula, data = data, control.compute = list(config = TRUE))
+  model <- INLA::inla(formula, data = data, control.compute = list(config = TRUE))
   expect_equal(log_mlik_correction(model), - 5.8514497 - 3.45305292)
 })
 
