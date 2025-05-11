@@ -54,14 +54,15 @@ ggplot() +
     theme(legend.position = "bottom")
 ```
 
-We can aggregate the data for easier visualization using the `stars::aggregate` function.
-The following figure displays the weekly mean risk, providing initial insights. For
+<!-- We can aggregate the data for easier visualization using the `stars::aggregate` function. -->
+<!-- The following figure displays the weekly mean risk, providing initial insights. For -->
+This figure displays the daily risk, providing initial insights. For
 example, the northwestern regions show a higher risk at the beginning (2024-01-01),
 followed by a decline by March 24. In contrast, a group of regions on the eastern side
 exhibits high risk at both the beginning (2024-01-01) and the end (2024-03-25) but lower
 values in the middle of the study period (2024-02-12).
 
-```{r}
+```{r, eval = FALSE, echo = FALSE}
 stweekly <- aggregate(stbinom, by = "week", FUN = mean)
 ggplot() +
   geom_stars(aes(fill = cases/population), stweekly) +

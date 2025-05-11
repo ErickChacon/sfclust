@@ -41,7 +41,7 @@ stgaus
 
 To gain some initial insights, we can aggregate the data weekly:
 
-```{r, fig.height = 9, fig.width = 8}
+```{r}
 stweekly <- aggregate(stgaus, by = "week", FUN = mean)
 ggplot() +
     geom_stars(aes(fill = y), stweekly) +
@@ -169,7 +169,7 @@ The `plot` method allows us to select which graph to produce. For example, we ca
 visualize only the log marginal likelihood to diagnose convergence. With just 50
 iterations, we can see that the log marginal likelihood has not yet achieved convergence.
 
-```{r}
+```{r, fig.dpi = 72}
 plot(result, which = 2)
 ```
 
@@ -198,7 +198,7 @@ With 2000 additional iterations, there have been many clustering movements. Furt
 when visualizing the results, we can observe that the log marginal likelihood has achieved
 convergence.
 
-```{r}
+```{r, fig.dpi = 72}
 plot(result2, which = 2)
 ```
 
