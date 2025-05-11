@@ -127,12 +127,22 @@ the scale hyperparameter. To begin, we will run the algorithm for only 50 iterat
 ```{r, eval = FALSE, echo = FALSE}
 result <- sfclust(stgaus, graphdata = initial_cluster, niter = 50,
     formula = y ~ f(idt, model = "rw1", hyper = list(prec = list(prior = "normal", param = c(-2, 1)))),
-  path_save = file.path("inst", "vigdata", "gaussian-mcmc1.rds"))
+  path_save = file.path("inst", "vigdata", "full-gaussian-mcmc1.rds"))
 system.time(
-  update(result, niter = 2000, path_save = file.path("inst", "vigdata", "gaussian-mcmc2.rds"))
+  update(result, niter = 2000, path_save = file.path("inst", "vigdata", "full-gaussian-mcmc2.rds"))
 )
 #      user    system   elapsed
 # 16010.960 11900.949  2794.096
+```
+
+```{r, eval = FALSE, echo = FALSE}
+# Reduce size of object
+result1 <- readRDS(file.path("inst", "vigdata", "full-gaussian-mcmc1.rds"))
+result2 <- readRDS(file.path("inst", "vigdata", "full-gaussian-mcmc2.rds"))
+result1$clust$models <- NULL
+result2$clust$models <- NULL
+saveRDS(result1, file.path("inst", "vigdata", "gaussian-mcmc1.rds"))
+saveRDS(result2, file.path("inst", "vigdata", "gaussian-mcmc2.rds"))
 ```
 
 ```{r, eval = FALSE}
@@ -143,6 +153,11 @@ result
 
 ```{r, echo = FALSE}
 result <- readRDS(system.file("vigdata", "gaussian-mcmc1.rds", package = "sfclust"))
+result$clust$models <- log_mlik_all(
+    result$clust$membership, stgaus, names(st_dimensions(stgaus)),
+    correction = FALSE, detailed = TRUE,
+    formula = y ~ f(idt, model = "rw1", hyper = list(prec = list(prior = "normal", param = c(-2, 1))))
+)
 result
 ```
 
@@ -170,8 +185,14 @@ result2
 
 ```{r, echo = FALSE}
 result2 <- readRDS(system.file("vigdata", "gaussian-mcmc2.rds", package = "sfclust"))
+result2$clust$models <- log_mlik_all(
+    result2$clust$membership, stgaus, names(st_dimensions(stgaus)),
+    correction = FALSE, detailed = TRUE,
+    formula = y ~ f(idt, model = "rw1", hyper = list(prec = list(prior = "normal", param = c(-2, 1))))
+)
 result2
 ```
+
 
 With 2000 additional iterations, there have been many clustering movements. Furthermore,
 when visualizing the results, we can observe that the log marginal likelihood has achieved
