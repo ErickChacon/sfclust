@@ -145,22 +145,28 @@ The following code perform the Bayesian function clustering for the model explai
 with 2000 iterations.
 
 ```{r, eval = FALSE, echo = FALSE}
-set.seed(7)
-system.time(
-  sfclust(stbinom, formula = cases ~ poly(time, 2) + f(id),
-    family = "binomial", Ntrials = population,
-    niter = 2000, path_save = file.path("inst", "vigdata", "full-binomial-mcmc.rds")
-  )
-)
-#      user    system   elapsed
-# 10819.833  1417.088  1644.396
+# set.seed(7)
+# system.time(
+#   sfclust(stbinom, formula = cases ~ poly(time, 2) + f(id),
+#     family = "binomial", Ntrials = population,
+#     niter = 2000, path_save = file.path("inst", "vigdata", "full-binomial-mcmc.rds")
+#   )
+# )
+# #      user    system   elapsed
+# # 10819.833  1417.088  1644.396
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-# Reduce size of object
-result <- readRDS(file.path("inst", "vigdata", "full-binomial-mcmc.rds"))
-result$clust$models <- NULL
-saveRDS(result, file.path("inst", "vigdata", "binomial-mcmc.rds"))
+# # Reduce size of object
+# result <- readRDS(file.path("inst", "vigdata", "full-binomial-mcmc.rds"))
+# pseudo_inla <- function(x) {
+#   list(
+#     summary.random = list(id = x$summary.random$id["mean"]),
+#     summary.linear.predictor = x$summary.linear.predictor["mean"]
+#   )
+# }
+# result$clust$models <- lapply(result$clust$models, pseudo_inla)
+# saveRDS(result, file.path("inst", "vigdata", "binomial-mcmc.rds"))
 ```
 
 ```{r, eval = FALSE}
@@ -172,11 +178,6 @@ names(result)
 
 ```{r, echo = FALSE}
 result <- readRDS(system.file("vigdata", "binomial-mcmc.rds", package = "sfclust"))
-result$clust$models <- log_mlik_all(
-    result$clust$membership, stbinom, names(st_dimensions(stbinom)),
-    correction = FALSE, detailed = TRUE, formula = cases ~ poly(time, 2) + f(id),
-    family = "binomial", Ntrials = population
-)
 names(result)
 ```
 
