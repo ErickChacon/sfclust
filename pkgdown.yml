@@ -4,6 +4,5 @@ pkgdown_sha: ~
 articles:
   additional-features: additional-features.html
   get-started: get-started.html
-  index: index.html
   stars-object: stars-object.html
-last_built: 2025-05-12T11:42Z
+last_built: 2025-05-12T12:06Z
