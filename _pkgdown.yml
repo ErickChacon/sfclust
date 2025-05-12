@@ -1,0 +1,9 @@
+template:
+  bootstrap: 5
+articles:
+- title: Articles
+  navbar: ~
+  contents:
+  - get-started
+  - additional-features
+  - stars-object
