@@ -3,7 +3,7 @@ title: "Additional features"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Additional features}
+  %\VignetteIndexEntry{2. Additional features}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

@@ -4,6 +4,8 @@
 
 # sfclust: Bayesian Spatial Functional Clustering
 
+## Introduction
+
 **sfclust** provides a Bayesian framework for clustering spatio-temporal data,
 supporting both Gaussian and non-Gaussian responses. The approach enforces spatial
 adjacency constraints, ensuring that clusters consist of neighboring regions with
