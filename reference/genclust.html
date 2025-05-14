@@ -88,15 +88,15 @@ random weights are assigned.</p></dd>
 <span class="r-in"><span><span class="va">clust</span> <span class="op">&lt;-</span> <span class="fu">genclust</span><span class="op">(</span><span class="va">x</span>, nclust <span class="op">=</span> <span class="fl">3</span>, weights <span class="op">=</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_measures.html" class="external-link">st_distance</a></span><span class="op">(</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_unary.html" class="external-link">st_centroid</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">clust</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $graph</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 851cf24 UNW- 6 11 -- </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 1ee4240 UNW- 6 11 -- </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> + attr: name (v/c), weight (e/n)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 851cf24 (vertex names):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 1ee4240 (vertex names):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [1] 1--2 1--4 1--5 2--3 2--4 2--5 2--6 3--5 3--6 4--5 5--6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $mst</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 4618548 UNW- 6 5 -- </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 1c1f4e8 UNW- 6 5 -- </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> + attr: name (v/c), vid (v/n), weight (e/n)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 4618548 (vertex names):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 1c1f4e8 (vertex names):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1--4 2--3 3--6 4--5 5--6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $membership</span>
@@ -110,15 +110,15 @@ random weights are assigned.</p></dd>
 <span class="r-in"><span><span class="va">cluster_ini</span> <span class="op">&lt;-</span> <span class="fu">genclust</span><span class="op">(</span><span class="va">x</span>, nclust <span class="op">=</span> <span class="fl">3</span>, weights <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">36</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">cluster_ini</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $graph</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 91c4421 U-W- 6 11 -- </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 1f05393 U-W- 6 11 -- </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> + attr: weight (e/n)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 91c4421:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 1f05393:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [1] 1--2 1--4 1--5 2--3 2--4 2--5 2--6 3--5 3--6 4--5 5--6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $mst</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH a2f2f9c U-W- 6 5 -- </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 78d59bc U-W- 6 5 -- </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> + attr: vid (v/n), weight (e/n)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from a2f2f9c:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 78d59bc:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1--2 1--4 1--5 2--3 2--6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $membership</span>
@@ -131,19 +131,19 @@ random weights are assigned.</p></dd>
 <span class="r-in"><span><span class="va">cluster_ini</span> <span class="op">&lt;-</span> <span class="fu">genclust</span><span class="op">(</span><span class="va">x</span>, nclust <span class="op">=</span> <span class="fl">3</span>, weights <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">36</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">cluster_ini</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $graph</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 6fa0c9d U-W- 6 11 -- </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 71d6586 U-W- 6 11 -- </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> + attr: weight (e/n)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 6fa0c9d:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 71d6586:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [1] 1--2 1--4 1--5 2--3 2--4 2--5 2--6 3--5 3--6 4--5 5--6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $mst</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 00126b2 U-W- 6 5 -- </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 58ec08d U-W- 6 5 -- </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> + attr: vid (v/n), weight (e/n)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 00126b2:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1--2 1--4 2--6 3--5 3--6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 58ec08d:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1--2 1--5 2--3 2--4 3--6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $membership</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1 2 2 3 2 2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1 1 2 1 1 3</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/sf.html" class="external-link">st_sf</a></span><span class="op">(</span><span class="va">x</span>, cluster <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">cluster_ini</span><span class="op">$</span><span class="va">membership</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="genclust-3.png" alt="" width="700" height="433"></span>
