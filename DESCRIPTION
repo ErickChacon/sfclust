@@ -9,8 +9,14 @@ Authors@R: c(
     person("Paula", "Moraga", ,"paula.moraga@kaust.edu.sa", role = c("aut"),
            comment = c(ORCID = "0000-0001-5266-0201"))
            )
-Description: Bayesian spatial functional clustering using latent Gaussian models and
-    spanning trees.
+Description: Bayesian clustering of spatial regions with similar functional shapes using
+    spanning trees and latent Gaussian models. The method enforces spatial contiguity
+    within clusters and supports a wide range of latent Gaussian models, including
+    non-Gaussian likelihoods, via the INLA framework. The algorithm is based on Zhong, R.,
+    Chacón-Montalván, E. A., and Moraga, P. (2024) <doi:10.48550/arXiv.2407.12633>,
+    extending the approach of Zhang, B., Sang, H., Luo, Z. T., and Huang, H. (2023)
+    <doi:10.1214/22-AOAS1643>. The package includes tools for model fitting, convergence
+    diagnostics, visualization, and summarization of clustering results.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
