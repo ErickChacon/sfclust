@@ -12,8 +12,8 @@ Authors@R: c(
 Description: Bayesian clustering of spatial regions with similar functional shapes using
     spanning trees and latent Gaussian models. The method enforces spatial contiguity
     within clusters and supports a wide range of latent Gaussian models, including
-    non-Gaussian likelihoods, via the INLA framework. The algorithm is based on Zhong, R.,
-    Chacón-Montalván, E. A., and Moraga, P. (2024) <doi:10.48550/arXiv.2407.12633>,
+    non-Gaussian likelihoods, via the R-INLA framework. The algorithm is based on Zhong,
+    R., Chacón-Montalván, E. A., and Moraga, P. (2024) <doi:10.48550/arXiv.2407.12633>,
     extending the approach of Zhang, B., Sang, H., Luo, Z. T., and Huang, H. (2023)
     <doi:10.1214/22-AOAS1643>. The package includes tools for model fitting, convergence
     diagnostics, visualization, and summarization of clustering results.

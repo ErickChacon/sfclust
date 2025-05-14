@@ -42,19 +42,19 @@ and combines them into a matrix of fitted values.
 }
 \examples{
 
-\dontrun{
+library(sfclust)
 
-# Assuming 'mod' is a pre-existing sfclust object
+data(stgaus)
+result <- sfclust(stgaus, formula = y ~ f(idt, model = "rw1"), niter = 10,
+  nmessage = 1)
 
 # Estimated values ordering clusters by size
-df_est <- fitted(mod, sort = TRUE)
+df_est <- fitted(result, sort = TRUE)
 
 # Estimated values aggregated by cluster
-df_est <- fitted(mod, aggregate = TRUE)
+df_est <- fitted(result, aggregate = TRUE)
 
 # Estimated values using a particular clustering sample
-df_est <- fitted(mod, sample = 3)
-
-}
+df_est <- fitted(result, sample = 3)
 
 }

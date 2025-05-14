@@ -11,6 +11,16 @@
 
 \item{...}{Additional arguments passed to \code{print.default}.}
 }
+\value{
+Invisibly returns the input \code{sfclust} object \code{x}. The function also
+prints a summary of:
+\itemize{
+\item the within-cluster model formula,
+\item clustering hyperparameters,
+\item movement counts from the MCMC sampler,
+\item and the log marginal likelihood of the selected sample.
+}
+}
 \description{
 Prints details of an sfclust object, including the (i) within-cluster formula;
 (ii) hyperparameters used for the MCMC sample such as the number of clusters penalty

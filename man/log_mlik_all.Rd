@@ -40,7 +40,6 @@ Fit the specified INLA model to each cluster and compute the log marginal likeli
 for each cluster specified in the membership vector.
 }
 \examples{
-\dontrun{
 
 library(stars)
 
@@ -62,5 +61,4 @@ models = log_mlik_all(c(1, 1, 1, 2, 2), stdata, detailed = TRUE,
   formula = cases ~ temperature, family = "poisson", E = expected)
 lapply(models, summary)
 
-}
 }

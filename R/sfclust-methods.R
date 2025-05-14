@@ -8,6 +8,16 @@
 #'
 #' @param x An object of class 'sfclust'.
 #' @param ... Additional arguments passed to `print.default`.
+#'
+#' @return Invisibly returns the input \code{sfclust} object \code{x}. The function also
+#' prints a summary of:
+#' \itemize{
+#'   \item the within-cluster model formula,
+#'   \item clustering hyperparameters,
+#'   \item movement counts from the MCMC sampler,
+#'   \item and the log marginal likelihood of the selected sample.
+#' }
+#'
 #' @export
 print.sfclust <- function(x, ...) {
   cat("Within-cluster formula:\n")
@@ -37,6 +47,17 @@ print.sfclust <- function(x, ...) {
 #' @param sort Logical value indicating if clusters should be relabel based on number of
 #'        elements.
 #' @param ... Additional arguments passed to `print.default`.
+#'
+#' @return
+#' Invisibly returns a table with the number of regions in each cluster for the selected
+#' sample. The function also prints a summary that includes:
+#' \itemize{
+#'   \item the within-cluster model formula,
+#'   \item the total number of MCMC clustering samples,
+#'   \item the cluster membership counts for the specified sample (optionally sorted),
+#'   \item and the log marginal likelihood of the selected clustering sample.
+#' }
+#'
 #' @export
 summary.sfclust <- function(object, sample = object$clust$id, sort = FALSE,...) {
 
@@ -91,6 +112,9 @@ sort_membership <- function(x) {
 #'          `sfclust` execution and uses it as the starting point for additional MCMC
 #'          iterations. If `sample` is provided, it simply udpates the within-cluster
 #'          models for the specified clustering `sample`.
+#'
+#' @return An updated `sfclust` object with (i) new clustering samples if `sample` is not
+#'   specified, or (ii) updated within-cluster model results if `sample` is given.
 #'
 #' @importFrom stats update
 #' @method update sfclust
@@ -167,20 +191,20 @@ update_within <- function(x, sample = nrow(x$samples$membership)) {
 #'
 #' @examples
 #'
-#' \dontrun{
+#' library(sfclust)
 #'
-#' # Assuming 'mod' is a pre-existing sfclust object
+#' data(stgaus)
+#' result <- sfclust(stgaus, formula = y ~ f(idt, model = "rw1"), niter = 10,
+#'   nmessage = 1)
 #'
 #' # Estimated values ordering clusters by size
-#' df_est <- fitted(mod, sort = TRUE)
+#' df_est <- fitted(result, sort = TRUE)
 #'
 #' # Estimated values aggregated by cluster
-#' df_est <- fitted(mod, aggregate = TRUE)
+#' df_est <- fitted(result, aggregate = TRUE)
 #'
 #' # Estimated values using a particular clustering sample
-#' df_est <- fitted(mod, sample = 3)
-#'
-#' }
+#' df_est <- fitted(result, sample = 3)
 #'
 #' @importFrom stats fitted
 #' @importFrom sf st_within st_union

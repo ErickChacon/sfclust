@@ -104,25 +104,22 @@ Chacón-Montalván, Paula Moraga:
 }
 \examples{
 
-\dontrun{
-
-library(stars)
-
-# Gaussian model
-out <- sfclust(stdata, formula = cases ~ temperature, niter = 100)
-print(out)
-summary(out)
-plot(out)
+# Clustering with Gaussian data
+data(stgaus)
+result <- sfclust(stgaus, formula = y ~ f(idt, model = "rw1"),
+  niter = 10, nmessage = 1)
+print(result)
+summary(result)
+plot(result)
 
 
-# Poisson model
-out <- sfclust(stdata, formula = cases ~ temperature + f(id, model = 'iid'),
-    family = "poisson", E = expected, niter = 100)
-print(out)
-summary(out)
-plot(out)
-
-}
+# Clustering with binomial data
+data(stbinom)
+result <- sfclust(stbinom, formula = cases ~ poly(time, 2) + f(id),
+  family = "binomial", Ntrials = population, niter = 10, nmessage = 1)
+print(result)
+summary(result)
+plot(result)
 
 }
 \author{

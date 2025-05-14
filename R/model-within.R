@@ -19,7 +19,6 @@
 #'         the fitted INLA model for each cluster when `detailed = TRUE`.
 #'
 #' @examples
-#' \dontrun{
 #'
 #' library(stars)
 #'
@@ -41,7 +40,6 @@
 #'   formula = cases ~ temperature, family = "poisson", E = expected)
 #' lapply(models, summary)
 #'
-#' }
 #' @export
 log_mlik_all <- function(membership, stdata, stnames = c("geometry", "time"),
                          correction = TRUE, detailed = FALSE, ...) {

@@ -37,6 +37,10 @@ The default is the last sample (i.e., \code{nrow(x$samples$membership)}).}
 
 \item{...}{Additional arguments (currently not used).}
 }
+\value{
+An updated \code{sfclust} object with (i) new clustering samples if \code{sample} is not
+specified, or (ii) updated within-cluster model results if \code{sample} is given.
+}
 \description{
 This function continues the MCMC sampling of a \code{sfclust} object based on previous results or
 update the model fitting for a specified sample clustering if the argument \code{sample} is
