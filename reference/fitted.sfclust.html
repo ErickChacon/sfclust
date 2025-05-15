@@ -103,21 +103,22 @@ and combines them into a matrix of fitted values.</p>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># \donttest{</span></span></span>
 <span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">sfclust</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">stgaus</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="sfclust.html">sfclust</a></span><span class="op">(</span><span class="va">stgaus</span>, formula <span class="op">=</span> <span class="va">y</span> <span class="op">~</span> <span class="fu">f</span><span class="op">(</span><span class="va">idt</span>, model <span class="op">=</span> <span class="st">"rw1"</span><span class="op">)</span>, niter <span class="op">=</span> <span class="fl">10</span>,</span></span>
 <span class="r-in"><span>  nmessage <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 1: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1553.38566353334</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 2: clusters = 11, births = 1, deaths = 0, changes = 1, hypers = 0, log_mlike = -1463.30976322275</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 3: clusters = 11, births = 1, deaths = 0, changes = 1, hypers = 0, log_mlike = -1463.30976322275</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 4: clusters = 11, births = 1, deaths = 0, changes = 1, hypers = 0, log_mlike = -1463.30976322275</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 5: clusters = 12, births = 2, deaths = 0, changes = 1, hypers = 0, log_mlike = -722.86722057599</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 6: clusters = 12, births = 2, deaths = 0, changes = 1, hypers = 0, log_mlike = -722.86722057599</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 7: clusters = 12, births = 2, deaths = 0, changes = 1, hypers = 0, log_mlike = -722.86722057599</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 8: clusters = 13, births = 3, deaths = 0, changes = 1, hypers = 0, log_mlike = -635.210850876291</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 9: clusters = 13, births = 3, deaths = 0, changes = 1, hypers = 0, log_mlike = -635.210850876291</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 10: clusters = 14, births = 4, deaths = 0, changes = 1, hypers = 0, log_mlike = -449.744408248292</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 1: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1553.3856648456</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 2: clusters = 11, births = 1, deaths = 0, changes = 1, hypers = 0, log_mlike = -1463.3097637665</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 3: clusters = 11, births = 1, deaths = 0, changes = 1, hypers = 0, log_mlike = -1463.3097637665</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 4: clusters = 11, births = 1, deaths = 0, changes = 1, hypers = 0, log_mlike = -1463.3097637665</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 5: clusters = 12, births = 2, deaths = 0, changes = 1, hypers = 0, log_mlike = -722.867221189076</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 6: clusters = 12, births = 2, deaths = 0, changes = 1, hypers = 0, log_mlike = -722.867221189076</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 7: clusters = 12, births = 2, deaths = 0, changes = 1, hypers = 0, log_mlike = -722.867221189076</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 8: clusters = 13, births = 3, deaths = 0, changes = 1, hypers = 0, log_mlike = -635.210850878789</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 9: clusters = 13, births = 3, deaths = 0, changes = 1, hypers = 0, log_mlike = -635.210850878789</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 10: clusters = 14, births = 4, deaths = 0, changes = 1, hypers = 0, log_mlike = -449.744409104302</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Estimated values ordering clusters by size</span></span></span>
 <span class="r-in"><span><span class="va">df_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/fitted.values.html" class="external-link">fitted</a></span><span class="op">(</span><span class="va">result</span>, sort <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
@@ -127,6 +128,7 @@ and combines them into a matrix of fitted values.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Estimated values using a particular clustering sample</span></span></span>
 <span class="r-in"><span><span class="va">df_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/fitted.values.html" class="external-link">fitted</a></span><span class="op">(</span><span class="va">result</span>, sample <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

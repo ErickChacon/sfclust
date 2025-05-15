@@ -172,20 +172,23 @@ Paula Moraga <a href="mailto:paula.moraga@kaust.edu.sa">paula.moraga@kaust.edu.s
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># \donttest{</span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">sfclust</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Clustering with Gaussian data</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">stgaus</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">sfclust</span><span class="op">(</span><span class="va">stgaus</span>, formula <span class="op">=</span> <span class="va">y</span> <span class="op">~</span> <span class="fu">f</span><span class="op">(</span><span class="va">idt</span>, model <span class="op">=</span> <span class="st">"rw1"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  niter <span class="op">=</span> <span class="fl">10</span>, nmessage <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 1: clusters = 10, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -1295.25479873251</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 2: clusters = 9, births = 0, deaths = 1, changes = 0, hypers = 0, log_mlike = -1254.15932014856</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 3: clusters = 9, births = 0, deaths = 1, changes = 0, hypers = 0, log_mlike = -1254.15932014856</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 4: clusters = 10, births = 1, deaths = 1, changes = 0, hypers = 0, log_mlike = -1038.07774216049</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 5: clusters = 10, births = 1, deaths = 1, changes = 0, hypers = 0, log_mlike = -1038.07774216049</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 6: clusters = 11, births = 2, deaths = 1, changes = 0, hypers = 0, log_mlike = -886.210224710715</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 7: clusters = 11, births = 2, deaths = 1, changes = 0, hypers = 1, log_mlike = -886.210224710715</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 8: clusters = 11, births = 2, deaths = 1, changes = 0, hypers = 1, log_mlike = -886.210224710715</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 9: clusters = 11, births = 2, deaths = 1, changes = 0, hypers = 1, log_mlike = -886.210224710715</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 10: clusters = 11, births = 2, deaths = 1, changes = 0, hypers = 1, log_mlike = -886.210224710715</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 1: clusters = 10, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -1295.25479238683</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 2: clusters = 9, births = 0, deaths = 1, changes = 0, hypers = 0, log_mlike = -1254.15931389429</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 3: clusters = 9, births = 0, deaths = 1, changes = 0, hypers = 0, log_mlike = -1254.15931389429</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 4: clusters = 10, births = 1, deaths = 1, changes = 0, hypers = 0, log_mlike = -1038.07773688728</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 5: clusters = 10, births = 1, deaths = 1, changes = 0, hypers = 0, log_mlike = -1038.07773688728</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 6: clusters = 11, births = 2, deaths = 1, changes = 0, hypers = 0, log_mlike = -886.210217972586</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 7: clusters = 11, births = 2, deaths = 1, changes = 0, hypers = 1, log_mlike = -886.210217972586</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 8: clusters = 11, births = 2, deaths = 1, changes = 0, hypers = 1, log_mlike = -886.210217972586</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 9: clusters = 11, births = 2, deaths = 1, changes = 0, hypers = 1, log_mlike = -886.210217972586</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 10: clusters = 11, births = 2, deaths = 1, changes = 0, hypers = 1, log_mlike = -886.210217972586</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Within-cluster formula:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> y ~ f(idt, model = "rw1")</span>
@@ -213,22 +216,21 @@ Paula Moraga <a href="mailto:paula.moraga@kaust.edu.sa">paula.moraga@kaust.edu.s
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="sfclust-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Clustering with binomial data</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">stbinom</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu">sfclust</span><span class="op">(</span><span class="va">stbinom</span>, formula <span class="op">=</span> <span class="va">cases</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/poly.html" class="external-link">poly</a></span><span class="op">(</span><span class="va">time</span>, <span class="fl">2</span><span class="op">)</span> <span class="op">+</span> <span class="fu">f</span><span class="op">(</span><span class="va">id</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  family <span class="op">=</span> <span class="st">"binomial"</span>, Ntrials <span class="op">=</span> <span class="va">population</span>, niter <span class="op">=</span> <span class="fl">10</span>, nmessage <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Log marginal-likelihood correction not required.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 1: clusters = 9, births = 0, deaths = 1, changes = 0, hypers = 0, log_mlike = -76059.6237218501</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 2: clusters = 9, births = 0, deaths = 1, changes = 1, hypers = 0, log_mlike = -75981.5138572543</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 3: clusters = 9, births = 0, deaths = 1, changes = 1, hypers = 0, log_mlike = -75981.5138572543</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 4: clusters = 9, births = 0, deaths = 1, changes = 1, hypers = 0, log_mlike = -75981.5138572543</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 5: clusters = 9, births = 0, deaths = 1, changes = 1, hypers = 0, log_mlike = -75981.5138572543</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 6: clusters = 9, births = 0, deaths = 1, changes = 1, hypers = 0, log_mlike = -75981.5138572543</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 7: clusters = 10, births = 1, deaths = 1, changes = 1, hypers = 0, log_mlike = -75620.101316414</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 8: clusters = 10, births = 1, deaths = 1, changes = 1, hypers = 0, log_mlike = -75620.101316414</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 9: clusters = 10, births = 1, deaths = 1, changes = 1, hypers = 0, log_mlike = -75620.101316414</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 10: clusters = 10, births = 1, deaths = 1, changes = 1, hypers = 0, log_mlike = -75620.101316414</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 1: clusters = 9, births = 0, deaths = 1, changes = 0, hypers = 0, log_mlike = -76059.6237201926</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 2: clusters = 9, births = 0, deaths = 1, changes = 1, hypers = 0, log_mlike = -75981.5138512315</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 3: clusters = 9, births = 0, deaths = 1, changes = 1, hypers = 0, log_mlike = -75981.5138512315</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 4: clusters = 9, births = 0, deaths = 1, changes = 1, hypers = 0, log_mlike = -75981.5138512315</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 5: clusters = 9, births = 0, deaths = 1, changes = 1, hypers = 0, log_mlike = -75981.5138512315</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 6: clusters = 9, births = 0, deaths = 1, changes = 1, hypers = 0, log_mlike = -75981.5138512315</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 7: clusters = 10, births = 1, deaths = 1, changes = 1, hypers = 0, log_mlike = -75620.1013084771</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 8: clusters = 10, births = 1, deaths = 1, changes = 1, hypers = 0, log_mlike = -75620.1013084771</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 9: clusters = 10, births = 1, deaths = 1, changes = 1, hypers = 0, log_mlike = -75620.1013084771</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 10: clusters = 10, births = 1, deaths = 1, changes = 1, hypers = 0, log_mlike = -75620.1013084771</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Within-cluster formula:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> cases ~ poly(time, 2) + f(id)</span>
@@ -255,6 +257,7 @@ Paula Moraga <a href="mailto:paula.moraga@kaust.edu.sa">paula.moraga@kaust.edu.s
 <span class="r-out co"><span class="r-pr">#&gt;</span> Log marginal likelihood:  -75620.1 </span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="sfclust-2.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span><span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
