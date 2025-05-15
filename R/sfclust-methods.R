@@ -303,7 +303,10 @@ plot.sfclust <- function(x, sample = x$clust$id, which = 1:3, clusters = NULL, s
 
   # visualize
   which <- which[which %in% 1:3]
-  if (length(which) > 1) opar <- par(mfrow = c(1, length(which)))
+  if (length(which) > 1) {
+    oldpar <- par(mfrow = c(1, length(which)))
+    on.exit(par(oldpar))
+  }
   if (1 %in% which) { # spatial clustering membership
     membership[!(membership %in% clusters)] <- NA
     membership <- factor(membership)
@@ -331,7 +334,6 @@ plot.sfclust <- function(x, sample = x$clust$id, which = 1:3, clusters = NULL, s
       xlab = "Sample", ylab = "Log marginal likelihood", col = "blue", lwd = 2)
     points(sample, x$samples$log_mlike[sample], col = "red", pch = 19)
   }
-  if (length(which) > 1) par(opar)
 
   invisible(NULL)
 }
