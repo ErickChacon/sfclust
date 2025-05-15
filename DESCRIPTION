@@ -1,6 +1,6 @@
 Package: sfclust
 Title: Bayesian Spatial Functional Clustering
-Version: 1.0.0
+Version: 1.0.1
 Authors@R: c(
     person(c("Erick", "A."), "Chacón-Montalván", ,"erick.chaconmontalvan@kaust.edu.sa", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-8068-1034")),
