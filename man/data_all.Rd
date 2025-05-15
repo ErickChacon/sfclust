@@ -20,6 +20,7 @@ Convert spatio-temporal data to long format with indices for time and spatial lo
 }
 \examples{
 
+library(sfclust)
 library(stars)
 
 dims <- st_dimensions(

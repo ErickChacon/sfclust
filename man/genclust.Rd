@@ -31,7 +31,10 @@ tree (MST), and generates \code{nclust} clusters. This function is used to initi
 cluster membership in a clustering algorithm, such as \code{sfclust}.
 }
 \examples{
+
+library(sfclust)
 library(sf)
+
 x <- st_make_grid(cellsize = c(1, 1), offset = c(0, 0), n = c(3, 2))
 
 # using distance between geometries

@@ -41,6 +41,9 @@ for each cluster specified in the membership vector.
 }
 \examples{
 
+
+\donttest{
+library(sfclust)
 library(stars)
 
 dims <- st_dimensions(
@@ -60,5 +63,6 @@ log_mlik_all(c(1, 1, 1, 2, 2), stdata,
 models = log_mlik_all(c(1, 1, 1, 2, 2), stdata, detailed = TRUE,
   formula = cases ~ temperature, family = "poisson", E = expected)
 lapply(models, summary)
+}
 
 }

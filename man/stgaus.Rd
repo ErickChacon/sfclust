@@ -19,6 +19,9 @@ clustering pattern uging random walk processes. This dataset includes the respon
 variable \code{y} observed across 100 simulated spatial regions over 91 time points.
 }
 \examples{
+
+library(sfclust)
+
 data(stgaus)
 stgaus
 plot(stgaus["y"])

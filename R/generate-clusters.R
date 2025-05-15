@@ -18,7 +18,10 @@
 #'   - `membership`: The cluster membership for elements in `x`.
 #'
 #' @examples
+#'
+#' library(sfclust)
 #' library(sf)
+#'
 #' x <- st_make_grid(cellsize = c(1, 1), offset = c(0, 0), n = c(3, 2))
 #'
 #' # using distance between geometries

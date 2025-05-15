@@ -25,6 +25,7 @@ indices for time and spatial location.
 }
 \examples{
 
+library(sfclust)
 library(stars)
 
 dims <- st_dimensions(

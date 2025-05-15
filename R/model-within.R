@@ -20,6 +20,9 @@
 #'
 #' @examples
 #'
+#'
+#' \donttest{
+#' library(sfclust)
 #' library(stars)
 #'
 #' dims <- st_dimensions(
@@ -39,6 +42,7 @@
 #' models = log_mlik_all(c(1, 1, 1, 2, 2), stdata, detailed = TRUE,
 #'   formula = cases ~ temperature, family = "poisson", E = expected)
 #' lapply(models, summary)
+#' }
 #'
 #' @export
 log_mlik_all <- function(membership, stdata, stnames = c("geometry", "time"),
@@ -150,6 +154,7 @@ correction_required <- function (formula) {
 #'
 #' @examples
 #'
+#' library(sfclust)
 #' library(stars)
 #'
 #' dims <- st_dimensions(
@@ -198,6 +203,7 @@ data_all <- function(stdata, stnames = c("geometry", "time")) {
 #'
 #' @examples
 #'
+#' library(sfclust)
 #' library(stars)
 #'
 #' dims <- st_dimensions(

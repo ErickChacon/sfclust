@@ -36,6 +36,9 @@
 #' @usage data(stbinom)
 #'
 #' @examples
+#'
+#' library(sfclust)
+#'
 #' data(stbinom)
 #' stbinom
 #' plot(stbinom["cases"])
@@ -57,6 +60,9 @@
 #' @usage data(stgaus)
 #'
 #' @examples
+#'
+#' library(sfclust)
+#'
 #' data(stgaus)
 #' stgaus
 #' plot(stgaus["y"])

@@ -104,6 +104,9 @@ Chacón-Montalván, Paula Moraga:
 }
 \examples{
 
+\donttest{
+library(sfclust)
+
 # Clustering with Gaussian data
 data(stgaus)
 result <- sfclust(stgaus, formula = y ~ f(idt, model = "rw1"),
@@ -112,7 +115,6 @@ print(result)
 summary(result)
 plot(result)
 
-
 # Clustering with binomial data
 data(stbinom)
 result <- sfclust(stbinom, formula = cases ~ poly(time, 2) + f(id),
@@ -120,6 +122,7 @@ result <- sfclust(stbinom, formula = cases ~ poly(time, 2) + f(id),
 print(result)
 summary(result)
 plot(result)
+}
 
 }
 \author{

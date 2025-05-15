@@ -191,6 +191,7 @@ update_within <- function(x, sample = nrow(x$samples$membership)) {
 #'
 #' @examples
 #'
+#' \donttest{
 #' library(sfclust)
 #'
 #' data(stgaus)
@@ -205,6 +206,7 @@ update_within <- function(x, sample = nrow(x$samples$membership)) {
 #'
 #' # Estimated values using a particular clustering sample
 #' df_est <- fitted(result, sample = 3)
+#' }
 #'
 #' @importFrom stats fitted
 #' @importFrom sf st_within st_union

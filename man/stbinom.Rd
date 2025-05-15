@@ -21,6 +21,9 @@ pattern defined by polynomial fixed effects. This dataset includes the variables
 and \code{population} observed across 100 simulated spatial regions over 91 time points.
 }
 \examples{
+
+library(sfclust)
+
 data(stbinom)
 stbinom
 plot(stbinom["cases"])
