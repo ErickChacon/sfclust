@@ -244,6 +244,7 @@ considered a reasonable realization of the clustering distribution.
 
 ```{r, fig.height = 5}
 plot(result)
+
 ```
 
 ### Summary
