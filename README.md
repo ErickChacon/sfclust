@@ -1,6 +1,7 @@
 <!-- badges: start -->
-  [![R-CMD-check](https://github.com/ErickChacon/sfclust/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ErickChacon/sfclust/actions/workflows/R-CMD-check.yaml)
- <!-- badges: end -->
+[![CRAN status](https://www.r-pkg.org/badges/version/sfclust)](https://CRAN.R-project.org/package=sfclust)
+[![R-CMD-check](https://github.com/ErickChacon/sfclust/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ErickChacon/sfclust/actions/workflows/R-CMD-check.yaml)
+<!-- badges: end -->
 
 # sfclust: Bayesian Spatial Functional Clustering
 
@@ -28,8 +29,13 @@ install.packages("INLA", dependencies = TRUE,
 )
 ```
 
-Once `INLA` is installed, you can install the development version of `sfclust` from
-GitHub:
+Once `INLA` is installed, you can install from [CRAN](https://cran.r-project.org/web/packages/sfclust/index.html) with:
+
+```r
+install.packages(sfclust)
+```
+
+Or you can install the development version of `sfclust` from GitHub:
 
 ```r
 devtools::install_github("ErickChacon/sfclust")
