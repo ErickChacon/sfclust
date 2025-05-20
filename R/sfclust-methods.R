@@ -314,15 +314,11 @@ plot.sfclust <- function(x, sample = x$clust$id, which = 1:3, clusters = NULL, s
       scale_x_continuous(expand = c(0, 0)) +
       scale_y_continuous(expand = c(0, 0)) +
       labs(fill = NULL, title = paste("Clustering sample", sample, "out of", nsamples)) +
-      theme_minimal() +
-      theme(
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank()
-      )
+      theme_bw()
     if (!legend) gg1 <- gg1 + theme(legend.position = "none")
     figs$gg1 <- gg1
   }
-   if (2 %in% which) { # functional shapes
+  if (2 %in% which) { # functional shapes
     df <- fitted(x, sample = sample, sort = sort)
     df <- filter(df, !!as.name(attr(x, "args")$stnames[1]) %in% which(membership %in% clusters))
     df <- st_set_dimensions(df[c("cluster", "mean_cluster")], attr(x, "args")$stnames[1],
@@ -333,7 +329,7 @@ plot.sfclust <- function(x, sample = x$clust$id, which = 1:3, clusters = NULL, s
       geom_line(aes(time, mean_cluster, color = factor(df$cluster))) +
       labs(x = "Time", y = "Cluster linear predictor", title = "Cluster mean functions", color = NULL) +
       theme_bw()
-    if (legend && (1 %in% which)) {
+    if (!legend || (1 %in% which)) {
       gg2 <- gg2 + theme(legend.position = "none")
     }
     figs$gg2 <- gg2
