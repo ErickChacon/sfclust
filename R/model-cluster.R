@@ -13,7 +13,12 @@
 #'        `c("geometry", "time")`).
 #' @param move_prob A numeric vector of probabilities for different types of moves in the MCMC process:
 #'        birth, death, change, and hyperparameter moves (default is `c(0.425, 0.425, 0.1, 0.05)`).
-#' @param q A numeric value representing the penalty for the number of clusters (default is `0.5`).
+#' @param logpen A negative numeric value representing the log-scale penalty for
+#'        increasing the number of clusters by one. The number of clusters is assumed to
+#'        follow a geometric prior with probability `q`, making this penalty equal to
+#'        `log(1 - q)`. For example, if `logp = -50`, then a proposal that increases the
+#'        number of clusters will only be favored if it improves the log marginal
+#'        likelihood by more than 50.
 #' @param correction A logical indicating whether correction to compute the marginal
 #'        likelihoods should be applied (default is `TRUE`). This depend of the type of
 #'        effect inclused in the `INLA` model.
@@ -87,7 +92,7 @@
 #'
 #' @export
 sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
-                    move_prob = c(0.425, 0.425, 0.1, 0.05), q = 0.5, correction = TRUE,
+                    move_prob = c(0.425, 0.425, 0.1, 0.05), logpen = log(1 - 0.5), correction = TRUE,
                     niter = 100, burnin = 0, thin = 1, nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
 
   inla_args <- match.call(expand.dots = FALSE)$...
@@ -111,7 +116,7 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
   membership <- graphdata[["membership"]]
 
   args <- list(stdata = stdata, graphdata = graphdata, stnames = stnames,
-    move_prob = move_prob, q = q, correction = correction)
+    move_prob = move_prob, logpen = logpen, correction = correction)
 
   nclust <- max(membership)
   edge_status <- getEdgeStatus(membership, mstgraph) # edge is within or between clusters
@@ -156,7 +161,7 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
         rd_new <- move_prob[2]
       }
       log_P <- log(rd_new) - log(rb)
-      log_A <- log(1 - q)
+      log_A <- logpen
       log_L_new <- log_mlik_ratio("split", split_res, log_mlike_vec, stdata, stnames, correction, ...)
       acc_prob <- exp(min(0, log_A + log_P + log_L_new$ratio))
 
@@ -179,7 +184,7 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
         rb_new <- move_prob[1]
       }
       log_P <- log(rb_new) - log(rd)
-      log_A <- -log(1 - q)
+      log_A <- -logpen
       log_L_new <- log_mlik_ratio("merge", merge_res, log_mlike_vec, stdata, stnames, correction, ...)
       acc_prob <- exp(min(0, log_A + log_P + log_L_new$ratio))
 

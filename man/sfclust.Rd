@@ -9,7 +9,7 @@ sfclust(
   graphdata = NULL,
   stnames = c("geometry", "time"),
   move_prob = c(0.425, 0.425, 0.1, 0.05),
-  q = 0.5,
+  logpen = log(1 - 0.5),
   correction = TRUE,
   niter = 100,
   burnin = 0,
@@ -33,7 +33,12 @@ It should include components like \code{graph}, \code{mst}, and \code{membership
 \item{move_prob}{A numeric vector of probabilities for different types of moves in the MCMC process:
 birth, death, change, and hyperparameter moves (default is \code{c(0.425, 0.425, 0.1, 0.05)}).}
 
-\item{q}{A numeric value representing the penalty for the number of clusters (default is \code{0.5}).}
+\item{logpen}{A negative numeric value representing the log-scale penalty for
+increasing the number of clusters by one. The number of clusters is assumed to
+follow a geometric prior with probability \code{q}, making this penalty equal to
+\code{log(1 - q)}. For example, if \code{logp = -50}, then a proposal that increases the
+number of clusters will only be favored if it improves the log marginal
+likelihood by more than 50.}
 
 \item{correction}{A logical indicating whether correction to compute the marginal
 likelihoods should be applied (default is \code{TRUE}). This depend of the type of

@@ -287,9 +287,9 @@ linpred_each_corrected <- function(x){
 #' @return A composed `patchwork` object displaying the selected subgraphs as specified by `which`.
 #'
 #' @importFrom ggplot2 ggplot aes geom_line geom_point scale_x_continuous scale_y_continuous element_blank
-#' @importFrom ggplot2 theme_bw theme_minimal theme labs
+#' @importFrom ggplot2 theme_bw theme_minimal theme labs geom_sf
 #' @importFrom patchwork wrap_plots
-#' @importFrom sf st_sf geom_sf
+#' @importFrom sf st_sf
 #' @export
 plot.sfclust <- function(x, sample = x$clust$id, which = 1:3, clusters = NULL, sort = FALSE, legend = FALSE, ...) {
 
