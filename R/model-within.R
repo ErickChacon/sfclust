@@ -75,12 +75,21 @@ unique_clusters <- function (membership) {
 log_mlik_each <- function(k, membership, stdata, stnames = c("geometry", "time"),
                           correction = TRUE, detailed = FALSE, ...) {
   inla_data <- data_each(k, membership, stdata, stnames)
-  model <- INLA::inla(
-    data = inla_data,
-    control.predictor = list(compute = TRUE),
-    control.compute = list(config = correction),
-    ...
-  )
+  model <- tryCatch({
+    INLA::inla(
+      data = inla_data,
+      control.predictor = list(compute = TRUE),
+      control.compute = list(config = correction),
+      ...
+    )
+  }, error = function(e) {
+    message("INLA model fitting failed: ", conditionMessage(e))
+    return(NULL)
+  })
+
+  if (is.null(model)) {
+    return(-1e6)  # Return low log-marginal likelihood to reject the move
+  }
 
   if (detailed) {
     model
