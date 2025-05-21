@@ -1,6 +1,5 @@
 ---
 title: "Additional features"
-date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Additional features}
@@ -10,7 +9,7 @@ vignette: >
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(fig.align = "center")
-knitr::opts_chunk$set(fig.height = 7, fig.width = 8, dpi = 90, out.width = '100%')
+knitr::opts_chunk$set(fig.height = 6.5, fig.width = 7.5, dpi = 90, out.width = '100%')
 knitr::opts_chunk$set(comment = "#>")
 ```
 
@@ -41,18 +40,18 @@ stgaus
 
 To gain some initial insights, we can aggregate the data weekly:
 
-```{r}
+```{r, fig.height = 5}
 stweekly <- aggregate(stgaus, by = "week", FUN = mean)
 ggplot() +
     geom_stars(aes(fill = y), stweekly) +
-    facet_wrap(~ time) +
+    facet_wrap(~ time, ncol = 5) +
     scale_fill_distiller(palette = "RdBu") +
     theme_bw()
 ```
 
 We can also examine the trends for each region:
 
-```{r, fig.height = 7, fig.width = 8}
+```{r, fig.height = 6}
 stgaus |>
     st_set_dimensions("geometry", values = 1:nrow(stgaus)) |>
     as_tibble() |>
@@ -110,7 +109,7 @@ names(initial_cluster)
 
 Now, let's visualize how the regions were randomly clustered:
 
-```{r}
+```{r, fig.height = 5.5}
 st_sf(st_geometry(stgaus), cluster = factor(initial_cluster$membership)) |>
   ggplot() +
     geom_sf(aes(fill = cluster)) +
@@ -170,7 +169,7 @@ The `plot` method allows us to select which graph to produce. For example, we ca
 visualize only the log marginal likelihood to diagnose convergence. With just 50
 iterations, we can see that the log marginal likelihood has not yet achieved convergence.
 
-```{r, fig.dpi = 72}
+```{r, fig.dpi = 72, fig.height = 6}
 plot(result, which = 3)
 ```
 
@@ -193,7 +192,7 @@ With 2000 additional iterations, there have been many clustering movements. Furt
 when visualizing the results, we can observe that the log marginal likelihood has achieved
 convergence.
 
-```{r, fig.dpi = 72}
+```{r, fig.dpi = 72, fig.height = 6}
 plot(result2, which = 3)
 ```
 
@@ -209,24 +208,20 @@ summary(result2, sort = TRUE)
 
 Let's visualize the regions grouped by cluster.
 
-```{r}
-stgaus$cluster <- fitted(result2, sort = TRUE)$cluster
-st_sf(st_geometry(stgaus), cluster = factor(stgaus$cluster)) |>
-  ggplot() +
-    geom_sf(aes(fill = cluster)) +
-    theme_bw()
+```{r, fig.height = 5.5}
+plot(result2, which = 1, sort = TRUE, legend = TRUE)
 ```
 
 Let's visualize the original data grouped by cluster.
 
-```{r, fig.height = 9.5}
+```{r, fig.height = 4}
 stgaus$cluster <- fitted(result2, sort = TRUE)$cluster
 stgaus |>
   st_set_dimensions("geometry", values = 1:nrow(stgaus)) |>
   as_tibble() |>
   ggplot() +
     geom_line(aes(time, y, group = geometry), linewidth = 0.3) +
-    facet_wrap(~ cluster, ncol = 2) +
+    facet_wrap(~ cluster, ncol = 5) +
     theme_bw() +
     labs(title = "Risk per cluster", y = "Risk", x = "Time")
 ```

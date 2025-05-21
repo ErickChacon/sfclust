@@ -24,8 +24,8 @@ print.sfclust <- function(x, ...) {
   print(eval(attr(x, "inla_args")$formula), showEnv = FALSE, ...)
 
   cat("\nClustering hyperparameters:\n")
-  hypernames <- c("q", "birth", "death", "change", "hyper")
-  print(setNames(c(attr(x, "args")$q, attr(x, "args")$move_prob), hypernames), ...)
+  hypernames <- c("log(1-q)", "birth", "death", "change", "hyper")
+  print(setNames(c(attr(x, "args")$logpen, attr(x, "args")$move_prob), hypernames), ...)
 
   cat("\nClustering movement counts:\n")
   print(x$samples$move_counts, ...)
@@ -313,11 +313,12 @@ plot.sfclust <- function(x, sample = x$clust$id, which = 1:3, clusters = NULL, s
       geom_sf(aes(fill = membership), color = "gray50") +
       scale_x_continuous(expand = c(0, 0)) +
       scale_y_continuous(expand = c(0, 0)) +
-      labs(fill = NULL, title = paste("Clustering sample", sample, "out of", nsamples)) +
+      labs(fill = NULL, subtitle = paste("Clustering:", sample, "/", nsamples)) +
       theme_bw()
     if (!legend) gg1 <- gg1 + theme(legend.position = "none")
     figs$gg1 <- gg1
   }
+
   if (2 %in% which) { # functional shapes
     df <- fitted(x, sample = sample, sort = sort)
     df <- filter(df, !!as.name(attr(x, "args")$stnames[1]) %in% which(membership %in% clusters))
@@ -327,20 +328,20 @@ plot.sfclust <- function(x, sample = x$clust$id, which = 1:3, clusters = NULL, s
     aux <- data.frame(time = df[[attr(x, "args")$stnames[2]]], mean_cluster = df$mean_cluster, cluster = df$cluster)
     gg2 <- ggplot(aux) +
       geom_line(aes(time, mean_cluster, color = factor(df$cluster))) +
-      labs(x = "Time", y = "Cluster linear predictor", title = "Cluster mean functions", color = NULL) +
+      labs(x = "Time", y = "Linear predictor", subtitle = "Cluster mean functions", color = NULL) +
       theme_bw()
     if (!legend || (1 %in% which)) {
       gg2 <- gg2 + theme(legend.position = "none")
     }
     figs$gg2 <- gg2
   }
+
   if (3 %in% which) { # marginal likelihood convergence
     gg3 <- ggplot(mapping = aes(sample, log_mlike)) +
       geom_line(data = data.frame(sample = 1:nsamples, log_mlike = x$samples$log_mlike)) +
       geom_point(data = data.frame(sample = sample, log_mlike = x$samples$log_mlike[sample]),
         color = 2) +
-      labs(x = "Sample", y = "Log marginal likelihood",
-        title = "Log marginal likelihood convergence") +
+      labs(x = "Sample", y = "Log marginal likelihood", subtitle = "Convergence") +
       theme_bw()
     figs$gg3 <- gg3
   }

@@ -1,6 +1,5 @@
 ---
 title: "Getting started"
-date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Getting started}
@@ -10,7 +9,7 @@ vignette: >
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(fig.align = "center", eval = TRUE)
-knitr::opts_chunk$set(fig.height = 7, fig.width = 8, dpi = 90, out.width = '100%')
+knitr::opts_chunk$set(fig.height = 6.5, fig.width = 7.5, dpi = 90, out.width = '100%')
 knitr::opts_chunk$set(comment = "#>")
 ```
 
@@ -152,8 +151,8 @@ with 2000 iterations.
 #     niter = 2000, path_save = file.path("inst", "vigdata", "full-binomial-mcmc.rds")
 #   )
 # )
-# #      user    system   elapsed
-# # 10819.833  1417.088  1644.396
+#      user    system   elapsed
+# 10781.142  1368.382  2794.899
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
@@ -186,6 +185,8 @@ The returning object is of class `sfclust`, which is a list of two elements:
 - `samples`: list containing the `membership` samples, the logarithm of the marginal
   likelihood `log_mlike` and the clustering movements `move_counts` done in total.
 - `clust`: list containing the selecting `membership` from `samples`. This include the
+#      user    system   elapsed
+# 10819.833  1417.088  1644.396
   `id` of selected sample, the selected `membership` and the `models` associated to each
   cluster.
 
@@ -204,9 +205,9 @@ The output indicates that the within-cluster model is specified using the formul
 poly(time, 2) + f(id)`, which is compatible with INLA. This formula includes polynomial
 fixed effects and an independent random effect per observation.
 
-The displayed hyperparameters are used in the clustering algorithm. The parameter `q =
-0.5` defines the prior for the number of clusters, while the other parameters control the
-probabilities of different clustering movements:
+The displayed hyperparameters are used in the clustering algorithm. The hyperparameter
+`log(1-q) = 0.5` penalizes the increase of clusters, while the other parameters control
+the probabilities of different clustering movements:
 
 - The probability of splitting a cluster is 0.425.
 - The probability of merging two clusters is 0.425.
@@ -242,9 +243,8 @@ Finally, the right panel presents the marginal likelihood for each iteration. Th
 stabilize around iteration 1500, indicating that any clustering beyond this point can be
 considered a reasonable realization of the clustering distribution.
 
-```{r, fig.height = 5}
+```{r, fig.height = 3}
 plot(result)
-
 ```
 
 ### Summary
@@ -325,14 +325,14 @@ ggplot() +
 
 Finally, we can use our results to visualize the original data grouped by clusters.
 
-```{r, fig.height = 9.5}
+```{r, fig.height = 4}
 stbinom$cluster <- fitted(result, sort = TRUE)$cluster
 stbinom |>
   st_set_dimensions("geometry", values = 1:nrow(stbinom)) |>
   as_tibble() |>
   ggplot() +
     geom_line(aes(time, cases/population, group = geometry), linewidth = 0.3) +
-    facet_wrap(~ cluster, ncol = 2) +
+    facet_wrap(~ cluster, ncol = 5) +
     theme_bw() +
     labs(title = "Risk per cluster", y = "Risk", x = "Time")
 ```
