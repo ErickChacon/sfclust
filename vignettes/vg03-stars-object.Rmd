@@ -1,6 +1,5 @@
 ---
 title: "Create stars dataset"
-date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Create stars dataset}
@@ -10,7 +9,7 @@ vignette: >
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(fig.align = "center", eval = TRUE)
-knitr::opts_chunk$set(fig.height = 7, fig.width = 8, dpi = 150, out.width = '100%')
+knitr::opts_chunk$set(fig.height = 6.5, fig.width = 7.5, dpi = 90, out.width = '100%')
 knitr::opts_chunk$set(comment = "#>")
 ```
 
@@ -65,7 +64,7 @@ Once the `stars` object is created, you can use any of the methods provided by t
 [`stars`](https://r-spatial.github.io/stars/index.html) package. For example, we can
 visualize the `cases` variable across time:
 
-```{r, fig.height = 5}
+```{r, fig.height = 4}
 ggplot() +
     geom_stars(aes(fill = cases), data = stdata) +
     facet_wrap(~ time) +

@@ -24,8 +24,8 @@ print.sfclust <- function(x, ...) {
   print(eval(attr(x, "inla_args")$formula), showEnv = FALSE, ...)
 
   cat("\nClustering hyperparameters:\n")
-  hypernames <- c("q", "birth", "death", "change", "hyper")
-  print(setNames(c(attr(x, "args")$q, attr(x, "args")$move_prob), hypernames), ...)
+  hypernames <- c("log(1-q)", "birth", "death", "change", "hyper")
+  print(setNames(c(attr(x, "args")$logpen, attr(x, "args")$move_prob), hypernames), ...)
 
   cat("\nClustering movement counts:\n")
   print(x$samples$move_counts, ...)
@@ -284,9 +284,12 @@ linpred_each_corrected <- function(x){
 #' @param legend Logical value indicating whether a legend should be included in the plot. Default is `FALSE`.
 #' @param ... Additional arguments passed to the underlying plotting functions.
 #'
-#' @return A plot displaying the selected subgraphs as specified by `which`.
+#' @return A composed `patchwork` object displaying the selected subgraphs as specified by `which`.
 #'
-#' @importFrom graphics par points
+#' @importFrom ggplot2 ggplot aes geom_line geom_point scale_x_continuous scale_y_continuous element_blank
+#' @importFrom ggplot2 theme_bw theme_minimal theme labs geom_sf
+#' @importFrom patchwork wrap_plots
+#' @importFrom sf st_sf
 #' @export
 plot.sfclust <- function(x, sample = x$clust$id, which = 1:3, clusters = NULL, sort = FALSE, legend = FALSE, ...) {
 
@@ -302,38 +305,46 @@ plot.sfclust <- function(x, sample = x$clust$id, which = 1:3, clusters = NULL, s
   if (is.null(clusters)) clusters <- 1:max(membership)
 
   # visualize
-  which <- which[which %in% 1:3]
-  if (length(which) > 1) {
-    oldpar <- par(mfrow = c(1, length(which)))
-    on.exit(par(oldpar))
-  }
+  figs <- list(gg1 = NA, gg2 = NA, gg3 = NA)
   if (1 %in% which) { # spatial clustering membership
     membership[!(membership %in% clusters)] <- NA
     membership <- factor(membership)
-    plot(geoms, col = membership, border = "gray50",
-      main = paste("Clustering sample", sample, "out of", nsamples),
-      xlab = "Longitude", ylab = "Latitude", ...
-    )
-    if (legend) {
-      legend("topright", legend = levels(membership), fill = 1:length(levels(membership)),
-        border = "black", title = "Cluster", cex = 0.8, bty = "n")
-    }
+    gg1 <- ggplot(st_sf(geometry = geoms, membership = membership)) +
+      geom_sf(aes(fill = membership), color = "gray50") +
+      scale_x_continuous(expand = c(0, 0)) +
+      scale_y_continuous(expand = c(0, 0)) +
+      labs(fill = NULL, subtitle = paste("Clustering:", sample, "/", nsamples)) +
+      theme_bw()
+    if (!legend) gg1 <- gg1 + theme(legend.position = "none")
+    figs$gg1 <- gg1
   }
-  if (3 %in% which) { # functional shapes
+
+  if (2 %in% which) { # functional shapes
     df <- fitted(x, sample = sample, sort = sort)
     df <- filter(df, !!as.name(attr(x, "args")$stnames[1]) %in% which(membership %in% clusters))
     df <- st_set_dimensions(df[c("cluster", "mean_cluster")], attr(x, "args")$stnames[1],
       values = seq_len(length(st_get_dimension_values(df, attr(x, "args")$stnames[1])))) |>
         as.data.frame()
-    plot(df[[attr(x, "args")$stnames[2]]], df$mean_cluster, col = df$cluster,
-      main = "Cluster mean functions", xlab = "Time", ylab = "Cluster linear predictor",
-      pch = 19)
-  }
-  if (2 %in% which) { # marginal likelihood convergence
-    plot(x$samples$log_mlike, type = "l", main = "Log marginal likelihood convergence",
-      xlab = "Sample", ylab = "Log marginal likelihood", col = "blue", lwd = 2)
-    points(sample, x$samples$log_mlike[sample], col = "red", pch = 19)
+    aux <- data.frame(time = df[[attr(x, "args")$stnames[2]]], mean_cluster = df$mean_cluster, cluster = df$cluster)
+    gg2 <- ggplot(aux) +
+      geom_line(aes(time, mean_cluster, color = factor(df$cluster))) +
+      labs(x = "Time", y = "Linear predictor", subtitle = "Cluster mean functions", color = NULL) +
+      theme_bw()
+    if (!legend || (1 %in% which)) {
+      gg2 <- gg2 + theme(legend.position = "none")
+    }
+    figs$gg2 <- gg2
   }
 
-  invisible(NULL)
+  if (3 %in% which) { # marginal likelihood convergence
+    gg3 <- ggplot(mapping = aes(sample, log_mlike)) +
+      geom_line(data = data.frame(sample = 1:nsamples, log_mlike = x$samples$log_mlike)) +
+      geom_point(data = data.frame(sample = sample, log_mlike = x$samples$log_mlike[sample]),
+        color = 2) +
+      labs(x = "Sample", y = "Log marginal likelihood", subtitle = "Convergence") +
+      theme_bw()
+    figs$gg3 <- gg3
+  }
+
+  wrap_plots(figs[which])
 }

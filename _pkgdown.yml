@@ -4,6 +4,6 @@ articles:
 - title: Articles
   navbar: ~
   contents:
-  - get-started
-  - additional-features
-  - stars-object
+  - vg01-get-started
+  - vg02-additional-features
+  - vg03-stars-object

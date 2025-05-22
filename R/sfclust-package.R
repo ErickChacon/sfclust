@@ -69,3 +69,6 @@
 #'
 #' @name stgaus
 "stgaus"
+
+#' ggplot variables
+globalVariables(c("log_mlike", "time", "mean_cluster"))

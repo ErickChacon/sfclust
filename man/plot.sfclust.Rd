@@ -33,7 +33,7 @@
 \item{...}{Additional arguments passed to the underlying plotting functions.}
 }
 \value{
-A plot displaying the selected subgraphs as specified by \code{which}.
+A composed \code{patchwork} object displaying the selected subgraphs as specified by \code{which}.
 }
 \description{
 This function visualizes the estimated clusters from an \code{sfclust} object. It can display:

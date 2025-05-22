@@ -29,9 +29,10 @@ Imports:
     stars,
     dplyr,
     methods,
-    Matrix
-Suggests:
+    Matrix,
     ggplot2,
+    patchwork
+Suggests:
     ggraph,
     class,
     fda,
