@@ -185,8 +185,6 @@ The returning object is of class `sfclust`, which is a list of two elements:
 - `samples`: list containing the `membership` samples, the logarithm of the marginal
   likelihood `log_mlike` and the clustering movements `move_counts` done in total.
 - `clust`: list containing the selecting `membership` from `samples`. This include the
-#      user    system   elapsed
-# 10819.833  1417.088  1644.396
   `id` of selected sample, the selected `membership` and the `models` associated to each
   cluster.
 
