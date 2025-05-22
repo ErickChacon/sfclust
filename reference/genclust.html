@@ -22,9 +22,9 @@ cluster membership in a clustering algorithm, such as sfclust."></head><body>
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/get-started.html">Getting started</a></li>
-    <li><a class="dropdown-item" href="../articles/additional-features.html">Additional features</a></li>
-    <li><a class="dropdown-item" href="../articles/stars-object.html">Create stars dataset</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/vg01-get-started.html">Getting started</a></li>
+    <li><a class="dropdown-item" href="../articles/vg02-additional-features.html">Additional features</a></li>
+    <li><a class="dropdown-item" href="../articles/vg03-stars-object.html">Create stars dataset</a></li>
   </ul></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -91,15 +91,15 @@ random weights are assigned.</p></dd>
 <span class="r-in"><span><span class="va">clust</span> <span class="op">&lt;-</span> <span class="fu">genclust</span><span class="op">(</span><span class="va">x</span>, nclust <span class="op">=</span> <span class="fl">3</span>, weights <span class="op">=</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_measures.html" class="external-link">st_distance</a></span><span class="op">(</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_unary.html" class="external-link">st_centroid</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">clust</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $graph</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 5548c96 UNW- 6 11 -- </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 117e762 UNW- 6 11 -- </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> + attr: name (v/c), weight (e/n)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 5548c96 (vertex names):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 117e762 (vertex names):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [1] 1--2 1--4 1--5 2--3 2--4 2--5 2--6 3--5 3--6 4--5 5--6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $mst</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 089d432 UNW- 6 5 -- </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 044c0e2 UNW- 6 5 -- </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> + attr: name (v/c), vid (v/n), weight (e/n)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 089d432 (vertex names):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 044c0e2 (vertex names):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1--4 2--3 3--6 4--5 5--6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $membership</span>
@@ -113,15 +113,15 @@ random weights are assigned.</p></dd>
 <span class="r-in"><span><span class="va">cluster_ini</span> <span class="op">&lt;-</span> <span class="fu">genclust</span><span class="op">(</span><span class="va">x</span>, nclust <span class="op">=</span> <span class="fl">3</span>, weights <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">36</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">cluster_ini</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $graph</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 16290a0 U-W- 6 11 -- </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH ab75277 U-W- 6 11 -- </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> + attr: weight (e/n)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 16290a0:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from ab75277:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [1] 1--2 1--4 1--5 2--3 2--4 2--5 2--6 3--5 3--6 4--5 5--6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $mst</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 3f2cd3b U-W- 6 5 -- </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 260b052 U-W- 6 5 -- </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> + attr: vid (v/n), weight (e/n)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 3f2cd3b:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 260b052:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1--2 1--4 1--5 2--3 2--6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $membership</span>
@@ -134,15 +134,15 @@ random weights are assigned.</p></dd>
 <span class="r-in"><span><span class="va">cluster_ini</span> <span class="op">&lt;-</span> <span class="fu">genclust</span><span class="op">(</span><span class="va">x</span>, nclust <span class="op">=</span> <span class="fl">3</span>, weights <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">36</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">cluster_ini</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $graph</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 0369dd0 U-W- 6 11 -- </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH eca7d68 U-W- 6 11 -- </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> + attr: weight (e/n)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 0369dd0:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from eca7d68:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [1] 1--2 1--4 1--5 2--3 2--4 2--5 2--6 3--5 3--6 4--5 5--6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $mst</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 337f247 U-W- 6 5 -- </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH e20794c U-W- 6 5 -- </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> + attr: vid (v/n), weight (e/n)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 337f247:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from e20794c:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1--2 1--5 2--3 2--4 3--6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $membership</span>
