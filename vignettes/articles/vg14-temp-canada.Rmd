@@ -190,7 +190,7 @@ summary(result, sort = TRUE)
 The `summary` indicates that 8 clusters from 14 have more than one member, where the two biggest cluster
 includes 7 stations, the third 4, and so on.
 
-```{r, fig.height = 4}
+```{r, fig.height = 3}
 plot(result, sort = TRUE)
 ```
 
