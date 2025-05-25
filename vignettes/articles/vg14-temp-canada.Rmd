@@ -1,0 +1,283 @@
+---
+title: "Daily temperature at Canada stations"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Daily temperature at Canada stations}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(fig.align = "center", eval = TRUE)
+knitr::opts_chunk$set(fig.height = 6.5, fig.width = 7.5, dpi = 90, out.width = '100%')
+knitr::opts_chunk$set(comment = "#>")
+```
+
+In this vignette, we use `sfclust` to clusterize Canada stations with similar standardised
+temperature averaged over 1960 to 1994.
+
+## Load packages and data
+
+```{r warning=FALSE, include=TRUE}
+library(sfclust)
+library(stars)
+library(ggplot2)
+library(dplyr)
+```
+
+We will use the common dataset `CanadianWeather` for functional data analysis from the
+`fda` package. Notice that this is a list containing the daily data per stations, and
+other information such as the location of the stations (`coordinates`).
+
+```{r}
+data(CanadianWeather, package = "fda")
+names(CanadianWeather)
+```
+
+Firt, we will convert the stations to the class `sf`, and visualize their locations.
+
+```{r}
+stations <- as.data.frame(CanadianWeather$coordinates) |>
+  mutate(longitud = - `W.longitude`) |>
+  rename(latitud = "N.latitude") |>
+  dplyr::select(longitud, latitud) |>
+  sf::st_as_sf(coords = c("longitud", "latitud"), crs = sf::st_crs(4326)) |>
+  sf::st_transform(st_crs(3857))
+
+ggplot(stations) +
+    geom_sf()
+```
+
+## Prepare data
+
+### Create polygonal data
+
+The `CanadianWeather` is not an `stars` object, we will create a stars object. However, we
+first need to somhow define the adjacency between the stations. For this, we will create a
+Voronoi tessellation with will create a polygon for each station.
+
+```{r}
+# create boundary
+boundary <- stations |>
+  st_union() |>
+  st_convex_hull() |>
+  st_buffer(units::set_units(1000, "km"))
+
+# create polygons with voronoi
+domain <- stations |>
+  st_union() |>
+  st_voronoi(boundary) |>
+  st_cast() |>
+  st_intersection(boundary)
+
+# reorganize the polygons to match stations
+idx <- stations |>
+    st_join(st_sf(geometry = domain, id = 1:35), join = st_within) |>
+    pull(id)
+domain <- domain[idx]
+
+ggplot() +
+  geom_sf(data = domain, color = 2, fill = NA) +
+  geom_sf(data = stations)
+```
+
+### Create stars data
+
+We will convert the data to a stars object with dimensions `geometry` and `time` as
+expected by `sfclust`.
+
+```{r}
+time <- seq(as.Date("1977-01-01"), as.Date("1977-12-31"), by = "1 day")
+canweather <- st_as_stars(
+    temp = t(CanadianWeather$dailyAv[ , ,1]),
+    dimensions = st_dimensions(geometry = domain, time = time)
+)
+```
+
+We standardised the temperature per group to be able to clusterize based on the functional
+form rather than the absolute value.
+
+```{r}
+stand <- function(x) (x - mean(x)) / sqrt(var(x))
+canweather$ztemp <- t(apply(canweather$temp, 1, stand))
+```
+
+### Exploratory analysis
+
+Let's visualize the temperature averaged per month. We can observe that higher values of
+standardised temperature have been observed in the north station on July; while the lowest values
+have been observed on January around some stations located around the south areas closed
+to the center.
+
+```{r, fig.height = 6}
+ggplot() +
+    geom_stars(aes(fill = ztemp), data = aggregate(canweather, by = "month", FUN = mean)) +
+    facet_wrap(~ time) +
+    scale_fill_distiller(palette = "RdBu") +
+    theme_bw() +
+    theme(legend.position = "bottom")
+```
+
+Additionally we can observe the temperal trends per regions. Although the functional
+shapes seem similar, it is important to notice that the temperature increases and decays at different
+times of the year per station.
+
+```{r, fig.height = 5.5}
+canweather |>
+  st_set_dimensions("geometry", values = 1:nrow(canweather)) |>
+  as_tibble() |>
+  ggplot() +
+  geom_line(aes(time, ztemp, group = geometry, color = factor(geometry)), linewidth = 0.3) +
+  theme_bw() +
+  theme(legend.position = "none")
+```
+
+## Spatial clustering
+
+### Model fitting
+
+In this application, because of the trends observed before, we will assume that the mean
+standardised temperature can be explained by (i) a polynomial trend with respect to
+`time`, (ii) and an autoregressive process over times units `idt` to capture correlated
+temporal variation. Additionally, we will start assuming that each state is a cluster,
+such us we will start with 35 clusters. Because of the presence of strong noise on the
+curves, we will use a strong penalty (-300) for the increase of parameters, it means that
+to have high chances of accepting the creation a new cluster, then the log marginal
+likelihood has be to improve by a value of 300, if the proposal has an improvement on the
+marginal likelihood smaller than 300, it will probably be rejected.
+
+```{r, eval = FALSE, echo = FALSE}
+# formula <- ztemp ~ poly(time, 2) + f(idt, model = "rw1")
+# geodata <- genclust(domain, nclust = 35)
+#
+# set.seed(123)
+# result <- sfclust(canweather, graphdata = geodata, formula = formula,
+#     logpen = -300, niter = 4000, burnin = 0, thin = 10, nmessage = 10, nsave = 100,
+#     control.inla = list(control.vb = list(enable = FALSE)),
+#     path_save = file.path("tools", "data", "canweather-mcmc.rds"))
+```
+
+```{r, eval = FALSE}
+formula <- ztemp ~ poly(time, 2) + f(idt, model = "rw1")
+geodata <- genclust(domain, nclust = 35)
+
+set.seed(123)
+result <- sfclust(canweather, graphdata = geodata, formula = formula,
+    logpen = -300, niter = 4000, burnin = 0, thin = 10, nmessage = 10, nsave = 100,
+    control.inla = list(control.vb = list(enable = FALSE)),
+    path_save = file.path("canweather-mcmc.rds"))
+result
+```
+
+```{r, echo = FALSE}
+formula <- ztemp ~ poly(time, 2) + f(idt, model = "rw1")
+geodata <- genclust(st_geometry(canweather), nclust = 35)
+result <- readRDS(here::here(file.path("tools", "data", "canweather-mcmc.rds")))
+result
+```
+
+Notice that 8 times there was an increase of number of clusters, 29 times clusters were
+merged, 19 times the composition were modified, and 171 times the minimum spanning tree has
+been modified. Also after thinning we keep 400 samples from a total of 4000, and the
+marginal likelihood achieve a value of 17541.96.
+
+### Results
+
+```{r}
+summary(result, sort = TRUE)
+```
+
+The `summary` indicates that 8 clusters from 14 have more than one member, where the two biggest cluster
+includes 7 stations, the third 4, and so on.
+
+```{r, fig.height = 4}
+plot(result, sort = TRUE)
+```
+
+```{r, echo = FALSE}
+path_figures <- here::here(file.path("tools", "figures"))
+ggsave(file.path(path_figures, "canweather-plot.pdf"), width = 10, height = 3, device = cairo_pdf)
+```
+
+### Empirical risk per cluster
+
+We can use that information of the cluster assignment to visualize the empirical data per
+cluster.
+
+```{r}
+canweather$cluster <- fitted(result, sort = TRUE)$cluster
+
+# convert stars to data frame per region and per cluster
+canaux <- canweather |>
+  st_set_dimensions("geometry", values = 1:nrow(canweather)) |>
+  as_tibble()
+cancluster <- canaux |>
+    group_by(time, cluster) |>
+    summarise(ztemp_mean = mean(ztemp) ) |>
+    ungroup()
+
+```
+
+Let's visualize empirical risk per cluster for those who have more than 1 stations.
+
+```{r, fig.height = 5}
+dplyr::filter(canaux, cluster %in% 1:8) |>
+    ggplot() +
+        geom_line(aes(time, ztemp, group = geometry), color = "gray50", linewidth = 0.3) +
+        geom_line(aes(time, ztemp_mean), dplyr::filter(cancluster, cluster %in% 1:8), color = "red", linewidth = 0.4) +
+        facet_wrap(~ cluster, ncol = 4) +
+        theme_bw() +
+        labs(y = "Relative risk", x = "Time")
+```
+
+```{r, echo = FALSE}
+ggsave(file.path(path_figures, "canweather-risk-per-cluster-1.pdf"), width = 10, height = 7.5, device = cairo_pdf)
+```
+
+The main differences between these clusters if the initial shape, the speed of increase,
+the peak shape and time, the decay behaviour. For example clusters 1 and 2 has a bell shape, while others like 3-6 have almost a linear increase until reaching a maximum level.
+
+Let's visualize empirical risk per cluster for those who have only 1 station.
+
+```{r, fig.height = 5.4}
+plot(result, which = 2, sort = TRUE, clusters = 9:14, legend = TRUE)
+```
+
+```{r, echo = FALSE}
+ggsave(file.path(path_figures, "canweather-risk-per-cluster-2.pdf"), width = 10, height = 7.5, device = cairo_pdf)
+```
+
+Notice that these clusters have more particular shapes that differentiate from the
+previous clusters, and between them.
+
+
+```{r, echo = FALSE}
+# pred <- fitted(result, sort = TRUE, aggregate = TRUE)
+# ggplot() +
+#     geom_stars(aes(fill = mean_cluster), data = pred) +
+#     facet_wrap(~ time) +
+#     scale_fill_distiller(palette = "RdBu") +
+#     labs(title = "Daily risk", fill = "Risk") +
+#     theme_bw(base_size = 7) +
+#     theme(legend.position = "bottom")
+```
+
+```{r, echo = FALSE}
+# # saveRDS(list(x = 1, b = 2), "find-problem.rds")
+#
+#  # -19550.807576937
+# plot(result)
+#  # -19449.8533593845
+#  # -19306.77
+#  # -19284.15
+#
+# # result2 =  update(result, niter = 2000, path_save = file.path("inst", "vigdata", "usacovid2.rds"))
+#
+# result = readRDS("clust_usacovid1.rds")
+# # result2 =  readRDS(file.path("inst", "vigdata", "usacovid2.rds"))
+# summary(result)
+# # summary(result2)
+# # library(sfclust)
+# plot(result, which = 1)
+```
+
