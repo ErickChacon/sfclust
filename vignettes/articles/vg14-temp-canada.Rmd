@@ -23,6 +23,7 @@ library(sfclust)
 library(stars)
 library(ggplot2)
 library(dplyr)
+library(rnaturalearth)
 ```
 
 We will use the common dataset `CanadianWeather` for functional data analysis from the
@@ -198,6 +199,29 @@ plot(result, sort = TRUE)
 path_figures <- here::here(file.path("tools", "figures"))
 ggsave(file.path(path_figures, "canweather-plot.pdf"), width = 10, height = 3, device = cairo_pdf)
 ```
+
+Let's create a map with the clustered stations.
+
+```{r}
+canada <- rnaturalearth::ne_states("Canada")
+stations$cluster <- factor(sfclust:::sort_membership(result$clust$membership))
+
+ggplot() +
+  geom_sf(data = st_transform(canada, st_crs(stations))) +
+  geom_sf(aes(color = cluster), data = stations, size = 2) +
+  labs(color = NULL) +
+  theme_bw()
+```
+
+```{r, echo = FALSE}
+path_figures <- here::here(file.path("tools", "figures"))
+ggsave(file.path(path_figures, "canweather-map.pdf"), width = 10, height = 3, device = cairo_pdf)
+```
+
+We can observe that the biggest cluster is located on the southeast of Canada with the total
+of 7 close stations, while the second biggest is located on the south conformed by 7
+stations that are more further apart. The third one, with 4 stations, is located on the
+southwest also more further apart.
 
 ### Empirical risk per cluster
 
