@@ -27,6 +27,8 @@ associated with the selected clustering sample."></head><body>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/vg01-get-started.html">Getting started</a></li>
     <li><a class="dropdown-item" href="../articles/vg02-additional-features.html">Additional features</a></li>
     <li><a class="dropdown-item" href="../articles/vg03-stars-object.html">Create stars dataset</a></li>
+    <li><a class="dropdown-item" href="../articles/vg12-covid-usa.html">Covid-19 in US states during 2020</a></li>
+    <li><a class="dropdown-item" href="../articles/vg14-temp-canada.html">Daily temperature at Canada stations</a></li>
   </ul></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -109,16 +111,16 @@ and combines them into a matrix of fitted values.</p>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">stgaus</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="sfclust.html">sfclust</a></span><span class="op">(</span><span class="va">stgaus</span>, formula <span class="op">=</span> <span class="va">y</span> <span class="op">~</span> <span class="fu">f</span><span class="op">(</span><span class="va">idt</span>, model <span class="op">=</span> <span class="st">"rw1"</span><span class="op">)</span>, niter <span class="op">=</span> <span class="fl">10</span>,</span></span>
 <span class="r-in"><span>  nmessage <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 1: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1553.38566687781</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 2: clusters = 11, births = 1, deaths = 0, changes = 1, hypers = 0, log_mlike = -1463.30976721682</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 3: clusters = 11, births = 1, deaths = 0, changes = 1, hypers = 0, log_mlike = -1463.30976721682</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 4: clusters = 11, births = 1, deaths = 0, changes = 1, hypers = 0, log_mlike = -1463.30976721682</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 5: clusters = 12, births = 2, deaths = 0, changes = 1, hypers = 0, log_mlike = -722.867221894929</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 6: clusters = 12, births = 2, deaths = 0, changes = 1, hypers = 0, log_mlike = -722.867221894929</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 7: clusters = 12, births = 2, deaths = 0, changes = 1, hypers = 0, log_mlike = -722.867221894929</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 8: clusters = 13, births = 3, deaths = 0, changes = 1, hypers = 0, log_mlike = -635.210851890943</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 9: clusters = 13, births = 3, deaths = 0, changes = 1, hypers = 0, log_mlike = -635.210851890943</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 10: clusters = 14, births = 4, deaths = 0, changes = 1, hypers = 0, log_mlike = -449.744409795672</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 1: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1553.38566238708</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 2: clusters = 11, births = 1, deaths = 0, changes = 1, hypers = 0, log_mlike = -1463.30976206172</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 3: clusters = 11, births = 1, deaths = 0, changes = 1, hypers = 0, log_mlike = -1463.30976206172</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 4: clusters = 11, births = 1, deaths = 0, changes = 1, hypers = 0, log_mlike = -1463.30976206172</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 5: clusters = 12, births = 2, deaths = 0, changes = 1, hypers = 0, log_mlike = -722.867218610422</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 6: clusters = 12, births = 2, deaths = 0, changes = 1, hypers = 0, log_mlike = -722.867218610422</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 7: clusters = 12, births = 2, deaths = 0, changes = 1, hypers = 0, log_mlike = -722.867218610422</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 8: clusters = 13, births = 3, deaths = 0, changes = 1, hypers = 0, log_mlike = -635.210848426983</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 9: clusters = 13, births = 3, deaths = 0, changes = 1, hypers = 0, log_mlike = -635.210848426983</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 10: clusters = 14, births = 4, deaths = 0, changes = 1, hypers = 0, log_mlike = -449.744406646135</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Estimated values ordering clusters by size</span></span></span>
 <span class="r-in"><span><span class="va">df_est</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/fitted.values.html" class="external-link">fitted</a></span><span class="op">(</span><span class="va">result</span>, sort <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
@@ -141,7 +143,7 @@ and combines them into a matrix of fitted values.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.2.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
     </footer></div>
