@@ -1,0 +1,219 @@
+---
+title: "Covid-19 in US states during 2020"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Covid-19 in US states during 2020}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(fig.align = "center", eval = TRUE)
+knitr::opts_chunk$set(fig.height = 6.5, fig.width = 7.5, dpi = 90, out.width = '100%')
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+In this vignette, we use `sfclust` to identify US states with similar relative risk of
+Covid-19 during 2020.
+
+## Load packages and data
+
+```{r warning=FALSE, include=TRUE}
+library(sfclust)
+library(stars)
+library(ggplot2)
+library(dplyr)
+```
+
+The data for this application can be found at our github repository:
+[https://github.com/ErickChacon/sfclust/blob/main/tools/data/usacovid.rds](https://github.com/ErickChacon/sfclust/blob/main/tools/data/usacovid.rds).
+This data contains the weekly information of the number of `cases`, the `population` size
+and the number of `expected` cases for 49 states.
+
+```{r}
+usacovid <- readRDS(here::here(file.path("tools", "data", "usacovid.rds")))
+usacovid
+```
+
+Notice that the dimensions names are `space` and `time`, take that in mind because
+`sfclust` assumes that the dimension names are `c("geometry", "time")`, so you will need
+to provide the dimension names when using `sfclust`.
+
+## Exploratory analysis
+
+We can visualize the weekly Covid-19 relative risk across 49 states. It shows higher
+levels of risk by the end of the year.
+
+```{r, fig.height = 6}
+ggplot() +
+    geom_stars(aes(fill = cases/expected), data = usacovid) +
+    facet_wrap(~ time) +
+    scale_fill_distiller(palette = "RdBu") +
+    labs(fill = "Relative risk") +
+    theme_bw() +
+    theme(legend.position = "bottom")
+```
+
+Similarly we can observe the relative risk time series per state. It shows some peak
+around April, July and a big peak in December.
+
+```{r, fig.height = 5}
+usacovid |>
+    st_set_dimensions("space", values = 1:ncol(usacovid)) |>
+    as_tibble() |>
+    ggplot() +
+    geom_line(aes(time, cases/expected, group = space, color = factor(space)), linewidth = 0.3) +
+    geom_point(aes(time, cases/expected, group = space, color = factor(space))) +
+    labs(y = "Relative risk", x = NULL) +
+    theme_bw() +
+    theme(legend.position = "none")
+```
+
+## Spatial clustering
+
+### Model fitting
+
+In this application, because of the trends observed before, we will assume that the
+logarithm relative risk can be explained by (i) a polynomial trend with respect to `time`,
+(ii) an autoregressive process over times units `idt` to capture correlated temporal
+variation, and (iii) an additional unstructured effect over `id` to capture any residual
+variation. Additionally, we will start assuming that each state is a cluster, such us we
+will start with 49 clusters. Also remember that in this case we need to provide the
+dimension names `stnames` as explained before.
+
+```{r, eval = FALSE, echo = FALSE}
+# formula <- cases ~ 1 + poly(time, 3) + f(idt, model = "ar1") + f(id)
+# geodata <- genclust(st_geometry(usacovid), nclust = 49)
+#
+# set.seed(123)
+# result <- sfclust(usacovid, graphdata = geodata, stnames = c("space", "time"),
+#     formula = formula, family = "poisson", E = expected,
+#     niter = 4000, burnin = 0, thin = 10, nmessage = 10, nsave = 100,
+#     path_save = file.path("tools", "data", "usacovid-mcmc.rds"))
+```
+
+```{r, eval = FALSE}
+formula <- cases ~ 1 + poly(time, 3) + f(idt, model = "ar1") + f(id)
+geodata <- genclust(st_geometry(usacovid), nclust = 49)
+
+set.seed(123)
+result <- sfclust(usacovid, graphdata = geodata, stnames = c("space", "time"),
+    formula = formula, family = "poisson", E = expected,
+    niter = 4000, burnin = 0, thin = 10, nmessage = 10, nsave = 100,
+    path_save = "usacovid-mcmc.rds")
+result
+```
+
+```{r, echo = FALSE}
+formula <- cases ~ 1 + poly(time, 3) + f(idt, model = "ar1") + f(id)
+geodata <- genclust(st_geometry(usacovid), nclust = 49)
+result <- readRDS(here::here(file.path("tools", "data", "usacovid-mcmc.rds")))
+result
+```
+
+Notice that 36 times there was an increase of number of clusters, 74 times clusters were
+merged, 12 times the composition were modified, and 187 time the minimum spanning tree has
+been modified. Also after thinning we keep 400 samples from a total of 4000, and the
+marginal likelihood achieve a value of -19196.77.
+
+### Results
+
+```{r}
+summary(result, sort = TRUE)
+```
+
+The `summary` indicates that 7 clusters from 11 have more than one member, where the biggest cluster
+includes 10 states, the second 9, and so on.
+
+```{r, fig.height = 3}
+plot(result, legend = TRUE, sort = TRUE)
+```
+
+```{r, echo = FALSE}
+path_figures <- here::here(file.path("tools", "figures"))
+ggsave(file.path(path_figures, "usacovid-plot.pdf"), width = 10, height = 3, device = cairo_pdf)
+```
+
+The `plot` of our result indicates that:
+
+- The biggest cluster is located in the southwest of US, followed by a second cluster in
+the middle, and a third cluster on the northwest.
+- The mean relative risk per cluster has low value at the beginning of the year and
+higher values by the end of the year, which is related to the empirical risk observed.
+- The algorithm increases the marginal likelihood in the first 100 samples (after
+thinning), and then is almost constant by sample 200.
+
+```{r}
+us_fit <- fitted(result, sort = TRUE)
+us_fit
+```
+
+The `fitted` function return an `stars` object with prediction summaries after fitting,
+the `cluster` assignment and the `mean_cluster`.
+
+### Empirical risk per cluster
+
+We can use that information of the cluster assignment to visualize the empirical data per
+cluster.
+
+```{r}
+usacovid$cluster <- us_fit$cluster
+
+# convert stars to data frame per region and per cluster
+usaaux <- usacovid |>
+  st_set_dimensions("space", values = 1:ncol(usacovid)) |>
+  as_tibble()
+usacluster <- usaaux |>
+    group_by(time, cluster) |>
+    summarise(rr = mean(cases/expected) ) |>
+    ungroup()
+
+# visualize empirical risk per cluster
+usaaux |>
+  ggplot() +
+    geom_line(aes(time, cases/expected, group = space), color = "gray50", linewidth = 0.3) +
+    geom_line(aes(time, rr), usacluster, color = "red") +
+    facet_wrap(~ cluster, ncol = 4) +
+    theme_bw() +
+    labs(y = "Relative risk", x = "Time")
+```
+
+```{r, echo = FALSE}
+ggsave(file.path(path_figures, "usacovid-risk-per-cluster.pdf"), width = 10, height = 7.5, device = cairo_pdf)
+```
+
+The graph above shows the empirical risk per cluster. We can see that the biggest cluster
+has a increasing risk with a peak around July-August, while the second has a increasing
+trend until November-December with a decay by end of December. The third cluster has a
+bigger peak around March and later a higher risk by January. Similar particularities can
+be seen for cluster 4-7, while cluster 8-11 have more uncommon behaviour than the others.
+
+```{r, echo = FALSE}
+# pred <- fitted(result, sort = TRUE, aggregate = TRUE)
+# ggplot() +
+#     geom_stars(aes(fill = mean_cluster), data = pred) +
+#     facet_wrap(~ time) +
+#     scale_fill_distiller(palette = "RdBu") +
+#     labs(title = "Daily risk", fill = "Risk") +
+#     theme_bw(base_size = 7) +
+#     theme(legend.position = "bottom")
+```
+
+```{r, echo = FALSE}
+# # saveRDS(list(x = 1, b = 2), "find-problem.rds")
+#
+#  # -19550.807576937
+# plot(result)
+#  # -19449.8533593845
+#  # -19306.77
+#  # -19284.15
+#
+# # result2 =  update(result, niter = 2000, path_save = file.path("inst", "vigdata", "usacovid2.rds"))
+#
+# result = readRDS("clust_usacovid1.rds")
+# # result2 =  readRDS(file.path("inst", "vigdata", "usacovid2.rds"))
+# summary(result)
+# # summary(result2)
+# # library(sfclust)
+# plot(result, which = 1)
+```

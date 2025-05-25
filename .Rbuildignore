@@ -5,3 +5,5 @@
 ^Meta$
 ^\.github$
 ^_pkgdown\.yml$
+^data/usacovid.rda$
+^vignettes/articles$
