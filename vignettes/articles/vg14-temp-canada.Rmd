@@ -23,7 +23,7 @@ library(sfclust)
 library(stars)
 library(ggplot2)
 library(dplyr)
-library(rnaturalearth)
+# library(rnaturalearth)
 ```
 
 We will use the common dataset `CanadianWeather` for functional data analysis from the
@@ -101,6 +101,7 @@ form rather than the absolute value.
 ```{r}
 stand <- function(x) (x - mean(x)) / sqrt(var(x))
 canweather$ztemp <- t(apply(canweather$temp, 1, stand))
+canweather
 ```
 
 ### Exploratory analysis
@@ -215,7 +216,7 @@ ggplot() +
 
 ```{r, echo = FALSE}
 path_figures <- here::here(file.path("tools", "figures"))
-ggsave(file.path(path_figures, "canweather-map.pdf"), width = 10, height = 3, device = cairo_pdf)
+ggsave(file.path(path_figures, "canweather-map.pdf"), width = 6, height = 6, device = cairo_pdf)
 ```
 
 We can observe that the biggest cluster is located on the southeast of Canada with the total
@@ -255,7 +256,7 @@ dplyr::filter(canaux, cluster %in% 1:8) |>
 ```
 
 ```{r, echo = FALSE}
-ggsave(file.path(path_figures, "canweather-risk-per-cluster-1.pdf"), width = 10, height = 7.5, device = cairo_pdf)
+ggsave(file.path(path_figures, "canweather-risk-per-cluster-1.pdf"), width = 10, height = 5.5, device = cairo_pdf)
 ```
 
 The main differences between these clusters if the initial shape, the speed of increase,
