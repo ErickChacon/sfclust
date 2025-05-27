@@ -291,60 +291,114 @@ linpred_each_corrected <- function(x){
 #' @importFrom patchwork wrap_plots
 #' @importFrom sf st_sf
 #' @export
-plot.sfclust <- function(x, sample = x$clust$id, which = 1:3, clusters = NULL, sort = FALSE, legend = FALSE, ...) {
-
-  nsamples <- nrow(x$samples$membership)
-  if (sample < 1 || sample > nsamples) {
-    stop("`sample` must be between 1 and the total number clustering (membership) samples.")
-  }
-
-  # get geometries, selected membership and clusters to plot
-  geoms <- st_get_dimension_values(attr(x, "args")$stdata, attr(x, "args")$stnames[1])
-  membership <- x$samples$membership[sample,]
-  if (sort) membership <- sort_membership(x$samples$membership[sample,])
-  if (is.null(clusters)) clusters <- 1:max(membership)
+plot.sfclust <- function(x, sample = x$clust$id, which = 1:3, clusters = NULL, sort = FALSE,
+                         legend = FALSE, geom_before = NULL, ...) {
 
   # visualize
   figs <- list(gg1 = NA, gg2 = NA, gg3 = NA)
   if (1 %in% which) { # spatial clustering membership
-    membership[!(membership %in% clusters)] <- NA
-    membership <- factor(membership)
-    gg1 <- ggplot(st_sf(geometry = geoms, membership = membership)) +
-      geom_sf(aes(fill = membership), color = "gray50") +
-      scale_x_continuous(expand = c(0, 0)) +
-      scale_y_continuous(expand = c(0, 0)) +
-      labs(fill = NULL, subtitle = paste("Clustering:", sample, "/", nsamples)) +
-      theme_bw()
-    if (!legend) gg1 <- gg1 + theme(legend.position = "none")
-    figs$gg1 <- gg1
+    figs$gg1 <- plot_clusters(x, sample, clusters, sort, legend, geom_before)
   }
-
   if (2 %in% which) { # functional shapes
-    df <- fitted(x, sample = sample, sort = sort)
-    df <- filter(df, !!as.name(attr(x, "args")$stnames[1]) %in% which(membership %in% clusters))
-    df <- st_set_dimensions(df[c("cluster", "mean_cluster")], attr(x, "args")$stnames[1],
-      values = seq_len(length(st_get_dimension_values(df, attr(x, "args")$stnames[1])))) |>
-        as.data.frame()
-    aux <- data.frame(time = df[[attr(x, "args")$stnames[2]]], mean_cluster = df$mean_cluster, cluster = df$cluster)
-    gg2 <- ggplot(aux) +
-      geom_line(aes(time, mean_cluster, color = factor(df$cluster))) +
-      labs(x = "Time", y = "Linear predictor", subtitle = "Cluster mean functions", color = NULL) +
-      theme_bw()
-    if (!legend || (1 %in% which)) {
-      gg2 <- gg2 + theme(legend.position = "none")
-    }
-    figs$gg2 <- gg2
+    if (!legend || (1 %in% which)) legend = FALSE
+    figs$gg2 <- plot_shapes(x, sample, clusters, sort, legend)
   }
-
   if (3 %in% which) { # marginal likelihood convergence
-    gg3 <- ggplot(mapping = aes(sample, log_mlike)) +
-      geom_line(data = data.frame(sample = 1:nsamples, log_mlike = x$samples$log_mlike)) +
-      geom_point(data = data.frame(sample = sample, log_mlike = x$samples$log_mlike[sample]),
-        color = 2) +
-      labs(x = "Sample", y = "Log marginal likelihood", subtitle = "Convergence") +
-      theme_bw()
-    figs$gg3 <- gg3
+    figs$gg3 <- plot_convergence(x, sample)
   }
-
   wrap_plots(figs[which])
 }
+
+plot_clusters <- function(x, sample = x$clust$id, clusters = NULL, sort = FALSE, legend = FALSE, geom_before = NULL, ...) {
+  nsamples <- check_sample_and_get_nsample(x, sample)
+  aux <- get_membership_and_clusters(x, sample, sort, clusters)
+  geoms <- st_get_dimension_values(attr(x, "args")$stdata, attr(x, "args")$stnames[1])
+
+  # plot
+  membership <- aux$membership
+  membership[!(membership %in% aux$clusters)] <- NA
+  membership <- factor(membership)
+  gg <- ggplot(st_sf(geometry = geoms, membership = membership))
+    if (!is.null(geom_before)) gg <- gg + geom_before
+  gg <- gg +
+    geom_sf(aes(fill = membership), shape = 21, ...) +
+    labs(fill = NULL, subtitle = paste("Clustering:", sample, "/", nsamples)) +
+    theme_bw()
+  if (!legend) gg <- gg + theme(legend.position = "none")
+  gg
+}
+
+plot_shapes <- function(x, sample = x$clust$id, clusters = NULL, sort = FALSE, legend = FALSE, ...) {
+  nsamples <- check_sample_and_get_nsample(x, sample)
+  aux <- get_membership_and_clusters(x, sample, sort, clusters)
+
+  # plot
+  df <- fitted(x, sample = sample, sort = sort)
+  membership_subset <- which(aux$membership %in% aux$clusters)
+  df <- filter(df, !!as.name(attr(x, "args")$stnames[1]) %in% membership_subset)
+  df <- st_set_dimensions(df[c("cluster", "mean_cluster")], attr(x, "args")$stnames[1],
+    values = seq_len(length(st_get_dimension_values(df, attr(x, "args")$stnames[1])))) |>
+      as.data.frame()
+  aux <- data.frame(time = df[[attr(x, "args")$stnames[2]]], mean_cluster = df$mean_cluster, cluster = df$cluster)
+  gg <- ggplot(aux) +
+    geom_line(aes(time, mean_cluster, color = factor(df$cluster)), ...) +
+    labs(x = "Time", y = "Linear predictor", subtitle = "Cluster mean functions", color = NULL) +
+    theme_bw()
+  if (!legend) gg <- gg + theme(legend.position = "none")
+  gg
+}
+
+plot_convergence <- function(x, sample = x$clust$id, ...) {
+  nsamples <- check_sample_and_get_nsample(x, sample)
+
+  gg <- ggplot(mapping = aes(sample, log_mlike)) +
+    geom_line(data = data.frame(sample = 1:nsamples, log_mlike = x$samples$log_mlike), ...) +
+    geom_point(data = data.frame(sample = sample, log_mlike = x$samples$log_mlike[sample]),
+      color = 2) +
+    labs(x = "Sample", y = "Log marginal likelihood", subtitle = "Convergence") +
+    theme_bw()
+  gg
+}
+
+plot_series <- function (x, var, clusters = NULL) {
+
+  stdata <- attr(x, "args")$stdata
+  stnames <- attr(x, "args")$stnames
+  ns <- length(st_get_dimension_values(stdata, stnames[1]))
+
+  stdata$cluster <- fitted(x, sort = TRUE)$cluster
+  if (is.null(clusters)) clusters <- 1:max(stdata$cluster)
+
+  # convert stars to data frame per region and per cluster
+  auxdata <- stdata |>
+    st_set_dimensions(stnames[1], values = 1:ns) |>
+    as_tibble()
+  stcluster <- auxdata |>
+    group_by(time, cluster) |>
+    summarise(mean_cluster = mean(!!as.name(var)), .groups = "drop")
+
+  dplyr::filter(auxdata, cluster %in% clusters) |>
+    ggplot() +
+      geom_line(aes(time, !!as.name(var), group = !!as.name(stnames[1])), color = "gray50", linewidth = 0.3) +
+      geom_line(aes(time, mean_cluster), dplyr::filter(stcluster, cluster %in% clusters), color = "red", linewidth = 0.4) +
+      facet_wrap(~ cluster) +
+      theme_bw() +
+      labs(x = NULL)
+}
+
+
+check_sample_and_get_nsample <- function (x, sample) {
+  nsamples <- nrow(x$samples$membership)
+  if (sample < 1 || sample > nsamples) {
+    stop("`sample` must be between 1 and the total number clustering (membership) samples.")
+  }
+  return(nsamples)
+}
+
+get_membership_and_clusters <- function (x, sample, sort = FALSE, clusters = NULL) {
+  membership <- x$samples$membership[sample,]
+  if (sort) membership <-  sort_membership(membership)
+  if (is.null(clusters)) clusters <- 1:max(membership)
+  list(membership = membership, clusters = clusters)
+}
+
