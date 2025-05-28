@@ -251,11 +251,17 @@ fitted.sfclust <- function(object, sample = object$clust$id, sort = FALSE, aggre
 }
 
 linpred_each <- function(k, membership, models, stdata, stnames){
+  # linear predictor prediction
   df <- data_each(k, membership, stdata, stnames)[c("id")]
   df <- cbind(df, models[[k]]$summary.linear.predictor)
-  df$lkd <- NULL
+  df$kld <- NULL
   df$mean_cluster <- linpred_each_corrected(models[[k]])
   df$cluster <- k
+
+  # get inverse of linear predictor
+  link_name <- tolower(result$clust$models[[1]]$misc$linkfunctions$names)
+  inv_link <- eval(parse(text = paste0("INLA::inla.link.inv", link_name)))
+  df$mean_cluster_inv <- inv_link(df$mean_cluster)
   df
 }
 
@@ -297,19 +303,20 @@ plot.sfclust <- function(x, sample = x$clust$id, which = 1:3, clusters = NULL, s
   # visualize
   figs <- list(gg1 = NA, gg2 = NA, gg3 = NA)
   if (1 %in% which) { # spatial clustering membership
-    figs$gg1 <- plot_clusters(x, sample, clusters, sort, legend, geom_before)
+    figs$gg1 <- plot_clusters_map(x, sample, clusters, sort, legend, geom_before)
   }
   if (2 %in% which) { # functional shapes
     if (!legend || (1 %in% which)) legend = FALSE
-    figs$gg2 <- plot_shapes(x, sample, clusters, sort, legend)
+    figs$gg2 <- plot_clusters_trends(x, sample, clusters, sort, legend)
   }
-  if (3 %in% which) { # marginal likelihood convergence
-    figs$gg3 <- plot_convergence(x, sample)
+  if (3 %in% which) { # log marginal likelihood convergence
+    figs$gg3 <- plot_log_mlik(x, sample)
   }
   wrap_plots(figs[which])
 }
 
-plot_clusters <- function(x, sample = x$clust$id, clusters = NULL, sort = FALSE, legend = FALSE, geom_before = NULL, ...) {
+#' @export
+plot_clusters_map <- function(x, sample = x$clust$id, clusters = NULL, sort = FALSE, legend = FALSE, geom_before = NULL, ...) {
   nsamples <- check_sample_and_get_nsample(x, sample)
   aux <- get_membership_and_clusters(x, sample, sort, clusters)
   geoms <- st_get_dimension_values(attr(x, "args")$stdata, attr(x, "args")$stnames[1])
@@ -328,7 +335,8 @@ plot_clusters <- function(x, sample = x$clust$id, clusters = NULL, sort = FALSE,
   gg
 }
 
-plot_shapes <- function(x, sample = x$clust$id, clusters = NULL, sort = FALSE, legend = FALSE, ...) {
+#' @export
+plot_clusters_trends <- function(x, sample = x$clust$id, clusters = NULL, sort = FALSE, legend = FALSE, inv_link = TRUE, ...) {
   nsamples <- check_sample_and_get_nsample(x, sample)
   aux <- get_membership_and_clusters(x, sample, sort, clusters)
 
@@ -336,19 +344,21 @@ plot_shapes <- function(x, sample = x$clust$id, clusters = NULL, sort = FALSE, l
   df <- fitted(x, sample = sample, sort = sort)
   membership_subset <- which(aux$membership %in% aux$clusters)
   df <- filter(df, !!as.name(attr(x, "args")$stnames[1]) %in% membership_subset)
-  df <- st_set_dimensions(df[c("cluster", "mean_cluster")], attr(x, "args")$stnames[1],
+  df <- st_set_dimensions(df[c("cluster", "mean_cluster", "mean_cluster_inv")], attr(x, "args")$stnames[1],
     values = seq_len(length(st_get_dimension_values(df, attr(x, "args")$stnames[1])))) |>
       as.data.frame()
-  aux <- data.frame(time = df[[attr(x, "args")$stnames[2]]], mean_cluster = df$mean_cluster, cluster = df$cluster)
+  varname <- if (!inv_link) "mean_cluster" else "mean_cluster_inv"
+  aux <- data.frame(time = df[[attr(x, "args")$stnames[2]]], mean_cluster = df[[varname]], cluster = df$cluster)
   gg <- ggplot(aux) +
     geom_line(aes(time, mean_cluster, color = factor(df$cluster)), ...) +
-    labs(x = "Time", y = "Linear predictor", subtitle = "Cluster mean functions", color = NULL) +
+    labs(x = NULL, y = "Estimated mean", subtitle = "Cluster functions", color = NULL) +
     theme_bw()
   if (!legend) gg <- gg + theme(legend.position = "none")
   gg
 }
 
-plot_convergence <- function(x, sample = x$clust$id, ...) {
+#' @export
+plot_log_mlik <- function(x, sample = x$clust$id, ...) {
   nsamples <- check_sample_and_get_nsample(x, sample)
 
   gg <- ggplot(mapping = aes(sample, log_mlike)) +
@@ -360,7 +370,8 @@ plot_convergence <- function(x, sample = x$clust$id, ...) {
   gg
 }
 
-plot_series <- function (x, var, clusters = NULL) {
+#' @export
+plot_clusters_series <- function(x, var, clusters = NULL) {
 
   stdata <- attr(x, "args")$stdata
   stnames <- attr(x, "args")$stnames
@@ -375,11 +386,11 @@ plot_series <- function (x, var, clusters = NULL) {
     as_tibble()
   stcluster <- auxdata |>
     group_by(time, cluster) |>
-    summarise(mean_cluster = mean(!!as.name(var)), .groups = "drop")
+    summarise(mean_cluster = mean({{ var }}), .groups = "drop")
 
   dplyr::filter(auxdata, cluster %in% clusters) |>
     ggplot() +
-      geom_line(aes(time, !!as.name(var), group = !!as.name(stnames[1])), color = "gray50", linewidth = 0.3) +
+      geom_line(aes(time, {{ var }}, group = !!as.name(stnames[1])), color = "gray50", linewidth = 0.3) +
       geom_line(aes(time, mean_cluster), dplyr::filter(stcluster, cluster %in% clusters), color = "red", linewidth = 0.4) +
       facet_wrap(~ cluster) +
       theme_bw() +
@@ -387,7 +398,7 @@ plot_series <- function (x, var, clusters = NULL) {
 }
 
 
-check_sample_and_get_nsample <- function (x, sample) {
+check_sample_and_get_nsample <- function(x, sample) {
   nsamples <- nrow(x$samples$membership)
   if (sample < 1 || sample > nsamples) {
     stop("`sample` must be between 1 and the total number clustering (membership) samples.")
@@ -395,7 +406,7 @@ check_sample_and_get_nsample <- function (x, sample) {
   return(nsamples)
 }
 
-get_membership_and_clusters <- function (x, sample, sort = FALSE, clusters = NULL) {
+get_membership_and_clusters <- function(x, sample, sort = FALSE, clusters = NULL) {
   membership <- x$samples$membership[sample,]
   if (sort) membership <-  sort_membership(membership)
   if (is.null(clusters)) clusters <- 1:max(membership)

@@ -11,6 +11,7 @@
   clusters = NULL,
   sort = FALSE,
   legend = FALSE,
+  geom_before = NULL,
   ...
 )
 }
