@@ -13,8 +13,8 @@ knitr::opts_chunk$set(fig.height = 6.5, fig.width = 7.5, dpi = 90, out.width = '
 knitr::opts_chunk$set(comment = "#>")
 ```
 
-In this vignette, we use `sfclust` to cluster Canadian stations with similar standardized
-daily temperatures averaged over the period 1960–1994.
+In this vignette, we use the `sfclust` package to cluster Canadian weather stations
+based on their standardized daily temperatures averaged over the period 1960–1994.
 
 ## Load packages and data
 
@@ -26,10 +26,10 @@ library(dplyr)
 library(rnaturalearth)
 ```
 
-We will use the polygonal shapes of the Canada states using the `rnaturalearth` package,
-and the common dataset `CanadianWeather` for functional data analysis from the `fda`
-package. Notice that this is a list containing the daily data per stations, and other
-information such as the location of the stations (`coordinates`).
+We use the polygonal shapes of Canadian provinces from the `rnaturalearth` package
+and the `CanadianWeather` dataset from the `fda` package, which is commonly used in
+functional data analysis. This dataset is a list containing daily temperature data
+per station, along with metadata such as station coordinates.
 
 ```{r}
 canada <- ne_states("Canada")
@@ -41,9 +41,9 @@ names(CanadianWeather)
 
 ### Create stars data
 
-Firt, we will convert the stations to the class `sf`, and visualize their locations.
+First, we convert the station coordinates to an `sf` object and visualize their locations.
 
-```{r}
+```{r, fig.height = 5}
 stations <- as.data.frame(CanadianWeather$coordinates) |>
   mutate(longitud = - `W.longitude`) |>
   rename(latitud = "N.latitude") |>
@@ -56,9 +56,9 @@ ggplot() +
   theme_bw()
 ```
 
-We standardised the temperature per station to be able to clusterize based on the
-functional form rather than the absolute value. Then, we convert the data to a stars
-object with dimensions `geometry` and `time` as expected by `sfclust`.
+We standardize the temperature per station to focus clustering on the functional shape of
+the time series rather than their absolute values. We then convert the data to a `stars`
+object with `geometry` and `time` dimensions, as required by the function `sfclust()`.
 
 ```{r}
 time <- seq(as.Date("1977-01-01"), as.Date("1977-12-31"), by = "1 day")
@@ -76,10 +76,9 @@ saveRDS(canweather, file = here::here(file.path("tools", "data", "canweather.rds
 
 ### Exploratory analysis
 
-Let's visualize the temperature averaged per month. We can observe that higher values of
-standardised temperature have been observed in the north stations on July; while the lowest values
-have been observed on January around some stations located around the south areas closed
-to the center.
+Let’s explore monthly averages of standardized temperatures. Higher standardized
+temperatures appear in northern stations during July, while lower values are observed in
+southern stations in January.
 
 ```{r, fig.height = 6}
 monthdata <- aggregate(canweather, by = "month", FUN = mean)
@@ -92,9 +91,9 @@ ggplot() +
   theme(legend.position = "bottom")
 ```
 
-Additionally we can observe the temperal trends per regions. Although the functional
-shapes seem similar, it is important to notice that the temperature increases and decays at different
-times of the year per station.
+We can also visualize the temperature trends over time for each station. Although the
+overall shape is similar, there are noticeable differences in the timing of the rise and
+fall of temperatures across stations.
 
 ```{r, fig.height = 5.5}
 canweather |>
@@ -110,12 +109,10 @@ canweather |>
 
 ### Create graph
 
-Our function `sfclust()` assumes that the `geometry` type of the provided `stars` object if `POLYGON`,
-from which it creates an `igraph` object using the adjacency matrix. However, the processed
-`canweather` has `POINT` as a geometry representing the locations of stations. In this
-case, it is necessary to define a graph that captures the connectiviy to consider between
-stations. For this, we will create a Voronoi tessellation with will create a polygon for
-each station.
+The `sfclust()` function assumes a `POLYGON` geometry in the `stars` object to build a
+spatial adjacency graph. However, our data uses `POINT` geometries representing station
+locations. To create a spatial graph, we construct a Voronoi tessellation that generates a
+polygon for each station.
 
 ```{r, fig.height = 5}
 stations2 <- st_transform(stations, st_crs(3857))
@@ -139,16 +136,15 @@ ggplot() +
 
 ### Model fitting
 
-In this application, because of the trends observed before, we will assume that the mean
-standardised temperature can be explained by (i) a polynomial trend with respect to
-`time`, (ii) and an autoregressive process over times units `idt` to capture correlated
-temporal variation. Additionally, we will start assuming that each state is a cluster,
-such us we will start with 35 clusters using the created polygonal data  (`domain`).
-Because of the presence of strong noise on the curves, we will use a strong penalty (-300)
-for the increase of parameters, it means that to have high chances of accepting the
-creation a new cluster, then the log marginal likelihood has be to improve by a value of
-300, if the proposal has an improvement on the marginal likelihood smaller than 300, it
-will probably be rejected.
+Based on the previously observed trends, we model the standardized temperature as a
+function of:
+
+1. A polynomial trend over `time`.
+2. A random walk to capture autocorrelated temporal variation over `idt`.
+
+We initialize with 35 clusters—one per polygon—and set a strong penalty (`logpen = -300`)
+to discourage overfitting and large number of clusters unless the log marginal likelihood
+improves by at least 300.
 
 ```{r, eval = FALSE, echo = FALSE}
 # formula <- ztemp ~ poly(time, 2) + f(idt, model = "rw1")
@@ -180,10 +176,9 @@ result <- readRDS(here::here(file.path("tools", "data", "canweather-mcmc.rds")))
 result
 ```
 
-Notice that 8 times there was an increase of number of clusters, 29 times clusters were
-merged, 19 times the composition were modified, and 171 times the minimum spanning tree has
-been modified. Also after thinning we keep 400 samples from a total of 4000, and the
-marginal likelihood achieve a value of 17541.96.
+Over the course of sampling, 8 cluster additions, 29 merges, and 19 reassignments
+occurred. The marginal likelihood reached a value of 17,541.96. After thinning, 400
+samples were retained.
 
 ### Results
 
@@ -191,19 +186,16 @@ marginal likelihood achieve a value of 17541.96.
 summary(result, sort = TRUE)
 ```
 
-The `summary` indicates that 8 clusters from 14 have more than one member, where the two
-biggest cluster includes 7 stations, the third 4, and so on. In order to verify the
-adequacy of this clustering, we check the convergence using the `plot()` function with
-option `which = 3`.
-
+According to the `summary()` output, 8 out of 14 clusters have more than one member. The
+largest clusters contain 7, 7, and 4 stations, respectively. To assess convergence, we
+plot the marginal likelihood trace:
 
 ```{r, fig.height = 4.5}
 plot(result, which = 3)
 ```
 
-The figure indicates that the marginal likelihood improves significantly within the first
-100 iterations (after thinning) and seems afterward. Now, we can visualize the spatial
-cluster assignment and the predicted mean for each cluster:
+The plot shows that the marginal likelihood stabilizes after the first 100 (thinned)
+iterations. Below, we visualize the cluster assignments and averaged fitted means:
 
 ```{r, fig.height = 3.2}
 gg1 <- plot_clusters_map(result, sort = TRUE, legend = TRUE, clusters = 1:8,
@@ -217,16 +209,13 @@ path_figures <- here::here(file.path("tools", "figures"))
 ggsave(file.path(path_figures, "canweather-plot.pdf"), width = 10, height = 4.1, device = cairo_pdf)
 ```
 
-We can observe that the biggest cluster is located on the southeast of Canada with the total
-of 7 close stations, while the second biggest is located on the south conformed by 7
-stations that are more further apart. The third one, with 4 stations, is located on the
-southwest also more further apart.
+The largest cluster is in southeastern Canada and includes 7 closely located stations. The
+second-largest is more dispersed, while the third is in the southwest with 4 stations.
 
 ### Empirical standardised temperature per cluster
 
-We can use that information of the cluster assignment to visualize the empirical data per
-cluster using the function `plot_cluster_series()`. In this case we show that we can
-easily customize our resulting graph using `ggplot2` functions.
+We use `plot_clusters_series()` to visualize the raw standardized temperature per cluster.
+The output can be customized using `ggplot2` elements.
 
 ```{r, fig.height = 4.5}
 plot_clusters_series(result, ztemp) +
@@ -240,13 +229,14 @@ plot_clusters_series(result, ztemp) +
 ggsave(file.path(path_figures, "canweather-risk-per-cluster.pdf"), width = 10, height = 5.5, device = cairo_pdf)
 ```
 
-Panels 1-8, shows the empirical risk per cluster for those who have more than 1 stations.
-The main differences between these clusters if the initial shape, the speed of increase,
-the peak shape and time, the decay behaviour. For example clusters 1 and 2 has a bell
-shape, while others like 3-6 have almost a linear increase until reaching a maximum level.
-Panels 9-14 shows the empirical risk per cluster for those who have only 1 station. Notice
-that these clusters have more particular shapes that differentiate from the previous
-clusters, and between them.
+Panels 1–8 show the empirical risk per cluster for those clusters that contain more than
+one station. The main differences among these clusters lie in the initial shape of the
+curve, the speed of increase, the shape and timing of the peak, and the behavior during
+the decay phase. For example, clusters 1 and 2 exhibit a bell-shaped pattern, while
+others, such as clusters 3 to 6, display a nearly linear increase until reaching a maximum
+level. Panels 9–14 present the empirical risk per cluster for those that contain only one
+station. These single-station clusters tend to exhibit more unique shapes, which not only
+distinguish them from the previous multi-station clusters but also from each other.
 
 ```{r, echo = FALSE}
 # pred <- fitted(result, sort = TRUE, aggregate = TRUE)
