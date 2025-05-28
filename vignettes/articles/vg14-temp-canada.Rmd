@@ -226,7 +226,8 @@ plot_clusters_series(result, ztemp) +
 ```
 
 ```{r, echo = FALSE}
-ggsave(file.path(path_figures, "canweather-risk-per-cluster.pdf"), width = 10, height = 5.5, device = cairo_pdf)
+ggsave(file.path(path_figures, "canweather-risk-per-cluster.pdf"),
+  width = 10, height = 5.5, device = cairo_pdf)
 ```
 
 Panels 1–8 show the empirical risk per cluster for those clusters that contain more than

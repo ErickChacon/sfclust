@@ -13,8 +13,8 @@ knitr::opts_chunk$set(fig.height = 6.5, fig.width = 7.5, dpi = 90, out.width = '
 knitr::opts_chunk$set(comment = "#>")
 ```
 
-In this vignette, we use `sfclust` to identify US states with similar relative risk of
-Covid-19 during 2020.
+In this vignette, we use `sfclust` to identify US states with similar weekly relative risk
+of Covid-19 during 2020.
 
 ## Load packages and data
 
@@ -132,7 +132,7 @@ largest cluster includes 10 states, while the second includes 9, and so on. In o
 verify the adequacy of this clustering, we check the convergence using the `plot()`
 function with option `which = 3`.
 
-```{r}
+```{r, fig.height = 4.5}
 plot(result, which = 3)
 ```
 
@@ -168,13 +168,16 @@ us_fit
 We use the cluster assignments to analyze and visualize the empirical relative risk per
 cluster. This can easily be done with the `plot_cluster_series()` function:
 
-```{r, fig.height = 5}
-plot_clusters_series(result, cases/expected) + labs(y = "Relative risk")
+```{r, fig.height = 3.5}
+plot_clusters_series(result, cases/expected, sort = TRUE, clusters = 1:10) +
+  facet_wrap(~ cluster, ncol = 5) +
+  scale_x_date(date_breaks = "2 months", date_labels =  "%b") +
+  labs(y = "Relative risk")
 ```
 
 ```{r, echo = FALSE}
-ggsave(file.path(path_figures, "usacovid-risk-per-cluster.pdf"), width = 10,
-  height = 7, device = cairo_pdf)
+ggsave(file.path(path_figures, "usacovid-risk-per-cluster.pdf"),
+  width = 10, height = 4, device = cairo_pdf)
 ```
 
 This figure shows distinct epidemic dynamics by cluster:

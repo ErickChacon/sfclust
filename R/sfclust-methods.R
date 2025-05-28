@@ -307,7 +307,7 @@ plot.sfclust <- function(x, sample = x$clust$id, which = 1:3, clusters = NULL, s
   }
   if (2 %in% which) { # functional shapes
     if (!legend || (1 %in% which)) legend = FALSE
-    figs$gg2 <- plot_clusters_trends(x, sample, clusters, sort, legend)
+    figs$gg2 <- plot_clusters_fitted(x, sample, clusters, sort, legend)
   }
   if (3 %in% which) { # log marginal likelihood convergence
     figs$gg3 <- plot_log_mlik(x, sample)
@@ -336,7 +336,7 @@ plot_clusters_map <- function(x, sample = x$clust$id, clusters = NULL, sort = FA
 }
 
 #' @export
-plot_clusters_trends <- function(x, sample = x$clust$id, clusters = NULL, sort = FALSE, legend = FALSE, inv_link = TRUE, ...) {
+plot_clusters_fitted <- function(x, sample = x$clust$id, clusters = NULL, sort = FALSE, legend = FALSE, inv_link = TRUE, ...) {
   nsamples <- check_sample_and_get_nsample(x, sample)
   aux <- get_membership_and_clusters(x, sample, sort, clusters)
 
@@ -371,13 +371,13 @@ plot_log_mlik <- function(x, sample = x$clust$id, ...) {
 }
 
 #' @export
-plot_clusters_series <- function(x, var, clusters = NULL) {
+plot_clusters_series <- function(x, var, clusters = NULL, sort = FALSE, ...) {
 
   stdata <- attr(x, "args")$stdata
   stnames <- attr(x, "args")$stnames
   ns <- length(st_get_dimension_values(stdata, stnames[1]))
 
-  stdata$cluster <- fitted(x, sort = TRUE)$cluster
+  stdata$cluster <- fitted(x, sort = sort)$cluster
   if (is.null(clusters)) clusters <- 1:max(stdata$cluster)
 
   # convert stars to data frame per region and per cluster
@@ -390,7 +390,7 @@ plot_clusters_series <- function(x, var, clusters = NULL) {
 
   dplyr::filter(auxdata, cluster %in% clusters) |>
     ggplot() +
-      geom_line(aes(time, {{ var }}, group = !!as.name(stnames[1])), color = "gray50", linewidth = 0.3) +
+      geom_line(aes(time, {{ var }}, group = !!as.name(stnames[1])), color = "gray50", linewidth = 0.3, ...) +
       geom_line(aes(time, mean_cluster), dplyr::filter(stcluster, cluster %in% clusters), color = "red", linewidth = 0.4) +
       facet_wrap(~ cluster) +
       theme_bw() +
