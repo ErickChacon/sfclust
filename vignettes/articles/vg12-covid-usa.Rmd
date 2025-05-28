@@ -7,10 +7,11 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
+
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(fig.align = "center", eval = TRUE)
 knitr::opts_chunk$set(fig.height = 6.5, fig.width = 7.5, dpi = 90, out.width = '100%')
-knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+knitr::opts_chunk$set(collapse = FALSE, comment = "#>")
 ```
 
 In this vignette, we use `sfclust` to identify US states with similar relative risk of
@@ -18,7 +19,7 @@ Covid-19 during 2020.
 
 ## Load packages and data
 
-```{r warning=FALSE, include=TRUE}
+```{r, warning = FALSE, message = FALSE}
 library(sfclust)
 library(stars)
 library(ggplot2)
@@ -36,7 +37,8 @@ usacovid
 ```
 
 Note that the dimension names are `space` and `time`. Since `sfclust` expects them to be
-`c("geometry", "time")`, you must specify the `stnames` argument when using the package.
+`c("geometry", "time")`, you must specify the `stnames` argument when using the function
+`sfclust()` of the package.
 
 ## Exploratory analysis
 
@@ -76,10 +78,10 @@ We assume that the logarithm of the relative risk can be explained by:
 
 1. A polynomial trend over `time`
 2. An autoregressive effect over `idt`
-3. An unstructured random effect across states (`id`)
+3. An unstructured random effect across states and times (`id`)
 
-We begin with one cluster per state (49 clusters total). Be sure to set `stnames =
-c("space", "time")`.
+We begin with one cluster per state (49 clusters total). Be sure to set the dimension
+names: `stnames = c("space", "time")`.
 
 ```{r, eval = FALSE, echo = FALSE}
 # formula <- cases ~ 1 + poly(time, 3) + f(idt, model = "ar1") + f(id)
@@ -126,11 +128,21 @@ Summary of clustering steps:
 summary(result, sort = TRUE)
 ```
 
-The `summary` indicates that Out of 11 clusters, 7 include more than one state. The
-largest cluster contains 10 states, followed by clusters with 9, and so on.
+The `summary()` output shows that 7 out of 11 clusters contain more than one state. The
+largest cluster includes 10 states, while the second includes 9, and so on. In order to
+verify the adequacy of this clustering, we check the convergence using the `plot()`
+function with option `which = 3`.
+
+```{r}
+plot(result, which = 3)
+```
+
+The figure indicates that the marginal likelihood improves significantly within the first
+100 iterations (after thinning) and stabilizes afterward from sample 200. Now, we can
+visualize the spatial cluster assignment and the predicted mean for each cluster:
 
 ```{r, fig.height = 3}
-plot(result, legend = TRUE, sort = TRUE)
+plot(result, which = 1:2, legend = TRUE, sort = TRUE)
 ```
 
 ```{r, echo = FALSE}
@@ -138,48 +150,31 @@ path_figures <- here::here(file.path("tools", "figures"))
 ggsave(file.path(path_figures, "usacovid-plot.pdf"), width = 10, height = 3, device = cairo_pdf)
 ```
 
-The `plot` of our result indicates that:
+The `plot()` output indicates that:
 
 * The largest cluster is in the southwestern US, followed by clusters in central and northwestern regions.
-* Mean relative risk increases gradually across the year.
-* The marginal likelihood improves within the first 100 iterations (after thinning) and stabilizes afterward.
+* Mean relative risk increases gradually across the year, with different peaks per cluster.
+
+The `fitted` function return an `stars` object with prediction summaries after fitting,
+the `cluster` assignment, the `mean_cluster` linear predictor, the inverse of the linear
+predictor (`mean_cluster_inv`).
 
 ```{r}
 us_fit <- fitted(result, sort = TRUE)
 us_fit
 ```
 
-The `fitted` function return an `stars` object with prediction summaries after fitting,
-the `cluster` assignment and the `mean_cluster`.
-
 ### Empirical risk per cluster
 
-We use the cluster assignments to analyze and visualize the empirical relative risk per cluster.
+We use the cluster assignments to analyze and visualize the empirical relative risk per cluster. This can easily be done with the `plot_cluster_series()` function:
 
-```{r}
-usacovid$cluster <- us_fit$cluster
-
-# convert stars to data frame per region and per cluster
-usaaux <- usacovid |>
-  st_set_dimensions("space", values = 1:ncol(usacovid)) |>
-  as_tibble()
-usacluster <- usaaux |>
-    group_by(time, cluster) |>
-    summarise(rr = mean(cases/expected) ) |>
-    ungroup()
-
-# visualize empirical risk per cluster
-usaaux |>
-  ggplot() +
-    geom_line(aes(time, cases/expected, group = space), color = "gray50", linewidth = 0.3) +
-    geom_line(aes(time, rr), usacluster, color = "red") +
-    facet_wrap(~ cluster, ncol = 4) +
-    theme_bw() +
-    labs(y = "Relative risk", x = "Time")
+```{r, fig.height = 5}
+plot_clusters_series(result, cases/expected) + labs(y = "Relative risk")
 ```
 
 ```{r, echo = FALSE}
-ggsave(file.path(path_figures, "usacovid-risk-per-cluster.pdf"), width = 10, height = 7.5, device = cairo_pdf)
+ggsave(file.path(path_figures, "usacovid-risk-per-cluster.pdf"), width = 10,
+  height = 7, device = cairo_pdf)
 ```
 
 This figure shows distinct epidemic dynamics by cluster:
@@ -219,3 +214,5 @@ This figure shows distinct epidemic dynamics by cluster:
 # # library(sfclust)
 # plot(result, which = 1)
 ```
+
+<!-- vim: set softtabstop=2 sw=2 tabstop=2 expandtab: -->
