@@ -1,8 +1,8 @@
 ---
-title: "Daily temperature at Canada stations"
+title: "Standardized daily temperature at Canadian stations (1960–1994)"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Daily temperature at Canada stations}
+  %\VignetteIndexEntry{Standardized daily temperature at Canadian stations (1960–1994)}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -13,12 +13,12 @@ knitr::opts_chunk$set(fig.height = 6.5, fig.width = 7.5, dpi = 90, out.width = '
 knitr::opts_chunk$set(comment = "#>")
 ```
 
-In this vignette, we use `sfclust` to clusterize Canada stations with similar standardised
-temperature averaged over 1960 to 1994.
+In this vignette, we use `sfclust` to cluster Canadian stations with similar standardized
+daily temperatures averaged over the period 1960–1994.
 
 ## Load packages and data
 
-```{r warning=FALSE, include=TRUE}
+```{r, warning = FALSE, message = FALSE}
 library(sfclust)
 library(stars)
 library(ggplot2)
@@ -77,7 +77,7 @@ saveRDS(canweather, file = here::here(file.path("tools", "data", "canweather.rds
 ### Exploratory analysis
 
 Let's visualize the temperature averaged per month. We can observe that higher values of
-standardised temperature have been observed in the north station on July; while the lowest values
+standardised temperature have been observed in the north stations on July; while the lowest values
 have been observed on January around some stations located around the south areas closed
 to the center.
 
@@ -110,14 +110,14 @@ canweather |>
 
 ### Create graph
 
-`sfclust` assumes that the `geometry` type of the provided `stars` object if `POLYGON`,
-from which it create a `igraph` using the adjacency matrix. However, the processed
+Our function `sfclust()` assumes that the `geometry` type of the provided `stars` object if `POLYGON`,
+from which it creates an `igraph` object using the adjacency matrix. However, the processed
 `canweather` has `POINT` as a geometry representing the locations of stations. In this
 case, it is necessary to define a graph that captures the connectiviy to consider between
 stations. For this, we will create a Voronoi tessellation with will create a polygon for
 each station.
 
-```{r}
+```{r, fig.height = 5}
 stations2 <- st_transform(stations, st_crs(3857))
 
 # create boundary
@@ -191,28 +191,30 @@ marginal likelihood achieve a value of 17541.96.
 summary(result, sort = TRUE)
 ```
 
-The `summary` indicates that 8 clusters from 14 have more than one member, where the two biggest cluster
-includes 7 stations, the third 4, and so on.
+The `summary` indicates that 8 clusters from 14 have more than one member, where the two
+biggest cluster includes 7 stations, the third 4, and so on. In order to verify the
+adequacy of this clustering, we check the convergence using the `plot()` function with
+option `which = 3`.
 
-```{r, fig.height = 3}
-plot(result, sort = TRUE, legend = TRUE, geom_before = geom_sf(data = canada), clusters = 1:8)
+
+```{r, fig.height = 4.5}
+plot(result, which = 3)
+```
+
+The figure indicates that the marginal likelihood improves significantly within the first
+100 iterations (after thinning) and seems afterward. Now, we can visualize the spatial
+cluster assignment and the predicted mean for each cluster:
+
+```{r, fig.height = 3.2}
+gg1 <- plot_clusters_map(result, sort = TRUE, legend = TRUE, clusters = 1:8,
+    geom_before = geom_sf(data = canada), size = 3, alpha = 0.8)
+gg2 <- plot_clusters_fitted(result, sort = TRUE, clusters = 1:8, linewidth = 0.4)
+gg1 + gg2
 ```
 
 ```{r, echo = FALSE}
 path_figures <- here::here(file.path("tools", "figures"))
-ggsave(file.path(path_figures, "canweather-plot.pdf"), width = 10, height = 3, device = cairo_pdf)
-```
-
-Let's create a map with the clustered stations.
-
-```{r}
-sfclust:::plot_clusters(result, sort = TRUE, legend = TRUE, geom_before = geom_sf(data = canada), size = 3,
-  clusters = 1:8)
-```
-
-```{r, echo = FALSE}
-path_figures <- here::here(file.path("tools", "figures"))
-ggsave(file.path(path_figures, "canweather-map.pdf"), width = 6, height = 6, device = cairo_pdf)
+ggsave(file.path(path_figures, "canweather-plot.pdf"), width = 10, height = 4.1, device = cairo_pdf)
 ```
 
 We can observe that the biggest cluster is located on the southeast of Canada with the total
@@ -220,18 +222,22 @@ of 7 close stations, while the second biggest is located on the south conformed 
 stations that are more further apart. The third one, with 4 stations, is located on the
 southwest also more further apart.
 
-### Empirical temperature per cluster
+### Empirical standardised temperature per cluster
 
 We can use that information of the cluster assignment to visualize the empirical data per
-cluster.
+cluster using the function `plot_cluster_series()`. In this case we show that we can
+easily customize our resulting graph using `ggplot2` functions.
 
-```{r, fig.height = 7}
-sfclust:::plot_series(result, "ztemp") +
-  labs(y = "Standardised temperature")
+```{r, fig.height = 4.5}
+plot_clusters_series(result, ztemp) +
+  geom_hline(yintercept = 0, linetype = 2) +
+  facet_wrap(~ cluster, ncol = 5) +
+  scale_x_date(date_breaks = "2 months", date_labels =  "%b") +
+  labs(y = "Standardized temperature")
 ```
 
 ```{r, echo = FALSE}
-ggsave(file.path(path_figures, "canweather-risk-per-cluster.pdf"), width = 10, height = 7, device = cairo_pdf)
+ggsave(file.path(path_figures, "canweather-risk-per-cluster.pdf"), width = 10, height = 5.5, device = cairo_pdf)
 ```
 
 Panels 1-8, shows the empirical risk per cluster for those who have more than 1 stations.
@@ -241,14 +247,6 @@ shape, while others like 3-6 have almost a linear increase until reaching a maxi
 Panels 9-14 shows the empirical risk per cluster for those who have only 1 station. Notice
 that these clusters have more particular shapes that differentiate from the previous
 clusters, and between them.
-
-<!-- ```{r, fig.height = 5.4} -->
-<!-- plot(result, which = 2, sort = TRUE, clusters = 9:14, legend = TRUE) -->
-<!-- ``` -->
-<!---->
-<!-- ```{r, echo = FALSE} -->
-<!-- ggsave(file.path(path_figures, "canweather-risk-per-cluster-2.pdf"), width = 10, height = 7.5, device = cairo_pdf) -->
-<!-- ``` -->
 
 ```{r, echo = FALSE}
 # pred <- fitted(result, sort = TRUE, aggregate = TRUE)

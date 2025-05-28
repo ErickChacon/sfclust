@@ -1,17 +1,16 @@
 ---
-title: "Covid-19 in US states during 2020"
+title: "Weekly relative risk of COVID-19 in US states (2020)"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Covid-19 in US states during 2020}
+  %\VignetteIndexEntry{Weekly relative risk of COVID-19 in US states (2020)}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(fig.align = "center", eval = TRUE)
 knitr::opts_chunk$set(fig.height = 6.5, fig.width = 7.5, dpi = 90, out.width = '100%')
-knitr::opts_chunk$set(collapse = FALSE, comment = "#>")
+knitr::opts_chunk$set(comment = "#>")
 ```
 
 In this vignette, we use `sfclust` to identify US states with similar relative risk of
@@ -166,7 +165,8 @@ us_fit
 
 ### Empirical risk per cluster
 
-We use the cluster assignments to analyze and visualize the empirical relative risk per cluster. This can easily be done with the `plot_cluster_series()` function:
+We use the cluster assignments to analyze and visualize the empirical relative risk per
+cluster. This can easily be done with the `plot_cluster_series()` function:
 
 ```{r, fig.height = 5}
 plot_clusters_series(result, cases/expected) + labs(y = "Relative risk")
