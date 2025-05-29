@@ -13,6 +13,11 @@ knitr::opts_chunk$set(fig.height = 6.5, fig.width = 7.5, dpi = 90, out.width = '
 knitr::opts_chunk$set(comment = "#>")
 ```
 
+```{r include = FALSE}
+path_figures <- here::here(file.path("tools", "figures"))
+save_figures <- dir.exists(path_figures)
+```
+
 In this vignette, we use `sfclust` to identify US states with similar weekly relative risk
 of Covid-19 during 2020.
 
@@ -145,8 +150,10 @@ plot(result, which = 1:2, legend = TRUE, sort = TRUE)
 ```
 
 ```{r, echo = FALSE}
-path_figures <- here::here(file.path("tools", "figures"))
-ggsave(file.path(path_figures, "usacovid-plot.pdf"), width = 10, height = 3, device = cairo_pdf)
+if (save_figures) {
+  ggsave(file.path(path_figures, "usacovid-plot.pdf"), width = 10, height = 3,
+    device = cairo_pdf)
+}
 ```
 
 The `plot()` output indicates that:
@@ -176,8 +183,10 @@ plot_clusters_series(result, cases/expected, sort = TRUE, clusters = 1:10) +
 ```
 
 ```{r, echo = FALSE}
-ggsave(file.path(path_figures, "usacovid-risk-per-cluster.pdf"),
-  width = 10, height = 4, device = cairo_pdf)
+if (save_figures) {
+  ggsave(file.path(path_figures, "usacovid-risk-per-cluster.pdf"),
+    width = 10, height = 4, device = cairo_pdf)
+}
 ```
 
 This figure shows distinct epidemic dynamics by cluster:

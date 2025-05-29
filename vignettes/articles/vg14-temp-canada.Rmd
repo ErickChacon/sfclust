@@ -13,6 +13,11 @@ knitr::opts_chunk$set(fig.height = 6.5, fig.width = 7.5, dpi = 90, out.width = '
 knitr::opts_chunk$set(comment = "#>")
 ```
 
+```{r include = FALSE}
+path_figures <- here::here(file.path("tools", "figures"))
+save_figures <- dir.exists(path_figures)
+```
+
 In this vignette, we use the `sfclust` package to cluster Canadian weather stations
 based on their standardized daily temperatures averaged over the period 1960–1994.
 
@@ -205,8 +210,10 @@ gg1 + gg2
 ```
 
 ```{r, echo = FALSE}
-path_figures <- here::here(file.path("tools", "figures"))
-ggsave(file.path(path_figures, "canweather-plot.pdf"), width = 10, height = 4.1, device = cairo_pdf)
+if (save_figures) {
+  ggsave(file.path(path_figures, "canweather-plot.pdf"), width = 10, height = 4.1,
+    device = cairo_pdf)
+}
 ```
 
 The largest cluster is in southeastern Canada and includes 7 closely located stations. The
@@ -226,8 +233,10 @@ plot_clusters_series(result, ztemp) +
 ```
 
 ```{r, echo = FALSE}
-ggsave(file.path(path_figures, "canweather-risk-per-cluster.pdf"),
-  width = 10, height = 5.5, device = cairo_pdf)
+if (save_figures) {
+  ggsave(file.path(path_figures, "canweather-risk-per-cluster.pdf"),
+    width = 10, height = 5.5, device = cairo_pdf)
+}
 ```
 
 Panels 1–8 show the empirical risk per cluster for those clusters that contain more than
