@@ -135,13 +135,14 @@ the scale hyperparameter. To begin, we will run the algorithm for only 50 iterat
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-# # Reduce size of object
+# # # Reduce size of object
 # result1 <- readRDS(file.path("inst", "vigdata", "full-gaussian-mcmc1.rds"))
 # result2 <- readRDS(file.path("inst", "vigdata", "full-gaussian-mcmc2.rds"))
 # pseudo_inla <- function(x) {
 #   list(
-#     summary.random = list(id = x$summary.random$id["mean"]),
-#     summary.linear.predictor = x$summary.linear.predictor["mean"]
+#     # summary.random = list(plop = 1),
+#     summary.linear.predictor = x$summary.linear.predictor["mean"],
+#     misc = list(linkfunctions = list(names = "identity"))
 #   )
 # }
 # result1$clust$models <- NULL
@@ -209,19 +210,14 @@ summary(result2, sort = TRUE)
 Let's visualize the regions grouped by cluster.
 
 ```{r, fig.height = 5.5}
-plot(result2, which = 1, sort = TRUE, legend = TRUE)
+plot(result2, which = 1:2, sort = TRUE, legend = TRUE)
 ```
 
 Let's visualize the original data grouped by cluster.
 
 ```{r, fig.height = 4}
-stgaus$cluster <- fitted(result2, sort = TRUE)$cluster
-stgaus |>
-  st_set_dimensions("geometry", values = 1:nrow(stgaus)) |>
-  as_tibble() |>
-  ggplot() +
-    geom_line(aes(time, y, group = geometry), linewidth = 0.3) +
-    facet_wrap(~ cluster, ncol = 5) +
-    theme_bw() +
-    labs(title = "Risk per cluster", y = "Risk", x = "Time")
+plot_clusters_series(result2, y, sort = TRUE) +
+  facet_wrap(~ cluster, ncol = 5) +
+  labs(title = "Risk per cluster", y = "Response")
 ```
+

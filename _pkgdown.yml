@@ -1,11 +1,15 @@
 template:
   bootstrap: 5
+
 articles:
 - title: Articles
   navbar: ~
   contents:
-  - vg01-get-started
   - vg02-additional-features
   - vg03-stars-object
+
+- title: Applications
+  navbar: Applications
+  contents:
   - articles/vg12-covid-usa
   - articles/vg14-temp-canada

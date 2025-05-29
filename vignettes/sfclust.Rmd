@@ -1,8 +1,8 @@
 ---
-title: "Getting started"
+title: "Introduction to sfclust"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Getting started}
+  %\VignetteIndexEntry{Introduction to sfclust}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -22,7 +22,7 @@ similar disease risk over time.
 We begin by loading the required packages. In particular, we load the `stars` package as
 our `sfclust` package works with spacio-temporal `stars` objects.
 
-```{r warning=FALSE, include=TRUE}
+```{r, warning = FALSE, message = FALSE}
 library(sfclust)
 library(stars)
 library(ggplot2)
@@ -53,8 +53,8 @@ ggplot() +
     theme(legend.position = "bottom")
 ```
 
-<!-- We can aggregate the data for easier visualization using the `stars::aggregate` function. -->
-<!-- The following figure displays the weekly mean risk, providing initial insights. For -->
+We can aggregate the data for easier visualization using the `stars::aggregate` function.
+The following figure displays the weekly mean risk, providing initial insights. For
 This figure displays the daily risk, providing initial insights. For
 example, the northwestern regions show a higher risk at the beginning (2024-01-01),
 followed by a decline by March 24. In contrast, a group of regions on the eastern side
@@ -161,7 +161,8 @@ with 2000 iterations.
 # pseudo_inla <- function(x) {
 #   list(
 #     summary.random = list(id = x$summary.random$id["mean"]),
-#     summary.linear.predictor = x$summary.linear.predictor["mean"]
+#     summary.linear.predictor = x$summary.linear.predictor["mean"],
+#     misc = list(linkfunctions = list(names = "logit"))
 #   )
 # }
 # result$clust$models <- lapply(result$clust$models, pseudo_inla)
@@ -242,7 +243,7 @@ stabilize around iteration 1500, indicating that any clustering beyond this poin
 considered a reasonable realization of the clustering distribution.
 
 ```{r, fig.height = 3}
-plot(result)
+plot(result, sort = TRUE, legend = TRUE)
 ```
 
 ### Summary
@@ -286,6 +287,7 @@ standard deviation, quantiles, and other summary statistics.
 
 ```{r}
 pred <- fitted(result)
+pred
 ```
 
 We can easily visualize these fitted values. Note that there are still differences between
@@ -294,7 +296,7 @@ level.
 
 ```{r, fig.height = 9.5}
 ggplot() +
-    geom_stars(aes(fill = mean), data = pred) +
+    geom_stars(aes(fill = mean_inv), data = pred) +
     facet_wrap(~ time) +
     scale_fill_distiller(palette = "RdBu") +
     labs(title = "Daily risk", fill = "Risk") +
@@ -313,7 +315,7 @@ Using these estimates, we can visualize the cluster-level mean risk evolution ov
 
 ```{r, fig.height = 9.5}
 ggplot() +
-    geom_stars(aes(fill = mean), data = pred) +
+    geom_stars(aes(fill = mean_cluster_inv), data = pred) +
     facet_wrap(~ time) +
     scale_fill_distiller(palette = "RdBu") +
     labs(title = "Daily risk", fill = "Risk") +
@@ -321,18 +323,14 @@ ggplot() +
     theme(legend.position = "bottom")
 ```
 
-Finally, we can use our results to visualize the original data grouped by clusters.
+Finally, we can use our clustering results to visualize the original data grouped by
+clusters using the function `plot_clusters_series()`. As the output is a `ggplot` object,
+then we can easily customize the output as follows:
 
-```{r, fig.height = 4}
-stbinom$cluster <- fitted(result, sort = TRUE)$cluster
-stbinom |>
-  st_set_dimensions("geometry", values = 1:nrow(stbinom)) |>
-  as_tibble() |>
-  ggplot() +
-    geom_line(aes(time, cases/population, group = geometry), linewidth = 0.3) +
-    facet_wrap(~ cluster, ncol = 5) +
-    theme_bw() +
-    labs(title = "Risk per cluster", y = "Risk", x = "Time")
+```{r, fig.height = 3.5}
+plot_clusters_series(result, cases/population, sort = TRUE) +
+  facet_wrap(~ cluster, ncol = 5) +
+  labs(y = "Risk")
 ```
 
 Even though some clusters exhibit similar trends—for example, clusters 2 and 6—the
