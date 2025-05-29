@@ -3,8 +3,8 @@ pkgdown: 2.1.3
 pkgdown_sha: ~
 articles:
   sfclust: sfclust.html
-  vg02-additional-features: vg02-additional-features.html
-  vg03-stars-object: vg03-stars-object.html
-  articles/vg12-covid-usa: vg12-covid-usa.html
-  articles/vg14-temp-canada: vg14-temp-canada.html
-last_built: 2025-05-29T09:20Z
+  vg01-stars-object: vg01-stars-object.html
+  vg02-advanced-features: vg02-advanced-features.html
+  articles/vg11-covid-usa: vg11-covid-usa.html
+  articles/vg12-temp-canada: vg12-temp-canada.html
+last_built: 2025-05-29T09:54Z
