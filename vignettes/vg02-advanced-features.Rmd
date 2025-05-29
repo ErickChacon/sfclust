@@ -1,8 +1,8 @@
 ---
-title: "Additional features"
+title: "Advanced features"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Additional features}
+  %\VignetteIndexEntry{Advanced features}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -19,7 +19,7 @@ In this vignette we present additional features of the `sfclust` package.
 
 We begin by loading the required packages.
 
-```{r warning=FALSE, include=TRUE}
+```{r, warning = FALSE, message = FALSE}
 library(sfclust)
 library(stars)
 library(ggplot2)

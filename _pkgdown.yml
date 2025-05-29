@@ -3,10 +3,10 @@ template:
 
 articles:
 - title: Articles
-  navbar: ~
+  navbar: Vignettes
   contents:
-  - vg02-additional-features
-  - vg03-stars-object
+  - vg01-stars-object
+  - vg02-advanced-features
 
 - title: Applications
   navbar: Applications

@@ -1,8 +1,8 @@
 ---
-title: "Create stars dataset"
+title: "Create a stars dataset"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Create stars dataset}
+  %\VignetteIndexEntry{Create a stars dataset}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -17,7 +17,7 @@ Our package `sfclust` is designed to work with spatio-temporal data structured a
 `stars` object. In this vignette, we demonstrate how to create and manipulate a basic
 `stars` object.
 
-```{r warning=FALSE, include=TRUE}
+```{r, warning = FALSE, message = FALSE}
 library(stars)
 library(ggplot2)
 ```

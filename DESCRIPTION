@@ -18,6 +18,8 @@ Description: Bayesian clustering of spatial regions with similar functional shap
     <doi:10.1214/22-AOAS1643>. The package includes tools for model fitting, convergence
     diagnostics, visualization, and summarization of clustering results.
 License: MIT + file LICENSE
+URL: https://erickchacon.github.io/sfclust, https://github.com/ErickChacon/sfclust
+BugReports: https://github.com/ErickChacon/sfclust/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2

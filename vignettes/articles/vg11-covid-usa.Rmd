@@ -1,8 +1,8 @@
 ---
-title: "Weekly relative risk of COVID-19 in US states (2020)"
+title: "Weekly relative risk of COVID-19 in US states"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Weekly relative risk of COVID-19 in US states (2020)}
+  %\VignetteIndexEntry{Weekly relative risk of COVID-19 in US states}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

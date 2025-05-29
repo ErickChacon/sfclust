@@ -1,8 +1,8 @@
 ---
-title: "Standardized daily temperature at Canadian stations (1960–1994)"
+title: "Standardized daily temperature at Canadian stations"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Standardized daily temperature at Canadian stations (1960–1994)}
+  %\VignetteIndexEntry{Standardized daily temperature at Canadian stations}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
