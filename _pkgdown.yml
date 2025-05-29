@@ -11,5 +11,5 @@ articles:
 - title: Applications
   navbar: Applications
   contents:
-  - articles/vg12-covid-usa
-  - articles/vg14-temp-canada
+  - articles/vg11-covid-usa
+  - articles/vg12-temp-canada
