@@ -243,7 +243,7 @@ fitted.sfclust <- function(object, sample = object$clust$id, sort = FALSE, aggre
       function(x) st_union(st_geometry(x))
     )
     geom_clusters <- do.call(c, geom_clusters)
-    stars_obj <- aggregate(stars_obj[c("mean", "mean_cluster")], geom_clusters,
+    stars_obj <- aggregate(stars_obj[c("mean_cluster", "mean_cluster_inv")], geom_clusters,
       join = st_within, FUN = mean)
   }
 
@@ -251,16 +251,19 @@ fitted.sfclust <- function(object, sample = object$clust$id, sort = FALSE, aggre
 }
 
 linpred_each <- function(k, membership, models, stdata, stnames){
-  # linear predictor prediction
+  # get inverse of linear predictor
+  link_name <- tolower(models[[k]]$misc$linkfunctions$names)
+  inv_link <- eval(parse(text = paste0("INLA::inla.link.inv", link_name)))
+
+  # linear predictor per region
   df <- data_each(k, membership, stdata, stnames)[c("id")]
   df <- cbind(df, models[[k]]$summary.linear.predictor)
   df$kld <- NULL
-  df$mean_cluster <- linpred_each_corrected(models[[k]])
-  df$cluster <- k
+  df$mean_inv <- inv_link(df$mean)
 
-  # get inverse of linear predictor
-  link_name <- tolower(result$clust$models[[1]]$misc$linkfunctions$names)
-  inv_link <- eval(parse(text = paste0("INLA::inla.link.inv", link_name)))
+  # linear predictor per cluster
+  df$cluster <- k
+  df$mean_cluster <- linpred_each_corrected(models[[k]])
   df$mean_cluster_inv <- inv_link(df$mean_cluster)
   df
 }
@@ -350,7 +353,7 @@ plot_clusters_fitted <- function(x, sample = x$clust$id, clusters = NULL, sort =
   varname <- if (!inv_link) "mean_cluster" else "mean_cluster_inv"
   aux <- data.frame(time = df[[attr(x, "args")$stnames[2]]], mean_cluster = df[[varname]], cluster = df$cluster)
   gg <- ggplot(aux) +
-    geom_line(aes(time, mean_cluster, color = factor(df$cluster)), ...) +
+    geom_line(aes(time, mean_cluster, color = factor(cluster)), ...) +
     labs(x = NULL, y = "Estimated mean", subtitle = "Cluster functions", color = NULL) +
     theme_bw()
   if (!legend) gg <- gg + theme(legend.position = "none")
