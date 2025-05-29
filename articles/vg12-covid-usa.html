@@ -5,12 +5,12 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Covid-19 in US states during 2020 • sfclust</title>
+<title>Weekly relative risk of COVID-19 in US states (2020) • sfclust</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Covid-19 in US states during 2020">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Weekly relative risk of COVID-19 in US states (2020)">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -29,15 +29,17 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
+<li class="nav-item"><a class="nav-link" href="../articles/sfclust.html">Get started</a></li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/vg01-get-started.html">Getting started</a></li>
-    <li><a class="dropdown-item" href="../articles/vg02-additional-features.html">Additional features</a></li>
+<li><a class="dropdown-item" href="../articles/vg02-additional-features.html">Additional features</a></li>
     <li><a class="dropdown-item" href="../articles/vg03-stars-object.html">Create stars dataset</a></li>
-    <li><a class="dropdown-item" href="../articles/vg12-covid-usa.html">Covid-19 in US states during 2020</a></li>
-    <li><a class="dropdown-item" href="../articles/vg14-temp-canada.html">Daily temperature at Canada stations</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Applications</h6></li>
+    <li><a class="dropdown-item" href="../articles/vg12-covid-usa.html">Weekly relative risk of COVID-19 in US states (2020)</a></li>
+    <li><a class="dropdown-item" href="../articles/vg14-temp-canada.html">Standardized daily temperature at Canadian stations (1960–1994)</a></li>
   </ul>
 </li>
       </ul>
@@ -58,7 +60,7 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
-      <h1>Covid-19 in US states during 2020</h1>
+      <h1>Weekly relative risk of COVID-19 in US states (2020)</h1>
             
       
 
@@ -68,34 +70,23 @@
     
     
 <p>In this vignette, we use <code>sfclust</code> to identify US states
-with similar relative risk of Covid-19 during 2020.</p>
+with similar weekly relative risk of Covid-19 during 2020.</p>
 <div class="section level2">
 <h2 id="load-packages-and-data">Load packages and data<a class="anchor" aria-label="anchor" href="#load-packages-and-data"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">sfclust</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-spatial.github.io/stars/" class="external-link">stars</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; Loading required package: abind</span></span>
-<span><span class="co">#&gt; Loading required package: sf</span></span>
-<span><span class="co">#&gt; Linking to GEOS 3.12.1, GDAL 3.8.4, PROJ 9.4.0; sf_use_s2() is TRUE</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Attaching package: 'dplyr'</span></span>
-<span><span class="co">#&gt; The following objects are masked from 'package:stats':</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;     filter, lag</span></span>
-<span><span class="co">#&gt; The following objects are masked from 'package:base':</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;     intersect, setdiff, setequal, union</span></span></code></pre></div>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span></code></pre></div>
 <p>The data for this application is available on our GitHub repository:
 <a href="https://github.com/ErickChacon/sfclust/blob/main/tools/data/usacovid.rds" class="external-link">https://github.com/ErickChacon/sfclust/blob/main/tools/data/usacovid.rds</a>.
 It contains weekly data for 49 states, including the number of cases,
 the population, and the number of expected cases.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">usacovid</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="fu">here</span><span class="fu">::</span><span class="fu"><a href="https://here.r-lib.org/reference/here.html" class="external-link">here</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">"tools"</span>, <span class="st">"data"</span>, <span class="st">"usacovid.rds"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">usacovid</span></span>
-<span><span class="co">#&gt; stars object with 2 dimensions and 3 attributes</span></span>
+<span><span class="va">usacovid</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; stars object with 2 dimensions and 3 attributes</span></span>
 <span><span class="co">#&gt; attribute(s):</span></span>
 <span><span class="co">#&gt;                     Min.      1st Qu.       Median         Mean     3rd Qu.</span></span>
 <span><span class="co">#&gt; cases             0.0000      387.000     2921.000     8862.738     8653.00</span></span>
@@ -111,11 +102,12 @@ the population, and the number of expected cases.</p>
 <span><span class="co">#&gt; space    1 49         NA     NA WGS 84 FALSE</span></span>
 <span><span class="co">#&gt;                                                              values</span></span>
 <span><span class="co">#&gt; time                                                           NULL</span></span>
-<span><span class="co">#&gt; space MULTIPOLYGON (((-88.05338...,...,MULTIPOLYGON (((-111.0467...</span></span></code></pre></div>
+<span><span class="co">#&gt; space MULTIPOLYGON (((-88.05338...,...,MULTIPOLYGON (((-111.0467...</span></span></code></pre>
 <p>Note that the dimension names are <code>space</code> and
 <code>time</code>. Since <code>sfclust</code> expects them to be
 <code>c("geometry", "time")</code>, you must specify the
-<code>stnames</code> argument when using the package.</p>
+<code>stnames</code> argument when using the function
+<code><a href="../reference/sfclust.html">sfclust()</a></code> of the package.</p>
 </div>
 <div class="section level2">
 <h2 id="exploratory-analysis">Exploratory analysis<a class="anchor" aria-label="anchor" href="#exploratory-analysis"></a>
@@ -123,7 +115,7 @@ the population, and the number of expected cases.</p>
 <p>We begin by visualizing the weekly relative risk of Covid-19 across
 the 49 states. Higher risk levels are observed toward the end of the
 year.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://r-spatial.github.io/stars/reference/geom_stars.html" class="external-link">geom_stars</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="va">cases</span><span class="op">/</span><span class="va">expected</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">usacovid</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">time</span><span class="op">)</span> <span class="op">+</span></span>
@@ -131,10 +123,10 @@ year.</p>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="st">"Relative risk"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="vg12-covid-usa_files/figure-html/unnamed-chunk-3-1.png" width="100%" style="display: block; margin: auto;"></p>
+<p><img src="vg12-covid-usa_files/figure-html/unnamed-chunk-4-1.png" width="100%" style="display: block; margin: auto;"></p>
 <p>We can also examine the time series of relative risk for each state.
 Peaks are evident around April, July, and especially December.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">usacovid</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="https://r-spatial.github.io/stars/reference/st_dimensions.html" class="external-link">st_set_dimensions</a></span><span class="op">(</span><span class="st">"space"</span>, values <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">usacovid</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>    <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -144,7 +136,7 @@ Peaks are evident around April, July, and especially December.</p>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>y <span class="op">=</span> <span class="st">"Relative risk"</span>, x <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="vg12-covid-usa_files/figure-html/unnamed-chunk-4-1.png" width="100%" style="display: block; margin: auto;"></p>
+<p><img src="vg12-covid-usa_files/figure-html/unnamed-chunk-5-1.png" width="100%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level2">
 <h2 id="spatial-clustering">Spatial clustering<a class="anchor" aria-label="anchor" href="#spatial-clustering"></a>
@@ -159,11 +151,12 @@ by:</p>
 </li>
 <li>An autoregressive effect over <code>idt</code>
 </li>
-<li>An unstructured random effect across states (<code>id</code>)</li>
+<li>An unstructured random effect across states and times
+(<code>id</code>)</li>
 </ol>
 <p>We begin with one cluster per state (49 clusters total). Be sure to
-set <code>stnames = c("space", "time")</code>.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+set the dimension names: <code>stnames = c("space", "time")</code>.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">formula</span> <span class="op">&lt;-</span> <span class="va">cases</span> <span class="op">~</span> <span class="fl">1</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/poly.html" class="external-link">poly</a></span><span class="op">(</span><span class="va">time</span>, <span class="fl">3</span><span class="op">)</span> <span class="op">+</span> <span class="fu">f</span><span class="op">(</span><span class="va">idt</span>, model <span class="op">=</span> <span class="st">"ar1"</span><span class="op">)</span> <span class="op">+</span> <span class="fu">f</span><span class="op">(</span><span class="va">id</span><span class="op">)</span></span>
 <span><span class="va">geodata</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/genclust.html">genclust</a></span><span class="op">(</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_geometry.html" class="external-link">st_geometry</a></span><span class="op">(</span><span class="va">usacovid</span><span class="op">)</span>, nclust <span class="op">=</span> <span class="fl">49</span><span class="op">)</span></span>
 <span></span>
@@ -198,9 +191,9 @@ final marginal likelihood was -19196.77.</p>
 <div class="section level3">
 <h3 id="results">Results<a class="anchor" aria-label="anchor" href="#results"></a>
 </h3>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">result</span>, sort <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Summary for clustering sample 400 out of 400 </span></span>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">result</span>, sort <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; Summary for clustering sample 400 out of 400 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Within-cluster formula:</span></span>
 <span><span class="co">#&gt; cases ~ 1 + poly(time, 3) + f(idt, model = "ar1") + f(id)</span></span>
@@ -209,85 +202,80 @@ final marginal likelihood was -19196.77.</p>
 <span><span class="co">#&gt;  1  2  3  4  5  6  7  8  9 10 11 </span></span>
 <span><span class="co">#&gt; 10  9  8  6  5  4  3  1  1  1  1 </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Log marginal likelihood:  -19196.71</span></span></code></pre></div>
-<p>The <code>summary</code> indicates that Out of 11 clusters, 7 include
-more than one state. The largest cluster contains 10 states, followed by
-clusters with 9, and so on.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">result</span>, legend <span class="op">=</span> <span class="cn">TRUE</span>, sort <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="vg12-covid-usa_files/figure-html/unnamed-chunk-9-1.png" width="100%" style="display: block; margin: auto;"></p>
-<p>The <code>plot</code> of our result indicates that:</p>
+<span><span class="co">#&gt; Log marginal likelihood:  -19196.71</span></span></code></pre>
+<p>The <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> output shows that 7 out of 11 clusters
+contain more than one state. The largest cluster includes 10 states,
+while the second includes 9, and so on. In order to verify the adequacy
+of this clustering, we check the convergence using the
+<code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> function with option <code>which = 3</code>.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">result</span>, which <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
+<p><img src="vg12-covid-usa_files/figure-html/unnamed-chunk-10-1.png" width="100%" style="display: block; margin: auto;"></p>
+<p>The figure indicates that the marginal likelihood improves
+significantly within the first 100 iterations (after thinning) and
+stabilizes afterward from sample 200. Now, we can visualize the spatial
+cluster assignment and the predicted mean for each cluster:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">result</span>, which <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, legend <span class="op">=</span> <span class="cn">TRUE</span>, sort <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p><img src="vg12-covid-usa_files/figure-html/unnamed-chunk-11-1.png" width="100%" style="display: block; margin: auto;"></p>
+<p>The <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> output indicates that:</p>
 <ul>
 <li>The largest cluster is in the southwestern US, followed by clusters
 in central and northwestern regions.</li>
-<li>Mean relative risk increases gradually across the year.</li>
-<li>The marginal likelihood improves within the first 100 iterations
-(after thinning) and stabilizes afterward.</li>
+<li>Mean relative risk increases gradually across the year, with
+different peaks per cluster.</li>
 </ul>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<p>The <code>fitted</code> function return an <code>stars</code> object
+with prediction summaries after fitting, the <code>cluster</code>
+assignment, the <code>mean_cluster</code> linear predictor, the inverse
+of the linear predictor (<code>mean_cluster_inv</code>).</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">us_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/fitted.values.html" class="external-link">fitted</a></span><span class="op">(</span><span class="va">result</span>, sort <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="va">us_fit</span></span>
-<span><span class="co">#&gt; stars object with 2 dimensions and 9 attributes</span></span>
+<span><span class="va">us_fit</span></span></code></pre></div>
+<pre><code><span><span class="co">#&gt; stars object with 2 dimensions and 10 attributes</span></span>
 <span><span class="co">#&gt; attribute(s):</span></span>
-<span><span class="co">#&gt;                        Min.       1st Qu.        Median          Mean</span></span>
-<span><span class="co">#&gt; mean          -18.756909955 -1.849076e+00 -6.834142e-01 -2.124749e+00</span></span>
-<span><span class="co">#&gt; sd              0.001776338  1.074621e-02  1.849090e-02  1.442848e-01</span></span>
-<span><span class="co">#&gt; 0.025quant    -21.774831846 -1.940976e+00 -7.270388e-01 -2.411716e+00</span></span>
-<span><span class="co">#&gt; 0.5quant      -18.743482749 -1.849076e+00 -6.834142e-01 -2.123470e+00</span></span>
-<span><span class="co">#&gt; 0.975quant    -15.814701821 -1.749546e+00 -6.387514e-01 -1.845001e+00</span></span>
-<span><span class="co">#&gt; mode          -18.743328395 -1.849076e+00 -6.834142e-01 -2.123175e+00</span></span>
-<span><span class="co">#&gt; kld             0.000000000  5.513189e-11  5.526687e-11  5.639992e-09</span></span>
-<span><span class="co">#&gt; mean_cluster  -18.756875140 -1.760756e+00 -6.846120e-01 -2.125807e+00</span></span>
-<span><span class="co">#&gt; cluster         1.000000000  2.000000e+00  3.000000e+00  3.755102e+00</span></span>
-<span><span class="co">#&gt;                    3rd Qu.         Max.</span></span>
-<span><span class="co">#&gt; mean          2.489176e-01 1.898851e+00</span></span>
-<span><span class="co">#&gt; sd            5.030386e-02 1.847165e+00</span></span>
-<span><span class="co">#&gt; 0.025quant    2.254256e-01 1.841667e+00</span></span>
-<span><span class="co">#&gt; 0.5quant      2.489176e-01 1.898851e+00</span></span>
-<span><span class="co">#&gt; 0.975quant    2.762781e-01 1.956034e+00</span></span>
-<span><span class="co">#&gt; mode          2.489176e-01 1.898851e+00</span></span>
-<span><span class="co">#&gt; kld           5.556921e-11 3.198865e-07</span></span>
-<span><span class="co">#&gt; mean_cluster  1.504234e-01 1.634518e+00</span></span>
-<span><span class="co">#&gt; cluster       5.000000e+00 1.100000e+01</span></span>
+<span><span class="co">#&gt;                            Min.     1st Qu.     Median       Mean    3rd Qu.</span></span>
+<span><span class="co">#&gt; mean              -1.875691e+01 -1.84907558 -0.6834142 -2.1247489 0.24891764</span></span>
+<span><span class="co">#&gt; sd                 1.776338e-03  0.01074621  0.0184909  0.1442848 0.05030386</span></span>
+<span><span class="co">#&gt; 0.025quant        -2.177483e+01 -1.94097604 -0.7270388 -2.4117157 0.22542558</span></span>
+<span><span class="co">#&gt; 0.5quant          -1.874348e+01 -1.84907552 -0.6834142 -2.1234705 0.24891764</span></span>
+<span><span class="co">#&gt; 0.975quant        -1.581470e+01 -1.74954612 -0.6387514 -1.8450015 0.27627810</span></span>
+<span><span class="co">#&gt; mode              -1.874333e+01 -1.84907552 -0.6834142 -2.1231750 0.24891764</span></span>
+<span><span class="co">#&gt; mean_inv           7.144593e-09  0.15738259  0.5048903  1.0000604 1.28263941</span></span>
+<span><span class="co">#&gt; cluster            1.000000e+00  2.00000000  3.0000000  3.7551020 5.00000000</span></span>
+<span><span class="co">#&gt; mean_cluster      -1.875688e+01 -1.76075551 -0.6846120 -2.1258073 0.15042338</span></span>
+<span><span class="co">#&gt; mean_cluster_inv   7.144842e-09  0.17191493  0.5042859  0.9636620 1.16233361</span></span>
+<span><span class="co">#&gt;                        Max.</span></span>
+<span><span class="co">#&gt; mean               1.898851</span></span>
+<span><span class="co">#&gt; sd                 1.847165</span></span>
+<span><span class="co">#&gt; 0.025quant         1.841667</span></span>
+<span><span class="co">#&gt; 0.5quant           1.898851</span></span>
+<span><span class="co">#&gt; 0.975quant         1.956034</span></span>
+<span><span class="co">#&gt; mode               1.898851</span></span>
+<span><span class="co">#&gt; mean_inv           6.678214</span></span>
+<span><span class="co">#&gt; cluster           11.000000</span></span>
+<span><span class="co">#&gt; mean_cluster       1.634518</span></span>
+<span><span class="co">#&gt; mean_cluster_inv   5.126985</span></span>
 <span><span class="co">#&gt; dimension(s):</span></span>
 <span><span class="co">#&gt;       from to     offset  delta refsys point</span></span>
 <span><span class="co">#&gt; time     1 51 2020-01-20 7 days   Date FALSE</span></span>
 <span><span class="co">#&gt; space    1 49         NA     NA WGS 84 FALSE</span></span>
 <span><span class="co">#&gt;                                                              values</span></span>
 <span><span class="co">#&gt; time                                                           NULL</span></span>
-<span><span class="co">#&gt; space MULTIPOLYGON (((-88.05338...,...,MULTIPOLYGON (((-111.0467...</span></span></code></pre></div>
-<p>The <code>fitted</code> function return an <code>stars</code> object
-with prediction summaries after fitting, the <code>cluster</code>
-assignment and the <code>mean_cluster</code>.</p>
+<span><span class="co">#&gt; space MULTIPOLYGON (((-88.05338...,...,MULTIPOLYGON (((-111.0467...</span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="empirical-risk-per-cluster">Empirical risk per cluster<a class="anchor" aria-label="anchor" href="#empirical-risk-per-cluster"></a>
 </h3>
 <p>We use the cluster assignments to analyze and visualize the empirical
-relative risk per cluster.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">usacovid</span><span class="op">$</span><span class="va">cluster</span> <span class="op">&lt;-</span> <span class="va">us_fit</span><span class="op">$</span><span class="va">cluster</span></span>
-<span></span>
-<span><span class="co"># convert stars to data frame per region and per cluster</span></span>
-<span><span class="va">usaaux</span> <span class="op">&lt;-</span> <span class="va">usacovid</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://r-spatial.github.io/stars/reference/st_dimensions.html" class="external-link">st_set_dimensions</a></span><span class="op">(</span><span class="st">"space"</span>, values <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">usacovid</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">usacluster</span> <span class="op">&lt;-</span> <span class="va">usaaux</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">cluster</span><span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>rr <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">cases</span><span class="op">/</span><span class="va">expected</span><span class="op">)</span> <span class="op">)</span> <span class="op">|&gt;</span></span>
-<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">ungroup</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; `summarise()` has grouped output by 'time'. You can override using the</span></span>
-<span><span class="co">#&gt; `.groups` argument.</span></span>
-<span></span>
-<span><span class="co"># visualize empirical risk per cluster</span></span>
-<span><span class="va">usaaux</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">cases</span><span class="op">/</span><span class="va">expected</span>, group <span class="op">=</span> <span class="va">space</span><span class="op">)</span>, color <span class="op">=</span> <span class="st">"gray50"</span>, linewidth <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">rr</span><span class="op">)</span>, <span class="va">usacluster</span>, color <span class="op">=</span> <span class="st">"red"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">cluster</span>, ncol <span class="op">=</span> <span class="fl">4</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>y <span class="op">=</span> <span class="st">"Relative risk"</span>, x <span class="op">=</span> <span class="st">"Time"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="vg12-covid-usa_files/figure-html/unnamed-chunk-12-1.png" width="100%" style="display: block; margin: auto;"></p>
+relative risk per cluster. This can easily be done with the
+<code>plot_cluster_series()</code> function:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">plot_clusters_series</span><span class="op">(</span><span class="va">result</span>, <span class="va">cases</span><span class="op">/</span><span class="va">expected</span>, sort <span class="op">=</span> <span class="cn">TRUE</span>, clusters <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">10</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">cluster</span>, ncol <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_date.html" class="external-link">scale_x_date</a></span><span class="op">(</span>date_breaks <span class="op">=</span> <span class="st">"2 months"</span>, date_labels <span class="op">=</span>  <span class="st">"%b"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>y <span class="op">=</span> <span class="st">"Relative risk"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="vg12-covid-usa_files/figure-html/unnamed-chunk-14-1.png" width="100%" style="display: block; margin: auto;"></p>
 <p>This figure shows distinct epidemic dynamics by cluster:</p>
 <ul>
 <li>Cluster 1 shows an increasing risk with a peak in July–August.</li>
@@ -298,6 +286,7 @@ January.</li>
 <li>Clusters 4–7 follow various intermediate trends.</li>
 <li>Clusters 8–11 exhibit less typical behavior.</li>
 </ul>
+<!-- vim: set softtabstop=2 sw=2 tabstop=2 expandtab: -->
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
