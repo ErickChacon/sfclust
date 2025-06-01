@@ -36,7 +36,8 @@ It contains weekly data for 49 states, including the number of cases, the popula
 the number of expected cases.
 
 ```{r}
-usacovid <- readRDS(here::here(file.path("tools", "data", "usacovid.rds")))
+link <- "https://github.com/ErickChacon/sfclust/blob/main/tools/data/"
+usacovid <- readRDS(gzcon(url(paste0(link, "usacovid.rds?raw=true"))))
 usacovid
 ```
 

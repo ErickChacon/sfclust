@@ -135,8 +135,17 @@ domain <- domain[as.numeric(st_within(stations2, domain))] |>
   st_transform(st_crs(stations))
 
 ggplot() +
-  geom_sf(data = domain, color = 2, fill = NA) +
-  geom_sf(data = stations)
+  geom_sf(data = canada) +
+  geom_sf(data = domain, color = 4, linewidth = 0.5, fill = NA) +
+  geom_sf(data = stations, color = 2) +
+  theme_bw()
+```
+
+```{r, echo = FALSE}
+if (save_figures) {
+  ggsave(file.path(path_figures, "canweather-voronoi.pdf"), width = 10, height = 4.1,
+    device = cairo_pdf)
+}
 ```
 
 ### Model fitting
