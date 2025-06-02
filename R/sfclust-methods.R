@@ -386,7 +386,7 @@ plot_clusters_series <- function(x, var, clusters = NULL, sort = FALSE, ...) {
   # convert stars to data frame per region and per cluster
   auxdata <- stdata |>
     st_set_dimensions(stnames[1], values = 1:ns) |>
-    as_tibble()
+    as.data.frame()
   stcluster <- auxdata |>
     group_by(time, cluster) |>
     summarise(mean_cluster = mean({{ var }}), .groups = "drop")
