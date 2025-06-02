@@ -13,6 +13,11 @@ knitr::opts_chunk$set(fig.height = 6.5, fig.width = 7.5, dpi = 90, out.width = '
 knitr::opts_chunk$set(comment = "#>")
 ```
 
+```{r include = FALSE}
+path_figures <- here::here(file.path("tools", "figures"))
+save_figures <- dir.exists(path_figures)
+```
+
 In this vignette, we demonstrate the basic use of `sfclust` for spatial clustering.
 Specifically, we focus on a synthetic dataset of disease cases to identify regions with
 similar disease risk over time.
@@ -37,7 +42,7 @@ a `stars` object with two variables, `cases` and `population`, and two dimension
 daily over 91 days, starting in January 2024.
 
 ```{r}
-data("stbinom")
+stbinom
 ```
 
 We can easily visualize the spatio-temporal risk using `ggplot` and `stars::geom_stars`.
@@ -65,10 +70,14 @@ values in the middle of the study period (2024-02-12).
 stweekly <- aggregate(stbinom, by = "week", FUN = mean)
 ggplot() +
   geom_stars(aes(fill = cases/population), stweekly) +
-  facet_wrap(~ time) +
+  facet_wrap(~ time, nrow = 2) +
   scale_fill_distiller(palette = "RdBu") +
-  labs(title = "Weekly mean risk", fill = "Risk") +
-  theme_bw()
+  theme_bw(base_size = 10) +
+  theme(legend.position = c(0.93, 0.22))
+if (save_figures) {
+  ggsave(file.path(path_figures, "stbinom-weekly-risk.pdf"), width = 10, height = 3.5,
+    device = cairo_pdf)
+}
 ```
 
 It is also useful to examine trends for each region. This can be done by converting the
@@ -79,7 +88,7 @@ these regions while considering spatial contiguity.
 ```{r}
 stbinom |>
   st_set_dimensions("geometry", values = 1:nrow(stbinom)) |>
-  as_tibble() |>
+  as.data.frame() |>
   ggplot() +
     geom_line(aes(time, cases/population, group = geometry), linewidth = 0.3) +
     theme_bw() +
@@ -246,6 +255,13 @@ considered a reasonable realization of the clustering distribution.
 plot(result, sort = TRUE, legend = TRUE)
 ```
 
+```{r, echo = FALSE}
+if (save_figures) {
+  ggsave(file.path(path_figures, "stbinom-plot.pdf"), width = 10, height = 3.5,
+    device = cairo_pdf)
+}
+```
+
 ### Summary
 
 Once convergence is observed in the clustering algorithm, we can summarize the results. By
@@ -309,6 +325,7 @@ To gain further insights, we can compute the mean fitted values per cluster usin
 
 ```{r}
 pred <- fitted(result, sort = TRUE, aggregate = TRUE)
+pred
 ```
 
 Using these estimates, we can visualize the cluster-level mean risk evolution over time.
@@ -329,8 +346,14 @@ then we can easily customize the output as follows:
 
 ```{r, fig.height = 3.5}
 plot_clusters_series(result, cases/population, sort = TRUE) +
-  facet_wrap(~ cluster, ncol = 5) +
-  labs(y = "Risk")
+  facet_wrap(~ cluster, ncol = 5)
+```
+
+```{r, echo = FALSE}
+if (save_figures) {
+  ggsave(file.path(path_figures, "stbinom-risk-per-cluster.pdf"),
+    width = 10, height = 4, device = cairo_pdf)
+}
 ```
 
 Even though some clusters exhibit similar trends—for example, clusters 2 and 6—the
