@@ -98,15 +98,15 @@ random weights are assigned.</p></dd>
 <span class="r-in"><span><span class="va">clust</span> <span class="op">&lt;-</span> <span class="fu">genclust</span><span class="op">(</span><span class="va">x</span>, nclust <span class="op">=</span> <span class="fl">3</span>, weights <span class="op">=</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_measures.html" class="external-link">st_distance</a></span><span class="op">(</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_unary.html" class="external-link">st_centroid</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">clust</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $graph</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 5a32419 UNW- 6 11 -- </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH d2e1d99 UNW- 6 11 -- </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> + attr: name (v/c), weight (e/n)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 5a32419 (vertex names):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from d2e1d99 (vertex names):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [1] 1--2 1--4 1--5 2--3 2--4 2--5 2--6 3--5 3--6 4--5 5--6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $mst</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 9bd0e64 UNW- 6 5 -- </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH c7ead30 UNW- 6 5 -- </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> + attr: name (v/c), vid (v/n), weight (e/n)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 9bd0e64 (vertex names):</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from c7ead30 (vertex names):</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1--4 2--3 3--6 4--5 5--6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $membership</span>
@@ -120,15 +120,15 @@ random weights are assigned.</p></dd>
 <span class="r-in"><span><span class="va">cluster_ini</span> <span class="op">&lt;-</span> <span class="fu">genclust</span><span class="op">(</span><span class="va">x</span>, nclust <span class="op">=</span> <span class="fl">3</span>, weights <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">36</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">cluster_ini</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $graph</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH c4a7eaf U-W- 6 11 -- </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 23a909b U-W- 6 11 -- </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> + attr: weight (e/n)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from c4a7eaf:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 23a909b:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [1] 1--2 1--4 1--5 2--3 2--4 2--5 2--6 3--5 3--6 4--5 5--6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $mst</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH f005646 U-W- 6 5 -- </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 9835439 U-W- 6 5 -- </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> + attr: vid (v/n), weight (e/n)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from f005646:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 9835439:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1--2 1--4 1--5 2--3 2--6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $membership</span>
@@ -141,15 +141,15 @@ random weights are assigned.</p></dd>
 <span class="r-in"><span><span class="va">cluster_ini</span> <span class="op">&lt;-</span> <span class="fu">genclust</span><span class="op">(</span><span class="va">x</span>, nclust <span class="op">=</span> <span class="fl">3</span>, weights <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">36</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">cluster_ini</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $graph</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH adc310a U-W- 6 11 -- </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH f4938a9 U-W- 6 11 -- </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> + attr: weight (e/n)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from adc310a:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from f4938a9:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [1] 1--2 1--4 1--5 2--3 2--4 2--5 2--6 3--5 3--6 4--5 5--6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $mst</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH c0e877c U-W- 6 5 -- </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> IGRAPH 5e36e6f U-W- 6 5 -- </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> + attr: vid (v/n), weight (e/n)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from c0e877c:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> + edges from 5e36e6f:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1--2 1--5 2--3 2--4 3--6</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $membership</span>
