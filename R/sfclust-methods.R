@@ -388,8 +388,8 @@ plot_clusters_series <- function(x, var, clusters = NULL, sort = FALSE, ...) {
     st_set_dimensions(stnames[1], values = 1:ns) |>
     as.data.frame()
   stcluster <- auxdata |>
-    group_by(time, cluster) |>
-    summarise(mean_cluster = mean({{ var }}), .groups = "drop")
+    dplyr::group_by(time, cluster) |>
+    dplyr::summarise(mean_cluster = mean({{ var }}), .groups = "drop")
 
   dplyr::filter(auxdata, cluster %in% clusters) |>
     ggplot() +

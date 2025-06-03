@@ -31,7 +31,6 @@ our `sfclust` package works with spacio-temporal `stars` objects.
 library(sfclust)
 library(stars)
 library(ggplot2)
-library(dplyr)
 ```
 
 ## Data
