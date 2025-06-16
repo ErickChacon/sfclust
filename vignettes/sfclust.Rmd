@@ -8,7 +8,7 @@ vignette: >
 ---
 
 ```{r setup, include = FALSE}
-knitr::opts_chunk$set(fig.align = "center", eval = TRUE)
+knitr::opts_chunk$set(fig.align = "center")
 knitr::opts_chunk$set(fig.height = 6.5, fig.width = 7.5, dpi = 90, out.width = '100%')
 knitr::opts_chunk$set(comment = "#>")
 ```
@@ -92,6 +92,10 @@ stbinom |>
     geom_line(aes(time, cases/population, group = geometry), linewidth = 0.3) +
     theme_bw() +
     labs(title = "Risk per region", y = "Risk", x = "Time")
+```
+
+```{r}
+head(data_all(stbinom))
 ```
 
 ## Clustering
@@ -330,13 +334,18 @@ pred
 Using these estimates, we can visualize the cluster-level mean risk evolution over time.
 
 ```{r, fig.height = 9.5}
+predweekly <- aggregate(pred, by = "week", FUN = mean)
 ggplot() +
-    geom_stars(aes(fill = mean_cluster_inv), data = pred) +
-    facet_wrap(~ time) +
-    scale_fill_distiller(palette = "RdBu") +
-    labs(title = "Daily risk", fill = "Risk") +
-    theme_bw(base_size = 7) +
-    theme(legend.position = "bottom")
+  geom_stars(aes(fill = mean_cluster_inv), data = predweekly) +
+  facet_wrap(~ time, nrow = 2) +
+  scale_fill_distiller(palette = "RdBu") +
+  labs(fill = "Risk") +
+  theme_bw(base_size = 10) +
+  theme(legend.position = c(0.93, 0.22))
+if (save_figures) {
+  ggsave(file.path(path_figures, "stbinom-weekly-risk-per-cluster.pdf"), width = 10, height = 3.5,
+    device = cairo_pdf)
+}
 ```
 
 Finally, we can use our clustering results to visualize the original data grouped by

@@ -13,6 +13,11 @@ knitr::opts_chunk$set(fig.height = 6.5, fig.width = 7.5, dpi = 90, out.width = '
 knitr::opts_chunk$set(comment = "#>")
 ```
 
+```{r include = FALSE}
+path_figures <- here::here(file.path("tools", "figures"))
+save_figures <- dir.exists(path_figures)
+```
+
 In this vignette we present additional features of the `sfclust` package.
 
 ## Packages
@@ -24,6 +29,7 @@ library(sfclust)
 library(stars)
 library(ggplot2)
 library(dplyr)
+library(ggraph)
 ```
 
 ## Data
@@ -109,11 +115,30 @@ names(initial_cluster)
 
 Now, let's visualize how the regions were randomly clustered:
 
-```{r, fig.height = 5.5}
-st_sf(st_geometry(stgaus), cluster = factor(initial_cluster$membership)) |>
+```{r}
+gg1 <- ggraph(initial_cluster$graph, layout = st_coordinates(st_centroid(st_geometry(stgaus)))) +
+    geom_edge_fan(linetype = 1, color = 2) +
+    geom_node_point(size = 1.5, color = 1) +
+    geom_sf(data = st_geometry(stgaus), fill = NA, color = 1, linewidth = 0.5) +
+    labs(subtitle = "(A)") +
+    theme_void()
+gg2 <- ggraph(initial_cluster$mst, layout = st_coordinates(st_centroid(st_geometry(stgaus)))) +
+    geom_edge_fan(linetype = 1, color = 2) +
+    geom_node_point(size = 1.5, color = 1) +
+    geom_sf(data = st_geometry(stgaus), fill = NA, color = 1, linewidth = 0.5) +
+    labs(subtitle = "(B)") +
+    theme_void()
+gg3 <- st_sf(st_geometry(stgaus), cluster = factor(initial_cluster$membership)) |>
   ggplot() +
-    geom_sf(aes(fill = cluster)) +
-    theme_bw()
+    geom_sf(aes(fill = cluster), color = 1) +
+    labs(subtitle = "(C)") +
+    theme_void() +
+    theme(legend.position = "none")
+gg1 + gg2 + gg3 & theme(plot.margin = margin(0, 0, 0, 0))
+if (save_figures) {
+  ggsave(file.path(path_figures, "stgaus-initial-cluster.pdf"), width = 10, height = 3.5,
+    device = cairo_pdf)
+}
 ```
 
 ### Sampling with `sfclust`
@@ -124,23 +149,28 @@ model that includes a random walk process in the linear predictor, and custom pr
 the scale hyperparameter. To begin, we will run the algorithm for only 50 iterations.
 
 ```{r, eval = FALSE, echo = FALSE}
-# result <- sfclust(stgaus, graphdata = initial_cluster, niter = 50,
-#     formula = y ~ f(idt, model = "rw1", hyper = list(prec = list(prior = "normal", param = c(-2, 1)))),
-#   path_save = file.path("inst", "vigdata", "full-gaussian-mcmc1.rds"))
+# set.seed(123)
+# initial_cluster <- genclust(st_geometry(stgaus), nclust = 20)
 # system.time(
-#   update(result, niter = 2000, path_save = file.path("inst", "vigdata", "full-gaussian-mcmc2.rds"))
+# result <- sfclust(stgaus, graphdata = initial_cluster, niter = 50, logpen = -50,
+#   formula = y ~ f(idt, model = "rw1", hyper = list(prec = list(prior = "normal", param = c(-2, 1)))),
+#   burnin = 10, thin = 2, nmessage = 10, path_save = file.path("inst", "vigdata", "full-gaussian-mcmc1.rds"))
 # )
-# #      user    system   elapsed
-# # 16010.960 11900.949  2794.096
+# #    user  system elapsed
+# # 331.552  60.037  58.307
+# system.time(
+# result2 <- update(result, niter = 1000, path_save = file.path("inst", "vigdata", "full-gaussian-mcmc2.rds"))
+# )
+# #     user   system  elapsed
+# # 4685.726  859.919  830.404
 ```
 
 ```{r, eval = FALSE, echo = FALSE}
-# # # Reduce size of object
+# # Reduce size of object
 # result1 <- readRDS(file.path("inst", "vigdata", "full-gaussian-mcmc1.rds"))
 # result2 <- readRDS(file.path("inst", "vigdata", "full-gaussian-mcmc2.rds"))
 # pseudo_inla <- function(x) {
 #   list(
-#     # summary.random = list(plop = 1),
 #     summary.linear.predictor = x$summary.linear.predictor["mean"],
 #     misc = list(linkfunctions = list(names = "identity"))
 #   )
@@ -152,14 +182,19 @@ the scale hyperparameter. To begin, we will run the algorithm for only 50 iterat
 ```
 
 ```{r, eval = FALSE}
-result <- sfclust(stgaus, graphdata = initial_cluster, niter = 50,
-    formula = y ~ f(idt, model = "rw1", hyper = list(prec = list(prior = "normal", param = c(-2, 1)))))
-result
+form <- y ~ f(idt, model = "rw1",
+  hyper = list(prec = list(prior = "normal", param = c(-2, 1)))
+)
+result0 <- sfclust(stgaus, graphdata = initial_cluster, formula = form, logpen = -50,
+  niter = 50, burnin = 10, thin = 2, nmessage = 10,
+  path_save = file.path("inst", "vigdata", "full-gaussian-mcmc1.rds")
+)
+result0
 ```
 
 ```{r, echo = FALSE}
-result <- readRDS(system.file("vigdata", "gaussian-mcmc1.rds", package = "sfclust"))
-result
+result0 <- readRDS(system.file("vigdata", "gaussian-mcmc1.rds", package = "sfclust"))
+result0
 ```
 
 The output indicates that after starting with 20 clusters, the algorithm created 11 new
@@ -171,7 +206,7 @@ visualize only the log marginal likelihood to diagnose convergence. With just 50
 iterations, we can see that the log marginal likelihood has not yet achieved convergence.
 
 ```{r, fig.dpi = 72, fig.height = 6}
-plot(result, which = 3)
+plot(result0, which = 3)
 ```
 
 ### Continue sampling
@@ -180,13 +215,13 @@ To achieve convergence, we can continue the sampling using the `update` function
 specify the number of new iterations with the `niter` argument:
 
 ```{r, eval = FALSE}
-result2 <- update(result, niter = 2000)
-result2
+result <- update(result0, niter = 1000)
+result
 ```
 
 ```{r, echo = FALSE}
-result2 <- readRDS(system.file("vigdata", "gaussian-mcmc2.rds", package = "sfclust"))
-result2
+result <- readRDS(system.file("vigdata", "gaussian-mcmc2.rds", package = "sfclust"))
+result
 ```
 
 With 2000 additional iterations, there have been many clustering movements. Furthermore,
@@ -194,7 +229,17 @@ when visualizing the results, we can observe that the log marginal likelihood ha
 convergence.
 
 ```{r, fig.dpi = 72, fig.height = 6}
-plot(result2, which = 3)
+plot(result, which = 3)
+```
+
+```{r}
+gg1 <- plot(result0, which = 3) + labs(subtitle = "(A)")
+gg2 <- plot(result, which = 3) + labs(subtitle = "(B)")
+gg1 + gg2
+if (save_figures) {
+  ggsave(file.path(path_figures, "stgaus-marginal-likelihood.pdf"), width = 10, height = 4.5,
+    device = cairo_pdf)
+}
 ```
 
 ## Results
@@ -204,19 +249,19 @@ marginal likelihood of 12,708.35. The largest cluster consists of 27 regions, wh
 smallest contains only one region.
 
 ```{r}
-summary(result2, sort = TRUE)
+summary(result, sort = TRUE)
 ```
 
 Let's visualize the regions grouped by cluster.
 
 ```{r, fig.height = 5.5}
-plot(result2, which = 1:2, sort = TRUE, legend = TRUE)
+plot(result, which = 1:2, sort = TRUE, legend = TRUE)
 ```
 
 Let's visualize the original data grouped by cluster.
 
 ```{r, fig.height = 4}
-plot_clusters_series(result2, y, sort = TRUE) +
+plot_clusters_series(result, y, sort = TRUE) +
   facet_wrap(~ cluster, ncol = 5) +
   labs(title = "Risk per cluster", y = "Response")
 ```
