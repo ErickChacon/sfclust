@@ -123,20 +123,20 @@ the fitted INLA model for each cluster when <code>detailed = TRUE</code>.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu">log_mlik_all</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>, <span class="va">stdata</span>,</span></span>
 <span class="r-in"><span>  formula <span class="op">=</span> <span class="va">cases</span> <span class="op">~</span> <span class="va">temperature</span>, family <span class="op">=</span> <span class="st">"poisson"</span>, E <span class="op">=</span> <span class="va">expected</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] -48.30537 -37.56921</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] -46.58291 -33.48540</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">models</span> <span class="op">=</span> <span class="fu">log_mlik_all</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span>, <span class="va">stdata</span>, detailed <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
 <span class="r-in"><span>  formula <span class="op">=</span> <span class="va">cases</span> <span class="op">~</span> <span class="va">temperature</span>, family <span class="op">=</span> <span class="st">"poisson"</span>, E <span class="op">=</span> <span class="va">expected</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">models</span>, <span class="va">summary</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [[1]]</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Time used:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Pre = 0.19, Running = 0.159, Post = 0.0097, Total = 0.359 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Pre = 0.214, Running = 0.242, Post = 0.0102, Total = 0.467 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fixed effects:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>              mean    sd 0.025quant 0.5quant 0.975quant  mode kld</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept) 0.728 0.229      0.279    0.728      1.177 0.728   0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> temperature 0.015 0.013     -0.011    0.015      0.041 0.015   0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               mean    sd 0.025quant 0.5quant 0.975quant   mode kld</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)  1.174 0.280      0.625    1.174      1.723  1.174   0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> temperature -0.009 0.016     -0.040   -0.009      0.022 -0.009   0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Marginal log-Likelihood:  -48.30 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Marginal log-Likelihood:  -46.58 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  is computed </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Posterior summaries for the linear predictor and the fitted values are computed</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> (Posterior marginals needs also 'control.compute=list(return.marginals.predictor=TRUE)')</span>
@@ -144,13 +144,13 @@ the fitted INLA model for each cluster when <code>detailed = TRUE</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [[2]]</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Time used:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     Pre = 0.183, Running = 0.156, Post = 0.00948, Total = 0.348 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     Pre = 0.206, Running = 0.249, Post = 0.0101, Total = 0.465 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Fixed effects:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>               mean    sd 0.025quant 0.5quant 0.975quant   mode kld</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)  1.643 0.383      0.893    1.643      2.394  1.643   0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> temperature -0.038 0.023     -0.082   -0.038      0.007 -0.038   0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept)  1.092 0.404      0.299    1.092      1.884  1.092   0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> temperature -0.006 0.023     -0.052   -0.006      0.040 -0.006   0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Marginal log-Likelihood:  -37.57 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Marginal log-Likelihood:  -33.48 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  is computed </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Posterior summaries for the linear predictor and the fitted values are computed</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> (Posterior marginals needs also 'control.compute=list(return.marginals.predictor=TRUE)')</span>
