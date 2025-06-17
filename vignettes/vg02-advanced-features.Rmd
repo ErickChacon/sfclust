@@ -246,6 +246,11 @@ if (save_figures) {
 }
 ```
 
+```{r}
+result_other <- sfclust:::update_within(result, sample = 750)
+result_other
+```
+
 ## Results
 
 The final iteration indicates that the algorithm identified 10 clusters, with a log
