@@ -109,13 +109,14 @@ with 20 clusters:
 
 ```{r}
 set.seed(123)
-initial_cluster <- genclust(st_geometry(stgaus), nclust = 20)
+regions <- st_geometry(stgaus)
+initial_cluster <- genclust(regions, nclust = 20)
 names(initial_cluster)
 ```
 
 Now, let's visualize how the regions were randomly clustered:
 
-```{r}
+```{r, fig.height = 2.7}
 gg1 <- ggraph(initial_cluster$graph, layout = st_coordinates(st_centroid(st_geometry(stgaus)))) +
     geom_edge_fan(linetype = 1, color = 2) +
     geom_node_point(size = 1.5, color = 1) +
@@ -135,6 +136,9 @@ gg3 <- st_sf(st_geometry(stgaus), cluster = factor(initial_cluster$membership)) 
     theme_void() +
     theme(legend.position = "none")
 gg1 + gg2 + gg3 & theme(plot.margin = margin(0, 0, 0, 0))
+```
+
+```{r, echo = FALSE}
 if (save_figures) {
   ggsave(file.path(path_figures, "stgaus-initial-cluster.pdf"), width = 10, height = 3.5,
     device = cairo_pdf)
@@ -185,8 +189,8 @@ the scale hyperparameter. To begin, we will run the algorithm for only 50 iterat
 form <- y ~ f(idt, model = "rw1",
   hyper = list(prec = list(prior = "normal", param = c(-2, 1)))
 )
-result0 <- sfclust(stgaus, graphdata = initial_cluster, formula = form, logpen = -50,
-  niter = 50, burnin = 10, thin = 2, nmessage = 10,
+result0 <- sfclust(stgaus, graphdata = initial_cluster, formula = form,
+  logpen = -50, niter = 50, burnin = 10, thin = 2, nmessage = 10,
   path_save = file.path("inst", "vigdata", "full-gaussian-mcmc1.rds")
 )
 result0
