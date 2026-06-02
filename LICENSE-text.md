@@ -1,0 +1,4 @@
+# License
+
+    YEAR: 2025
+    COPYRIGHT HOLDER: Erick A. Chacón-Montalván, Ruiman Zhong, Paula Moraga
