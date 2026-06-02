@@ -42,9 +42,12 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck
-          needs: check
-          extra-repositories: 'https://inla.r-inla-download.org/R/stable/'
+          extra-packages: any::rcmdcheck, any::testthat, any::knitr, any::rmarkdown
+          dependencies: '"hard"'
+
+      - name: Install INLA
+        run: install.packages("INLA", repos = c(INLA = "https://inla.r-inla-download.org/R/stable/", getOption("repos")))
+        shell: Rscript {0}
 
       - uses: r-lib/actions/check-r-package@v2
         with:
