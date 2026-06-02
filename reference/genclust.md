@@ -52,15 +52,15 @@ x <- st_make_grid(cellsize = c(1, 1), offset = c(0, 0), n = c(3, 2))
 clust <- genclust(x, nclust = 3, weights = st_distance(st_centroid(x)))
 print(clust)
 #> $graph
-#> IGRAPH 4e9bb74 UNW- 6 11 -- 
+#> IGRAPH 94183f5 UNW- 6 11 -- 
 #> + attr: name (v/c), weight (e/n)
-#> + edges from 4e9bb74 (vertex names):
+#> + edges from 94183f5 (vertex names):
 #>  [1] 1--2 1--4 1--5 2--3 2--4 2--5 2--6 3--5 3--6 4--5 5--6
 #> 
 #> $mst
-#> IGRAPH e438e8b UNW- 6 5 -- 
+#> IGRAPH e2bce13 UNW- 6 5 -- 
 #> + attr: name (v/c), vid (v/n), weight (e/n)
-#> + edges from e438e8b (vertex names):
+#> + edges from e2bce13 (vertex names):
 #> [1] 1--4 2--3 3--6 4--5 5--6
 #> 
 #> $membership
@@ -74,15 +74,15 @@ plot(st_sf(x, cluster = factor(clust$membership)))
 cluster_ini <- genclust(x, nclust = 3, weights = 1:36)
 print(cluster_ini)
 #> $graph
-#> IGRAPH 2b63b2d U-W- 6 11 -- 
+#> IGRAPH d75f667 U-W- 6 11 -- 
 #> + attr: weight (e/n)
-#> + edges from 2b63b2d:
+#> + edges from d75f667:
 #>  [1] 1--2 1--4 1--5 2--3 2--4 2--5 2--6 3--5 3--6 4--5 5--6
 #> 
 #> $mst
-#> IGRAPH 55c0c9e U-W- 6 5 -- 
+#> IGRAPH a3d6b5c U-W- 6 5 -- 
 #> + attr: vid (v/n), weight (e/n)
-#> + edges from 55c0c9e:
+#> + edges from a3d6b5c:
 #> [1] 1--2 1--4 1--5 2--3 2--6
 #> 
 #> $membership
@@ -95,15 +95,15 @@ plot(st_sf(x, cluster = factor(cluster_ini$membership)))
 cluster_ini <- genclust(x, nclust = 3, weights = runif(36))
 print(cluster_ini)
 #> $graph
-#> IGRAPH 32bf83c U-W- 6 11 -- 
+#> IGRAPH 4b077c9 U-W- 6 11 -- 
 #> + attr: weight (e/n)
-#> + edges from 32bf83c:
+#> + edges from 4b077c9:
 #>  [1] 1--2 1--4 1--5 2--3 2--4 2--5 2--6 3--5 3--6 4--5 5--6
 #> 
 #> $mst
-#> IGRAPH da6ddea U-W- 6 5 -- 
+#> IGRAPH 0396ea0 U-W- 6 5 -- 
 #> + attr: vid (v/n), weight (e/n)
-#> + edges from da6ddea:
+#> + edges from 0396ea0:
 #> [1] 1--4 2--4 2--6 3--5 3--6
 #> 
 #> $membership
