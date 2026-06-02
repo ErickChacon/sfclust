@@ -22,7 +22,7 @@ URL: https://erickchacon.github.io/sfclust, https://github.com/ErickChacon/sfclu
 BugReports: https://github.com/ErickChacon/sfclust/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Imports:
     cubelyr,
     igraph,
@@ -38,6 +38,7 @@ Suggests:
     ggraph,
     class,
     fda,
+    here,
     purrr,
     INLA,
     knitr,

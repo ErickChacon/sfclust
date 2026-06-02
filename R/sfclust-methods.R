@@ -291,6 +291,7 @@ linpred_each_corrected <- function(x){
 #' @param clusters Optional vector specifying which clusters to plot. If `NULL`, all clusters are included.
 #' @param sort Logical value indicating whether clusters should be relabeled based on the number of elements. Default is `FALSE`.
 #' @param legend Logical value indicating whether a legend should be included in the plot. Default is `FALSE`.
+#' @param geom_before An optional `ggplot2` geom layer to add before the cluster map layer (e.g., a background tile). Default is `NULL`.
 #' @param ... Additional arguments passed to the underlying plotting functions.
 #'
 #' @return A composed `patchwork` object displaying the selected subgraphs as specified by `which`.
@@ -318,6 +319,22 @@ plot.sfclust <- function(x, sample = x$clust$id, which = 1:3, clusters = NULL, s
   wrap_plots(figs[which])
 }
 
+#' Plot a spatial map of cluster assignments
+#'
+#' Produces a `ggplot2` map of spatial regions colored by their cluster assignment for a
+#' given MCMC sample of an `sfclust` object.
+#'
+#' @param x An `sfclust` object.
+#' @param sample Integer specifying the clustering sample to display. Defaults to the last sample.
+#' @param clusters Optional vector of cluster IDs to include. If `NULL`, all clusters are shown.
+#' @param sort Logical; if `TRUE`, clusters are relabeled by decreasing size. Default is `FALSE`.
+#' @param legend Logical; if `TRUE`, a fill legend is included. Default is `FALSE`.
+#' @param geom_before An optional `ggplot2` geom layer to add before the cluster fill layer. Default is `NULL`.
+#' @param ... Additional arguments passed to `geom_sf()`.
+#'
+#' @return A `ggplot2` object.
+#'
+#' @importFrom ggplot2 facet_wrap
 #' @export
 plot_clusters_map <- function(x, sample = x$clust$id, clusters = NULL, sort = FALSE, legend = FALSE, geom_before = NULL, ...) {
   nsamples <- check_sample_and_get_nsample(x, sample)
@@ -338,6 +355,21 @@ plot_clusters_map <- function(x, sample = x$clust$id, clusters = NULL, sort = FA
   gg
 }
 
+#' Plot functional shapes of cluster linear predictors
+#'
+#' Plots the estimated mean functional shape (linear predictor or inverse-link scale) for
+#' each cluster in a given MCMC sample of an `sfclust` object.
+#'
+#' @param x An `sfclust` object.
+#' @param sample Integer specifying the clustering sample to display. Defaults to the last sample.
+#' @param clusters Optional vector of cluster IDs to include. If `NULL`, all clusters are shown.
+#' @param sort Logical; if `TRUE`, clusters are relabeled by decreasing size. Default is `FALSE`.
+#' @param legend Logical; if `TRUE`, a color legend is included. Default is `FALSE`.
+#' @param inv_link Logical; if `TRUE` (default), values are shown on the inverse-link (mean) scale.
+#' @param ... Additional arguments passed to `geom_line()`.
+#'
+#' @return A `ggplot2` object.
+#'
 #' @export
 plot_clusters_fitted <- function(x, sample = x$clust$id, clusters = NULL, sort = FALSE, legend = FALSE, inv_link = TRUE, ...) {
   nsamples <- check_sample_and_get_nsample(x, sample)
@@ -360,6 +392,17 @@ plot_clusters_fitted <- function(x, sample = x$clust$id, clusters = NULL, sort =
   gg
 }
 
+#' Plot log marginal likelihood convergence trace
+#'
+#' Plots the log marginal likelihood across MCMC samples for an `sfclust` object,
+#' highlighting the selected sample.
+#'
+#' @param x An `sfclust` object.
+#' @param sample Integer specifying the clustering sample to highlight. Defaults to the last sample.
+#' @param ... Additional arguments passed to `geom_line()`.
+#'
+#' @return A `ggplot2` object.
+#'
 #' @export
 plot_log_mlik <- function(x, sample = x$clust$id, ...) {
   nsamples <- check_sample_and_get_nsample(x, sample)
@@ -373,6 +416,19 @@ plot_log_mlik <- function(x, sample = x$clust$id, ...) {
   gg
 }
 
+#' Plot observed time series by cluster
+#'
+#' Plots individual region time series faceted by cluster, overlaid with the cluster mean,
+#' for a given variable in an `sfclust` object.
+#'
+#' @param x An `sfclust` object.
+#' @param var An unquoted variable name from the `stars` object to plot on the y-axis.
+#' @param clusters Optional vector of cluster IDs to include. If `NULL`, all clusters are shown.
+#' @param sort Logical; if `TRUE`, clusters are relabeled by decreasing size. Default is `FALSE`.
+#' @param ... Additional arguments passed to `geom_line()` for individual region series.
+#'
+#' @return A `ggplot2` object with one facet per cluster.
+#'
 #' @export
 plot_clusters_series <- function(x, var, clusters = NULL, sort = FALSE, ...) {
 

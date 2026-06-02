@@ -70,5 +70,5 @@
 #' @name stgaus
 "stgaus"
 
-#' ggplot variables
-globalVariables(c("log_mlike", "time", "mean_cluster"))
+## ggplot variables used in NSE contexts
+globalVariables(c("log_mlike", "time", "mean_cluster", "cluster"))

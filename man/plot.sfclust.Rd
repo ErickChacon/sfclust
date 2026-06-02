@@ -31,6 +31,8 @@
 
 \item{legend}{Logical value indicating whether a legend should be included in the plot. Default is \code{FALSE}.}
 
+\item{geom_before}{An optional \code{ggplot2} geom layer to add before the cluster map layer (e.g., a background tile). Default is \code{NULL}.}
+
 \item{...}{Additional arguments passed to the underlying plotting functions.}
 }
 \value{
