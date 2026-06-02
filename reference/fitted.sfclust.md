@@ -66,16 +66,16 @@ library(sfclust)
 data(stgaus)
 result <- sfclust(stgaus, formula = y ~ f(idt, model = "rw1"), niter = 10,
   nmessage = 1)
-#> Iteration 1: clusters = 10, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -1867.54279049678
-#> Iteration 2: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1818.05514390246
-#> Iteration 3: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1818.05514390246
-#> Iteration 4: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1503.31662389613
-#> Iteration 5: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1503.31662389613
-#> Iteration 6: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1503.31662389613
-#> Iteration 7: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1503.31662389613
-#> Iteration 8: clusters = 13, births = 3, deaths = 0, changes = 0, hypers = 0, log_mlike = -840.715687312249
-#> Iteration 9: clusters = 14, births = 4, deaths = 0, changes = 0, hypers = 0, log_mlike = -426.665205068983
-#> Iteration 10: clusters = 14, births = 4, deaths = 0, changes = 0, hypers = 0, log_mlike = -426.665205068983
+#> Iteration 1: clusters = 10, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -1867.54278987303
+#> Iteration 2: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1818.05514376303
+#> Iteration 3: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1818.05514376303
+#> Iteration 4: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1503.31662432528
+#> Iteration 5: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1503.31662432528
+#> Iteration 6: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1503.31662432528
+#> Iteration 7: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1503.31662432528
+#> Iteration 8: clusters = 13, births = 3, deaths = 0, changes = 0, hypers = 0, log_mlike = -840.715686749306
+#> Iteration 9: clusters = 14, births = 4, deaths = 0, changes = 0, hypers = 0, log_mlike = -426.665204489668
+#> Iteration 10: clusters = 14, births = 4, deaths = 0, changes = 0, hypers = 0, log_mlike = -426.665204489668
 
 # Estimated values ordering clusters by size
 df_est <- fitted(result, sort = TRUE)
