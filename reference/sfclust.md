@@ -153,7 +153,7 @@ can be found in our paper *"Bayesian spatial functional data clustering:
 applications in disease surveillance"* by Ruiman Zhong, Erick A.
 Chacón-Montalván, Paula Moraga:
 
-- The paper: <https://arxiv.org/abs/2407.12633>
+- The paper: <https://doi.org/10.1002/sim.70597>
 
 ## Author
 
@@ -172,16 +172,16 @@ library(sfclust)
 data(stgaus)
 result <- sfclust(stgaus, formula = y ~ f(idt, model = "rw1"),
   niter = 10, nmessage = 1)
-#> Iteration 1: clusters = 10, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -2093.91044539331
-#> Iteration 2: clusters = 10, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -2093.91044539331
-#> Iteration 3: clusters = 10, births = 0, deaths = 0, changes = 1, hypers = 0, log_mlike = -1795.08686144488
-#> Iteration 4: clusters = 10, births = 0, deaths = 0, changes = 1, hypers = 0, log_mlike = -1795.08686144488
-#> Iteration 5: clusters = 11, births = 1, deaths = 0, changes = 1, hypers = 0, log_mlike = -1750.492084521
-#> Iteration 6: clusters = 11, births = 1, deaths = 0, changes = 2, hypers = 0, log_mlike = -1641.91771691436
-#> Iteration 7: clusters = 11, births = 1, deaths = 0, changes = 2, hypers = 0, log_mlike = -1641.91771691436
-#> Iteration 8: clusters = 11, births = 1, deaths = 0, changes = 2, hypers = 0, log_mlike = -1641.91771691436
-#> Iteration 9: clusters = 11, births = 1, deaths = 0, changes = 2, hypers = 0, log_mlike = -1641.91771691436
-#> Iteration 10: clusters = 11, births = 1, deaths = 0, changes = 2, hypers = 0, log_mlike = -1641.91771691436
+#> Iteration 1: clusters = 10, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -2093.9104148119
+#> Iteration 2: clusters = 10, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -2093.9104148119
+#> Iteration 3: clusters = 10, births = 0, deaths = 0, changes = 1, hypers = 0, log_mlike = -1795.08683098101
+#> Iteration 4: clusters = 10, births = 0, deaths = 0, changes = 1, hypers = 0, log_mlike = -1795.08683098101
+#> Iteration 5: clusters = 11, births = 1, deaths = 0, changes = 1, hypers = 0, log_mlike = -1750.49205409041
+#> Iteration 6: clusters = 11, births = 1, deaths = 0, changes = 2, hypers = 0, log_mlike = -1641.9176864263
+#> Iteration 7: clusters = 11, births = 1, deaths = 0, changes = 2, hypers = 0, log_mlike = -1641.9176864263
+#> Iteration 8: clusters = 11, births = 1, deaths = 0, changes = 2, hypers = 0, log_mlike = -1641.9176864263
+#> Iteration 9: clusters = 11, births = 1, deaths = 0, changes = 2, hypers = 0, log_mlike = -1641.9176864263
+#> Iteration 10: clusters = 11, births = 1, deaths = 0, changes = 2, hypers = 0, log_mlike = -1641.9176864263
 print(result)
 #> Within-cluster formula:
 #> y ~ f(idt, model = "rw1")
@@ -214,16 +214,16 @@ data(stbinom)
 result <- sfclust(stbinom, formula = cases ~ poly(time, 2) + f(id),
   family = "binomial", Ntrials = population, niter = 10, nmessage = 1)
 #> Warning: Log marginal-likelihood correction not required.
-#> Iteration 1: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -76423.0462383958
-#> Iteration 2: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -76423.0462383958
-#> Iteration 3: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -76423.0462383958
-#> Iteration 4: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -76270.7425039501
-#> Iteration 5: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -76270.7425039501
-#> Iteration 6: clusters = 12, births = 2, deaths = 0, changes = 1, hypers = 0, log_mlike = -76249.613150235
-#> Iteration 7: clusters = 12, births = 2, deaths = 0, changes = 2, hypers = 0, log_mlike = -76091.6396039248
-#> Iteration 8: clusters = 12, births = 2, deaths = 0, changes = 2, hypers = 0, log_mlike = -76091.6396039248
-#> Iteration 9: clusters = 12, births = 2, deaths = 0, changes = 2, hypers = 0, log_mlike = -76091.6396039248
-#> Iteration 10: clusters = 12, births = 2, deaths = 0, changes = 2, hypers = 0, log_mlike = -76091.6396039248
+#> Iteration 1: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -76423.0462543754
+#> Iteration 2: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -76423.0462543754
+#> Iteration 3: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -76423.0462543754
+#> Iteration 4: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -76270.7424982142
+#> Iteration 5: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -76270.7424982142
+#> Iteration 6: clusters = 12, births = 2, deaths = 0, changes = 1, hypers = 0, log_mlike = -76249.6131336732
+#> Iteration 7: clusters = 12, births = 2, deaths = 0, changes = 2, hypers = 0, log_mlike = -76091.6395966867
+#> Iteration 8: clusters = 12, births = 2, deaths = 0, changes = 2, hypers = 0, log_mlike = -76091.6395966867
+#> Iteration 9: clusters = 12, births = 2, deaths = 0, changes = 2, hypers = 0, log_mlike = -76091.6395966867
+#> Iteration 10: clusters = 12, births = 2, deaths = 0, changes = 2, hypers = 0, log_mlike = -76091.6395966867
 print(result)
 #> Within-cluster formula:
 #> cases ~ poly(time, 2) + f(id)
