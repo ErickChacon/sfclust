@@ -52,8 +52,11 @@ genclust <- function(x, nclust = 10, weights = NULL){
     stop("`x` must be of class `sf`, `sfc`, `matrix` or `Matrix`.")
   }
 
+  if (!is.numeric(nclust) || length(nclust) != 1 || nclust < 1) {
+    stop("`nclust` must be a positive integer.")
+  }
   if (nclust > dim(x)[1]) {
-    stop("`nclust` must be smaller that number of regions.")
+    stop("`nclust` must be smaller than number of regions.")
   }
 
   if (is.null(weights)) weights <- runif(length(x))

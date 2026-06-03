@@ -28,7 +28,7 @@ splitCluster <- function(mstgraph, k, membership) {
   edge_cutted <- sample.int(tcluster[clust.split] - 1, 1)
 
   mst_subgraph <- igraph::induced_subgraph(mstgraph, membership == clust.split)
-  mst_subgraph <- delete.edges(mst_subgraph, edge_cutted)
+  mst_subgraph <- delete_edges(mst_subgraph, edge_cutted)
   connect_comp <- components(mst_subgraph)
   cluster_new <- connect_comp$membership
   vid_new <- (V(mst_subgraph)$vid)[cluster_new == 2] # vid for vertices belonging to new cluster

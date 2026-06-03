@@ -167,13 +167,7 @@ correction_required <- function (formula) {
 #'
 #' @export
 data_all <- function(stdata, stnames = c("geometry", "time")) {
-  # check if the input is a stars object and dimension names
-  if (!inherits(stdata, "stars")) {
-    stop("Argument `stdata` must be a `stars` object.")
-  }
-  if (any(!(stnames %in% dimnames(stdata)))) {
-    stop("Provided dimension names in `stnames` not found in stars object `stdata`.")
-  }
+  validate_stdata_input(stdata, stnames)
 
   stdata[["id"]] <- 1:prod(dim(stdata))
 
@@ -186,6 +180,15 @@ data_all <- function(stdata, stnames = c("geometry", "time")) {
   # merge dimensions and dataframe
   stdata <- as.data.frame(stdata)
   cbind(stdata["id"], dims, stdata[, !names(stdata) %in% c("id", stnames[1])])
+}
+
+validate_stdata_input <- function(stdata, stnames) {
+  if (!inherits(stdata, "stars")) {
+    stop("Argument `stdata` must be a `stars` object.")
+  }
+  if (any(!(stnames %in% dimnames(stdata)))) {
+    stop("Provided dimension names in `stnames` not found in stars object `stdata`.")
+  }
 }
 
 #' Prepare data for a cluster
@@ -219,13 +222,7 @@ data_all <- function(stdata, stnames = c("geometry", "time")) {
 #'
 #' @export
 data_each <- function(k, membership, stdata, stnames = c("geometry", "time")) {
-  # check if the input is a stars object and dimension names
-  if (!inherits(stdata, "stars")) {
-    stop("Argument `stdata` must be a `stars` object.")
-  }
-  if (any(!(stnames %in% dimnames(stdata)))) {
-    stop("Provided dimension names in `stnames` not found in stars object `stdata`.")
-  }
+  validate_stdata_input(stdata, stnames)
 
   stdata[["id"]] <- 1:prod(dim(stdata))
 
