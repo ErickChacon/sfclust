@@ -2,7 +2,7 @@
 #'
 #' Prints details of an sfclust object, including the (i) within-cluster formula;
 #' (ii) hyperparameters used for the MCMC sample such as the number of clusters penalty
-#' (q) and the movement probabilities (move_prob); (iii) the number of movement type dones
+#' (q) and the movement probabilities (move_prob); (iii) the number of movement type counts
 #' during the MCMC sampling; and (iv) the log marginal likelihood of the model of the last
 #' clustering sample.
 #'
@@ -110,7 +110,7 @@ sort_membership <- function(x) {
 #'
 #' @details This function takes the last state of the Markov chain from a previous
 #'          `sfclust` execution and uses it as the starting point for additional MCMC
-#'          iterations. If `sample` is provided, it simply udpates the within-cluster
+#'          iterations. If `sample` is provided, it simply updates the within-cluster
 #'          models for the specified clustering `sample`.
 #'
 #' @return An updated `sfclust` object with (i) new clustering samples if `sample` is not
@@ -122,7 +122,7 @@ sort_membership <- function(x) {
 update.sfclust <- function(object, niter = 100, burnin = 0, thin = 1, nmessage = 10, sample = NULL,
                            path_save = NULL, nsave = nmessage, ...) {
   if (!is.null(sample)) {
-    update_within(object, nrow(object$samples$membership))
+    update_within(object, sample)
   } else {
     update_sfclust(object, niter, burnin, thin, nmessage, path_save, nsave)
   }

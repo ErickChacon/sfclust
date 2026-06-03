@@ -49,6 +49,6 @@ provided.
 \details{
 This function takes the last state of the Markov chain from a previous
 \code{sfclust} execution and uses it as the starting point for additional MCMC
-iterations. If \code{sample} is provided, it simply udpates the within-cluster
+iterations. If \code{sample} is provided, it simply updates the within-cluster
 models for the specified clustering \code{sample}.
 }

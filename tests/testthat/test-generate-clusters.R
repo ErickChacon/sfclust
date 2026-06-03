@@ -49,4 +49,9 @@ test_that("generate clusters", {
   # missspecified x
   expect_error(genclust("x", nclust = 5),
     "`x` must be of class `sf`, `sfc`, `matrix` or `Matrix`.")
+
+  # invalid nclust values
+  expect_error(genclust(x, nclust = 0), "`nclust` must be a positive integer.")
+  expect_error(genclust(x, nclust = -1), "`nclust` must be a positive integer.")
+  expect_error(genclust(x, nclust = "3"), "`nclust` must be a positive integer.")
 })
