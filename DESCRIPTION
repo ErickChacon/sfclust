@@ -36,10 +36,7 @@ Imports:
     patchwork
 Suggests:
     ggraph,
-    class,
-    fda,
     here,
-    purrr,
     INLA,
     knitr,
     rmarkdown,
@@ -49,4 +46,4 @@ Depends: R (>= 4.1.0)
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 LazyData: true
-Config/Needs/website: rmarkdown, here, rnaturalearth, ropensci/rnaturalearthhires
+Config/Needs/website: rmarkdown, fda, rnaturalearth, ropensci/rnaturalearthhires
