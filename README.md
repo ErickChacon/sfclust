@@ -13,8 +13,8 @@ adjacency constraints, ensuring that clusters consist of neighboring regions wit
 similar temporal dynamics.
 
 The package implements the methodology described in *"Bayesian Spatial Functional
-Data Clustering: Applications in Disease Surveillance"*, available at
-[arXiv:2407.12633](https://arxiv.org/abs/2407.12633). In addition to the core
+Data Clustering: Applications in Disease Surveillance"* (2026), published in Statistics
+in Medicine at <https://doi.org/10.1002/sim.70597>. In addition to the core
 clustering algorithm, `sfclust` offers tools for model diagnostics, visualization,
 and result summarization.
 

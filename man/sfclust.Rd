@@ -104,7 +104,7 @@ Further details of our approach can be found in our paper \emph{"Bayesian spatia
 data clustering: applications in disease surveillance"} by Ruiman Zhong, Erick A.
 Chacón-Montalván, Paula Moraga:
 \itemize{
-\item The paper: \url{https://arxiv.org/abs/2407.12633}
+\item The paper: \url{https://doi.org/10.1002/sim.70597}
 }
 }
 \examples{

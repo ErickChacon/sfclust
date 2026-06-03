@@ -7,7 +7,7 @@
 \description{
 The \code{sfclust} package implements the clustering algorithm proposed in \emph{"Bayesian
 Spatial Functional Data Clustering: Applications in Disease Surveillance"}, available
-at \url{https://arxiv.org/abs/2407.12633}. The package provides tools for performing
+at \url{https://doi.org/10.1002/sim.70597}. The package provides tools for performing
 Bayesian spatial functional clustering, as well as methods for diagnostic analysis,
 visualization, and summarization of results.
 }

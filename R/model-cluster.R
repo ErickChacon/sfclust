@@ -50,7 +50,7 @@
 #' Further details of our approach can be found in our paper *"Bayesian spatial functional
 #' data clustering: applications in disease surveillance"* by Ruiman Zhong, Erick A.
 #' Chacón-Montalván, Paula Moraga:
-#' - The paper: <https://arxiv.org/abs/2407.12633>
+#' - The paper: <https://doi.org/10.1002/sim.70597>
 #'
 #' @return
 #' An `sfclust` object containing two main lists: `samples` and `clust`.
