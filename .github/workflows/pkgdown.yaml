@@ -33,9 +33,9 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::pkgdown, local::.
+          extra-packages: any::pkgdown, any::knitr, any::rmarkdown, any::ggraph, any::here, local::.
           needs: website
-          extra-repositories: 'https://inla.r-inla-download.org/R/stable/'
+          dependencies: '"hard"'
 
       - name: Install INLA
         run: install.packages("INLA", repos = c(INLA = "https://inla.r-inla-download.org/R/stable/", getOption("repos")))
