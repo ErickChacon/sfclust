@@ -82,7 +82,7 @@ models = log_mlik_all(c(1, 1, 1, 2, 2), stdata, detailed = TRUE,
 lapply(models, summary)
 #> [[1]]
 #> Time used:
-#>     Pre = 0.198, Running = 0.138, Post = 0.00989, Total = 0.345 
+#>     Pre = 0.191, Running = 0.126, Post = 0.0102, Total = 0.327 
 #> Fixed effects:
 #>               mean    sd 0.025quant 0.5quant 0.975quant   mode kld
 #> (Intercept)  1.174 0.280      0.625    1.174      1.723  1.174   0
@@ -96,7 +96,7 @@ lapply(models, summary)
 #> 
 #> [[2]]
 #> Time used:
-#>     Pre = 0.242, Running = 0.138, Post = 0.0102, Total = 0.389 
+#>     Pre = 0.233, Running = 0.125, Post = 0.0103, Total = 0.369 
 #> Fixed effects:
 #>               mean    sd 0.025quant 0.5quant 0.975quant   mode kld
 #> (Intercept)  1.092 0.404      0.299    1.092      1.884  1.092   0

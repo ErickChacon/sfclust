@@ -74,5 +74,5 @@ is not specified, or (ii) updated within-cluster model results if
 
 This function takes the last state of the Markov chain from a previous
 `sfclust` execution and uses it as the starting point for additional
-MCMC iterations. If `sample` is provided, it simply udpates the
+MCMC iterations. If `sample` is provided, it simply updates the
 within-cluster models for the specified clustering `sample`.
