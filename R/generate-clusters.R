@@ -67,7 +67,8 @@ genclust <- function(x, nclust = 10, weights = NULL){
   V(mstgraph)$vid <- 1:vcount(mstgraph)
 
   # partition mst into nclust groups
-  rmid <- order(E(mstgraph)$weight, decreasing = TRUE)[1:(nclust - 1)]
+  # rmid <- order(E(mstgraph)$weight, decreasing = TRUE)[1:(nclust - 1)]
+  rmid <- sample.int(ecount(mstgraph), nclust - 1)
   partition <- components(delete_edges(mstgraph, rmid))
 
   return(list(graph = graph, mst = mstgraph, membership = partition$membership))
