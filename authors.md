@@ -15,13 +15,13 @@ Source:
 [`DESCRIPTION`](https://github.com/ErickChacon/sfclust/blob/main/DESCRIPTION)
 
 Chacón-Montalván EA, Zhong R, Moraga P (2026). *sfclust: Bayesian
-Spatial Functional Clustering*. R package version 1.0.1,
+Spatial Functional Clustering*. R package version 1.0.2,
 <https://erickchacon.github.io/sfclust>.
 
     @Manual{,
       title = {sfclust: Bayesian Spatial Functional Clustering},
       author = {Erick A. Chacón-Montalván and Ruiman Zhong and Paula Moraga},
       year = {2026},
-      note = {R package version 1.0.1},
+      note = {R package version 1.0.2},
       url = {https://erickchacon.github.io/sfclust},
     }
