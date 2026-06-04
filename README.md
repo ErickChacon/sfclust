@@ -1,6 +1,7 @@
 <!-- badges: start -->
 [![CRAN status](https://www.r-pkg.org/badges/version/sfclust)](https://CRAN.R-project.org/package=sfclust)
 [![R-CMD-check](https://github.com/ErickChacon/sfclust/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/ErickChacon/sfclust/actions/workflows/R-CMD-check.yaml)
+[![pkgdown](https://github.com/ErickChacon/sfclust/actions/workflows/pkgdown.yaml/badge.svg)](https://github.com/ErickChacon/sfclust/actions/workflows/pkgdown.yaml)
 <!-- badges: end -->
 
 # sfclust: Bayesian Spatial Functional Clustering
