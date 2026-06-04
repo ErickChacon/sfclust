@@ -157,7 +157,7 @@ the scale hyperparameter. To begin, we will run the algorithm for only 50 iterat
 # initial_cluster <- genclust(st_geometry(stgaus), nclust = 20)
 # system.time(
 # result <- sfclust(stgaus, graphdata = initial_cluster, niter = 50, logpen = -50,
-#   formula = y ~ f(idt, model = "rw1", hyper = list(prec = list(prior = "normal", param = c(-2, 1)))),
+#   formula = y ~ f(idf_time, model = "rw1", hyper = list(prec = list(prior = "normal", param = c(-2, 1)))),
 #   burnin = 10, thin = 2, nmessage = 10, path_save = file.path("inst", "vigdata", "full-gaussian-mcmc1.rds"))
 # )
 # #    user  system elapsed
@@ -186,7 +186,7 @@ the scale hyperparameter. To begin, we will run the algorithm for only 50 iterat
 ```
 
 ```{r, eval = FALSE}
-form <- y ~ f(idt, model = "rw1",
+form <- y ~ f(idf_time, model = "rw1",
   hyper = list(prec = list(prior = "normal", param = c(-2, 1)))
 )
 result0 <- sfclust(stgaus, graphdata = initial_cluster, formula = form,

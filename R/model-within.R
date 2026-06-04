@@ -5,10 +5,13 @@
 #'
 #' @param membership Integer, character or factor vector indicating the cluster membership
 #'        for each spatial unit.
-#' @param stdata A stars object with spatial-temporal dimensions defined in `stnames`, and
-#'        including predictors and response variables.
-#' @param stnames The names of the `spatial` and `temporal` dimensions of the `stdata`
-#'        object.
+#' @param stdata A stars object with spatial and functional dimensions defined in `sp_dims`
+#'        and `fun_dims`, and including predictors and response variables.
+#' @param sp_dims Character vector with the names of the spatial dimensions of `stdata`.
+#'        Use a single name (e.g. `"geometry"`) for vector geometry data, or two names
+#'        (e.g. `c("x", "y")`) for raster data.
+#' @param fun_dims Character vector with the names of the functional dimensions of `stdata`
+#'        (e.g. `"time"`).
 #' @param correction Logical value indicating whether a correction for dispersion.
 #' @param detailed Logical value indicating whether to return the INLA model instead of
 #'        the log marginal likelihood. The argument `correction` is not applied in this
@@ -45,14 +48,14 @@
 #' }
 #'
 #' @export
-log_mlik_all <- function(membership, stdata, stnames = c("geometry", "time"),
+log_mlik_all <- function(membership, stdata, sp_dims = "geometry", fun_dims = "time",
                          correction = TRUE, detailed = FALSE, ...) {
   clusters <- unique_clusters(membership)
 
   if (detailed) {
-    lapply(clusters, log_mlik_each, membership, stdata, stnames, correction, detailed, ...)
+    lapply(clusters, log_mlik_each, membership, stdata, sp_dims, fun_dims, correction, detailed, ...)
   } else {
-    sapply(clusters, log_mlik_each, membership, stdata, stnames, correction, detailed, ...)
+    sapply(clusters, log_mlik_each, membership, stdata, sp_dims, fun_dims, correction, detailed, ...)
   }
 }
 
@@ -72,9 +75,9 @@ unique_clusters <- function (membership) {
   }
 }
 
-log_mlik_each <- function(k, membership, stdata, stnames = c("geometry", "time"),
+log_mlik_each <- function(k, membership, stdata, sp_dims = "geometry", fun_dims = "time",
                           correction = TRUE, detailed = FALSE, ...) {
-  inla_data <- data_each(k, membership, stdata, stnames)
+  inla_data <- data_each(k, membership, stdata, sp_dims, fun_dims)
   model <- INLA::inla(
     data = inla_data,
     control.predictor = list(compute = TRUE),
@@ -144,13 +147,19 @@ correction_required <- function (formula) {
 
 #' Prepare data in long format
 #'
-#' Convert spatio-temporal data to long format with indices for time and spatial location.
+#' Convert spatio-functional data to long format with a flat spatial index (`ids`) and
+#' ordered functional indices (`idf_<dimname>` for each functional dimension).
 #'
-#' @param stdata A stars object containing spatial-temporal dimensions defined in `stnames`.
-#' @param stnames The names of the `spatial` and `temporal` dimensions.
+#' @param stdata A stars object containing the spatial and functional dimensions.
+#' @param sp_dims Character vector with the names of the spatial dimensions of `stdata`.
+#'        Use a single name (e.g. `"geometry"`) for vector geometry data, or two names
+#'        (e.g. `c("x", "y")`) for raster data.
+#' @param fun_dims Character vector with the names of the functional dimensions of `stdata`
+#'        (e.g. `"time"`).
 #'
-#' @return A long-format data frame with ids for each observation and  for spatial and
-#'         time indexing.
+#' @return A long-format data frame with columns `id` (flat array index), `ids` (flat
+#'         spatial index, 1 to ns), `idf_<dimname>` for each functional dimension, and
+#'         all variables from `stdata`.
 #'
 #' @examples
 #'
@@ -166,43 +175,50 @@ correction_required <- function (formula) {
 #' data_all(stdata)
 #'
 #' @export
-data_all <- function(stdata, stnames = c("geometry", "time")) {
-  validate_stdata_input(stdata, stnames)
-
+data_all <- function(stdata, sp_dims = "geometry", fun_dims = "time") {
+  validate_stdata_input(stdata, sp_dims, fun_dims)
   stdata[["id"]] <- 1:prod(dim(stdata))
 
-  # spatio-temporal dimension in long format
   dims <- expand_dimensions(stdata)
-  dims[[stnames[1]]] <- seq_along(dims[[stnames[1]]])
-  dims[[stnames[2]]] <- order(dims[[stnames[2]]])
-  dims <- setNames(do.call(expand.grid, dims)[stnames], c("ids", "idt"))
 
-  # merge dimensions and dataframe
-  stdata <- as.data.frame(stdata)
-  cbind(stdata["id"], dims, stdata[, !names(stdata) %in% c("id", stnames[1])])
-}
+  # replace spatial dim values with sequential indices, functional dims with order
+  sp_sizes <- setNames(sapply(sp_dims, function(d) length(dims[[d]])), sp_dims)
+  for (d in sp_dims) dims[[d]] <- seq_len(sp_sizes[[d]])
+  for (d in fun_dims) dims[[d]] <- order(dims[[d]])
 
-validate_stdata_input <- function(stdata, stnames) {
-  if (!inherits(stdata, "stars")) {
-    stop("Argument `stdata` must be a `stars` object.")
+  # full grid; row order matches as.data.frame(stdata)
+  grid <- do.call(expand.grid, dims)
+
+  # flat spatial index (column-major over sp_dims)
+  if (length(sp_dims) == 1) {
+    ids <- grid[[sp_dims]]
+  } else {
+    strides <- cumprod(c(1L, as.integer(sp_sizes[-length(sp_sizes)])))
+    ids <- as.integer(as.matrix(grid[sp_dims] - 1L) %*% strides) + 1L
   }
-  if (any(!(stnames %in% dimnames(stdata)))) {
-    stop("Provided dimension names in `stnames` not found in stars object `stdata`.")
-  }
+
+  fun_cols <- setNames(as.data.frame(grid[fun_dims]), paste0("idf_", fun_dims))
+
+  stdata_df <- as.data.frame(stdata)
+  cbind(stdata_df["id"], ids = ids, fun_cols,
+        stdata_df[, !names(stdata_df) %in% c("id", sp_dims), drop = FALSE])
 }
 
 #' Prepare data for a cluster
 #'
-#' Subset a spatio-temporal dataset for a cluster and convert it to a long format with
-#' indices for time and spatial location.
+#' Subset a spatio-functional dataset to a single cluster and convert it to long format.
 #'
 #' @param k The cluster number to subset.
-#' @param membership A vector defining the cluster membership for each region.
-#' @param stdata A stars object containing spatial-temporal dimensions defined in `stnames`.
-#' @param stnames The names of the `spatial` and `temporal` dimensions.
+#' @param membership A vector defining the cluster membership for each spatial unit.
+#' @param stdata A stars object containing the spatial and functional dimensions.
+#' @param sp_dims Character vector with the names of the spatial dimensions of `stdata`.
+#'        Use a single name (e.g. `"geometry"`) for vector geometry data, or two names
+#'        (e.g. `c("x", "y")`) for raster data.
+#' @param fun_dims Character vector with the names of the functional dimensions of `stdata`
+#'        (e.g. `"time"`).
 #'
-#' @return A long-format data frame with ids for each observation and  for spatial and
-#'         time indexing.
+#' @return A long-format data frame for cluster `k` with columns `id`, `ids`, `idf_<dimname>`
+#'         for each functional dimension, and all variables from `stdata`.
 #'
 #' @examples
 #'
@@ -221,22 +237,37 @@ validate_stdata_input <- function(stdata, stnames) {
 #' @importFrom dplyr filter
 #'
 #' @export
-data_each <- function(k, membership, stdata, stnames = c("geometry", "time")) {
-  validate_stdata_input(stdata, stnames)
-
+data_each <- function(k, membership, stdata, sp_dims = "geometry", fun_dims = "time") {
+  validate_stdata_input(stdata, sp_dims, fun_dims)
   stdata[["id"]] <- 1:prod(dim(stdata))
 
-  # subset cluster k
-  cluster_elements <- which(membership == k)
-  stdata <- filter(stdata, !!as.name(stnames[1]) %in% cluster_elements)
+  cluster_sp_ids <- which(membership == k)
 
-  # spatio-temporal dimension in long format
-  dims <- expand_dimensions(stdata)
-  dims[[stnames[1]]] <- cluster_elements
-  dims[[stnames[2]]] <- order(dims[[stnames[2]]])
-  dims <- setNames(do.call(expand.grid, dims)[stnames], c("ids", "idt"))
+  if (length(sp_dims) == 1) {
+    stdata <- filter(stdata, !!as.name(sp_dims) %in% cluster_sp_ids)
 
-  # merge dimensions and dataframe
-  stdata <- as.data.frame(stdata)
-  cbind(stdata["id"], dims, stdata[, !names(stdata) %in% c("id", stnames[1])])
+    dims <- expand_dimensions(stdata)
+    dims[[sp_dims]] <- cluster_sp_ids
+    for (d in fun_dims) dims[[d]] <- order(dims[[d]])
+
+    grid <- do.call(expand.grid, dims)
+    fun_cols <- setNames(as.data.frame(grid[fun_dims]), paste0("idf_", fun_dims))
+
+    stdata_df <- as.data.frame(stdata)
+    cbind(stdata_df["id"], ids = grid[[sp_dims]], fun_cols,
+          stdata_df[, !names(stdata_df) %in% c("id", sp_dims), drop = FALSE])
+  } else {
+    all_data <- data_all(stdata, sp_dims, fun_dims)
+    all_data[all_data$ids %in% cluster_sp_ids, , drop = FALSE]
+  }
+}
+
+validate_stdata_input <- function(stdata, sp_dims, fun_dims) {
+  if (!inherits(stdata, "stars")) {
+    stop("Argument `stdata` must be a `stars` object.")
+  }
+  all_dims <- c(sp_dims, fun_dims)
+  if (any(!(all_dims %in% dimnames(stdata)))) {
+    stop("Dimension names in `sp_dims` and `fun_dims` not found in stars object `stdata`.")
+  }
 }

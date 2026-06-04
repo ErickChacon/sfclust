@@ -8,9 +8,11 @@
 #' @param stdata A stars object containing response variables, covariates, and other necessary data.
 #' @param graphdata A list containing the initial graph used for the Bayesian model.
 #'        It should include components like `graph`, `mst`, and `membership` (default is `NULL`).
-#' @param stnames A character vector specifying the spatio-temporal dimension names of
-#'        `stdata` that represent spatial geometry and time, respectively (default is
-#'        `c("geometry", "time")`).
+#' @param sp_dims Character vector with the names of the spatial dimensions of `stdata`.
+#'        Use a single name (e.g. `"geometry"`) for vector geometry data, or two names
+#'        (e.g. `c("x", "y")`) for raster data. Default is `"geometry"`.
+#' @param fun_dims Character vector with the names of the functional dimensions of `stdata`
+#'        (e.g. `"time"`). Default is `"time"`.
 #' @param move_prob A numeric vector of probabilities for different types of moves in the MCMC process:
 #'        birth, death, change, and hyperparameter moves (default is `c(0.425, 0.425, 0.1, 0.05)`).
 #' @param logpen A negative numeric value representing the log-scale penalty for
@@ -75,7 +77,7 @@
 #'
 #' # Clustering with Gaussian data
 #' data(stgaus)
-#' result <- sfclust(stgaus, formula = y ~ f(idt, model = "rw1"),
+#' result <- sfclust(stgaus, formula = y ~ f(idf_time, model = "rw1"),
 #'   niter = 10, nmessage = 1)
 #' print(result)
 #' summary(result)
@@ -83,7 +85,7 @@
 #'
 #' # Clustering with binomial data
 #' data(stbinom)
-#' result <- sfclust(stbinom, formula = cases ~ poly(time, 2) + f(id),
+#' result <- sfclust(stbinom, formula = cases ~ poly(idf_time, 2) + f(id),
 #'   family = "binomial", Ntrials = population, niter = 10, nmessage = 1)
 #' print(result)
 #' summary(result)
@@ -91,15 +93,20 @@
 #' }
 #'
 #' @export
-sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
+sfclust <- function(stdata, graphdata = NULL, sp_dims = "geometry", fun_dims = "time",
                     move_prob = c(0.425, 0.425, 0.1, 0.05), logpen = log(1 - 0.5), correction = TRUE,
                     niter = 100, burnin = 0, thin = 1, nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
 
   inla_args <- match.call(expand.dots = FALSE)$...
 
-  # number of regions
-  geoms <- st_get_dimension_values(stdata, stnames[1])
-  ns <- length(geoms)
+  # number of spatial units
+  if (length(sp_dims) == 1) {
+    geoms <- st_get_dimension_values(stdata, sp_dims)
+    ns <- length(geoms)
+  } else {
+    geoms <- NULL
+    ns <- prod(dim(stdata)[sp_dims])
+  }
 
   # check if correction is required
   if (correction) {
@@ -110,17 +117,25 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
   }
 
   # initial clustering
-  if (is.null(graphdata)) graphdata <- genclust(geoms)
+  if (is.null(graphdata)) {
+    if (length(sp_dims) == 1) {
+      graphdata <- genclust(geoms)
+    } else {
+      nx <- dim(stdata)[sp_dims[1]]
+      ny <- dim(stdata)[sp_dims[2]]
+      graphdata <- genclust(raster_adjacency(nx, ny))
+    }
+  }
   graph <- graphdata[["graph"]]
   mstgraph <- graphdata[["mst"]]
   membership <- graphdata[["membership"]]
 
-  args <- list(stdata = stdata, graphdata = graphdata, stnames = stnames,
+  args <- list(stdata = stdata, graphdata = graphdata, sp_dims = sp_dims, fun_dims = fun_dims,
     move_prob = move_prob, logpen = logpen, correction = correction)
 
   nclust <- max(membership)
   edge_status <- getEdgeStatus(membership, mstgraph) # edge is within or between clusters
-  log_mlike_vec <- log_mlik_all(membership, stdata, stnames, correction, detailed = FALSE, ...)
+  log_mlike_vec <- log_mlik_all(membership, stdata, sp_dims, fun_dims, correction, detailed = FALSE, ...)
   log_mlike <- sum(log_mlike_vec)
 
   # output objects
@@ -162,7 +177,7 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
       }
       log_P <- log(rd_new) - log(rb)
       log_A <- logpen
-      log_L_new <- log_mlik_ratio("split", split_res, log_mlike_vec, stdata, stnames, correction, ...)
+      log_L_new <- log_mlik_ratio("split", split_res, log_mlike_vec, stdata, sp_dims, fun_dims, correction, ...)
       acc_prob <- exp(min(0, log_A + log_P + log_L_new$ratio))
 
       if (runif(1) < acc_prob) {
@@ -185,7 +200,7 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
       }
       log_P <- log(rb_new) - log(rd)
       log_A <- -logpen
-      log_L_new <- log_mlik_ratio("merge", merge_res, log_mlike_vec, stdata, stnames, correction, ...)
+      log_L_new <- log_mlik_ratio("merge", merge_res, log_mlike_vec, stdata, sp_dims, fun_dims, correction, ...)
       acc_prob <- exp(min(0, log_A + log_P + log_L_new$ratio))
 
       if (runif(1) < acc_prob) {
@@ -202,8 +217,8 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
       merge_res <- mergeCluster(mstgraph, edge_status, membership)
       split_res <- splitCluster(mstgraph, nclust - 1, merge_res$membership)
 
-      log_L_new_merge <- log_mlik_ratio("merge", merge_res, log_mlike_vec, stdata, stnames, correction, ...)
-      log_L_new <- log_mlik_ratio("split", split_res, log_L_new_merge$log_mlike_vec, stdata, stnames, correction, ...)
+      log_L_new_merge <- log_mlik_ratio("merge", merge_res, log_mlike_vec, stdata, sp_dims, fun_dims, correction, ...)
+      log_L_new <- log_mlik_ratio("split", split_res, log_L_new_merge$log_mlike_vec, stdata, sp_dims, fun_dims, correction, ...)
       acc_prob <- exp(min(0, log_L_new_merge$ratio + log_L_new$ratio))
 
       if (runif(1) < acc_prob) {
@@ -274,7 +289,7 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
     clust = list(
       id = nrow(membership_out),
       membership = membership,
-      models = log_mlik_all(membership, stdata, stnames, correction = FALSE, detailed = TRUE, ...)
+      models = log_mlik_all(membership, stdata, sp_dims, fun_dims, correction = FALSE, detailed = TRUE, ...)
     )
   )
   attr(output, "mst") <- mst_out
@@ -286,13 +301,13 @@ sfclust <- function(stdata, graphdata = NULL, stnames = c("geometry", "time"),
   return(output)
 }
 
-log_mlik_ratio <- function(move_type, move, log_mlike_vec, stdata, stnames = c("geometry", "time"),
-                           correction = TRUE, ...) {
+log_mlik_ratio <- function(move_type, move, log_mlike_vec, stdata, sp_dims = "geometry",
+                           fun_dims = "time", correction = TRUE, ...) {
   # update local marginal likelihoods for split move
   if (move_type == "split") {
     log_like_vec_new <- log_mlike_vec
-    M1 <- log_mlik_each(move$cluster_old, move$membership, stdata, stnames, correction, detailed = FALSE, ...)
-    M2 <- log_mlik_each(move$cluster_new, move$membership, stdata, stnames, correction, detailed = FALSE, ...)
+    M1 <- log_mlik_each(move$cluster_old, move$membership, stdata, sp_dims, fun_dims, correction, detailed = FALSE, ...)
+    M2 <- log_mlik_each(move$cluster_new, move$membership, stdata, sp_dims, fun_dims, correction, detailed = FALSE, ...)
     log_like_vec_new[move$cluster_old] <- M1
     log_like_vec_new[move$cluster_new] <- M2
     llratio <- M1 + M2 - log_mlike_vec[move$cluster_old]
@@ -301,7 +316,7 @@ log_mlik_ratio <- function(move_type, move, log_mlike_vec, stdata, stnames = c("
   # update local marginal likelihoods for merge move
   if (move_type == "merge") {
     log_like_vec_new <- log_mlike_vec[- move$cluster_rm]
-    M <- log_mlik_each(move$cluster_new, move$membership, stdata, stnames, correction, detailed = FALSE, ...)
+    M <- log_mlik_each(move$cluster_new, move$membership, stdata, sp_dims, fun_dims, correction, detailed = FALSE, ...)
     log_like_vec_new[move$cluster_new] <- M
     llratio <- M - sum(log_mlike_vec[c(move$cluster_rm, move$cluster_new)])
   }

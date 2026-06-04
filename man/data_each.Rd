@@ -4,24 +4,28 @@
 \alias{data_each}
 \title{Prepare data for a cluster}
 \usage{
-data_each(k, membership, stdata, stnames = c("geometry", "time"))
+data_each(k, membership, stdata, sp_dims = "geometry", fun_dims = "time")
 }
 \arguments{
 \item{k}{The cluster number to subset.}
 
-\item{membership}{A vector defining the cluster membership for each region.}
+\item{membership}{A vector defining the cluster membership for each spatial unit.}
 
-\item{stdata}{A stars object containing spatial-temporal dimensions defined in \code{stnames}.}
+\item{stdata}{A stars object containing the spatial and functional dimensions.}
 
-\item{stnames}{The names of the \code{spatial} and \code{temporal} dimensions.}
+\item{sp_dims}{Character vector with the names of the spatial dimensions of \code{stdata}.
+Use a single name (e.g. \code{"geometry"}) for vector geometry data, or two names
+(e.g. \code{c("x", "y")}) for raster data.}
+
+\item{fun_dims}{Character vector with the names of the functional dimensions of \code{stdata}
+(e.g. \code{"time"}).}
 }
 \value{
-A long-format data frame with ids for each observation and  for spatial and
-time indexing.
+A long-format data frame for cluster \code{k} with columns \code{id}, \code{ids}, \verb{idf_<dimname>}
+for each functional dimension, and all variables from \code{stdata}.
 }
 \description{
-Subset a spatio-temporal dataset for a cluster and convert it to a long format with
-indices for time and spatial location.
+Subset a spatio-functional dataset to a single cluster and convert it to long format.
 }
 \examples{
 

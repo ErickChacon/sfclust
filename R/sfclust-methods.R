@@ -134,7 +134,7 @@ update_sfclust <- function(x, niter = 100, burnin = 0, thin = 1, nmessage = 10,
 
   args <- c(attr(x, "args"), attr(x, "inla_args"))
   args$graphdata$mst <- attr(x, "mst")[[nsamples]]
-  args$graphdata$membership <- x$samples$membership[nsamples,]
+  args$graphdata$membership <- x$samples$membership[nsamples, ]
 
   args$niter <- niter
   args$burnin <- burnin
@@ -151,7 +151,8 @@ update_within <- function(x, sample = nrow(x$samples$membership)) {
   args <- attr(x, "inla_args")
   args$membership <- x$samples$membership[sample,]
   args$stdata <- attr(x, "args")$stdata
-  args$stnames <- attr(x, "args")$stnames
+  args$sp_dims <- attr(x, "args")$sp_dims
+  args$fun_dims <- attr(x, "args")$fun_dims
   args$correction <- FALSE
   args$detailed <- TRUE
 
@@ -195,7 +196,7 @@ update_within <- function(x, sample = nrow(x$samples$membership)) {
 #' library(sfclust)
 #'
 #' data(stgaus)
-#' result <- sfclust(stgaus, formula = y ~ f(idt, model = "rw1"), niter = 10,
+#' result <- sfclust(stgaus, formula = y ~ f(idf_time, model = "rw1"), niter = 10,
 #'   nmessage = 1)
 #'
 #' # Estimated values ordering clusters by size
@@ -225,9 +226,11 @@ fitted.sfclust <- function(object, sample = object$clust$id, sort = FALSE, aggre
 
   # obtain fitted values
   clusters <- 1:max(membership)
+  sp_dims <- attr(object, "args")$sp_dims
+  fun_dims <- attr(object, "args")$fun_dims
   pred <- lapply(
     1:max(membership), linpred_each, membership, object$clust$models,
-    attr(object, "args")$stdata, attr(object, "args")$stnames
+    attr(object, "args")$stdata, sp_dims, fun_dims
   )
   pred <- do.call(rbind, pred)
   pred <- pred[order(pred$id), setdiff(names(pred), "id")]
@@ -236,27 +239,31 @@ fitted.sfclust <- function(object, sample = object$clust$id, sort = FALSE, aggre
   stars_obj <- attr(object, "args")$stdata[0]
   for (var_name in names(pred)) stars_obj[[var_name]] <- pred[[var_name]]
 
-  # aggregate if required
+  # aggregate if required (geometry case only)
   if (aggregate) {
-    geom_clusters <- lapply(
-      split(st_geometry(attr(object, "args")$stdata), membership),
-      function(x) st_union(st_geometry(x))
-    )
-    geom_clusters <- do.call(c, geom_clusters)
-    stars_obj <- aggregate(stars_obj[c("mean_cluster", "mean_cluster_inv")], geom_clusters,
-      join = st_within, FUN = mean)
+    if (length(sp_dims) > 1) {
+      warning("`aggregate = TRUE` is not supported for raster data.", call. = FALSE)
+    } else {
+      geom_clusters <- lapply(
+        split(st_geometry(attr(object, "args")$stdata), membership),
+        function(x) st_union(st_geometry(x))
+      )
+      geom_clusters <- do.call(c, geom_clusters)
+      stars_obj <- aggregate(stars_obj[c("mean_cluster", "mean_cluster_inv")], geom_clusters,
+        join = st_within, FUN = mean)
+    }
   }
 
   stars_obj
 }
 
-linpred_each <- function(k, membership, models, stdata, stnames){
+linpred_each <- function(k, membership, models, stdata, sp_dims, fun_dims){
   # get inverse of linear predictor
   link_name <- tolower(models[[k]]$misc$linkfunctions$names)
   inv_link <- eval(parse(text = paste0("INLA::inla.link.inv", link_name)))
 
   # linear predictor per region
-  df <- data_each(k, membership, stdata, stnames)[c("id")]
+  df <- data_each(k, membership, stdata, sp_dims, fun_dims)[c("id")]
   df <- cbind(df, models[[k]]$summary.linear.predictor)
   df$kld <- NULL
   df$mean_inv <- inv_link(df$mean)
@@ -297,7 +304,7 @@ linpred_each_corrected <- function(x){
 #' @return A composed `patchwork` object displaying the selected subgraphs as specified by `which`.
 #'
 #' @importFrom ggplot2 ggplot aes geom_line geom_point scale_x_continuous scale_y_continuous element_blank
-#' @importFrom ggplot2 theme_bw theme_minimal theme labs geom_sf
+#' @importFrom ggplot2 theme_bw theme_minimal theme labs geom_sf geom_raster
 #' @importFrom patchwork wrap_plots
 #' @importFrom sf st_sf
 #' @export
@@ -339,16 +346,34 @@ plot.sfclust <- function(x, sample = x$clust$id, which = 1:3, clusters = NULL, s
 plot_clusters_map <- function(x, sample = x$clust$id, clusters = NULL, sort = FALSE, legend = FALSE, geom_before = NULL, ...) {
   nsamples <- check_sample_and_get_nsample(x, sample)
   aux <- get_membership_and_clusters(x, sample, sort, clusters)
-  geoms <- st_get_dimension_values(attr(x, "args")$stdata, attr(x, "args")$stnames[1])
+  stdata <- attr(x, "args")$stdata
+  sp_dims <- attr(x, "args")$sp_dims
 
-  # plot
   membership <- aux$membership
   membership[!(membership %in% aux$clusters)] <- NA
   membership <- factor(membership)
-  gg <- ggplot(st_sf(geometry = geoms, membership = membership))
+
+  if (length(sp_dims) == 1) {
+    # vector geometry: use geom_sf
+    geoms <- st_get_dimension_values(stdata, sp_dims)
+    gg <- ggplot(st_sf(geometry = geoms, membership = membership))
     if (!is.null(geom_before)) gg <- gg + geom_before
+    gg <- gg +
+      geom_sf(aes(fill = membership), shape = 21, ...)
+  } else {
+    # raster: use geom_raster
+    dims <- expand_dimensions(stdata)
+    x_vals <- dims[[sp_dims[1]]]
+    y_vals <- dims[[sp_dims[2]]]
+    sp_grid <- expand.grid(x_vals, y_vals)
+    names(sp_grid) <- sp_dims
+    sp_grid$membership <- membership
+    gg <- ggplot(sp_grid, aes(!!as.name(sp_dims[1]), !!as.name(sp_dims[2]), fill = membership)) +
+      geom_raster() +
+      ggplot2::coord_equal()
+    if (!is.null(geom_before)) gg <- gg + geom_before
+  }
   gg <- gg +
-    geom_sf(aes(fill = membership), shape = 21, ...) +
     labs(fill = NULL, subtitle = paste("Clustering:", sample, "/", nsamples)) +
     theme_bw()
   if (!legend) gg <- gg + theme(legend.position = "none")
@@ -374,18 +399,14 @@ plot_clusters_map <- function(x, sample = x$clust$id, clusters = NULL, sort = FA
 plot_clusters_fitted <- function(x, sample = x$clust$id, clusters = NULL, sort = FALSE, legend = FALSE, inv_link = TRUE, ...) {
   nsamples <- check_sample_and_get_nsample(x, sample)
   aux <- get_membership_and_clusters(x, sample, sort, clusters)
-
-  # plot
-  df <- fitted(x, sample = sample, sort = sort)
-  membership_subset <- which(aux$membership %in% aux$clusters)
-  df <- filter(df, !!as.name(attr(x, "args")$stnames[1]) %in% membership_subset)
-  df <- st_set_dimensions(df[c("cluster", "mean_cluster", "mean_cluster_inv")], attr(x, "args")$stnames[1],
-    values = seq_len(length(st_get_dimension_values(df, attr(x, "args")$stnames[1])))) |>
-      as.data.frame()
+  fun_name <- attr(x, "args")$fun_dims[1]
   varname <- if (!inv_link) "mean_cluster" else "mean_cluster_inv"
-  aux <- data.frame(time = df[[attr(x, "args")$stnames[2]]], mean_cluster = df[[varname]], cluster = df$cluster)
-  gg <- ggplot(aux) +
-    geom_line(aes(time, mean_cluster, color = factor(cluster)), ...) +
+
+  df <- as.data.frame(fitted(x, sample = sample, sort = sort))
+  df <- unique(df[df$cluster %in% aux$clusters, c(fun_name, varname, "cluster")])
+
+  gg <- ggplot(df) +
+    geom_line(aes(!!as.name(fun_name), !!as.name(varname), color = factor(cluster)), ...) +
     labs(x = NULL, y = "Estimated mean", subtitle = "Cluster functions", color = NULL) +
     theme_bw()
   if (!legend) gg <- gg + theme(legend.position = "none")
@@ -433,24 +454,37 @@ plot_log_mlik <- function(x, sample = x$clust$id, ...) {
 plot_clusters_series <- function(x, var, clusters = NULL, sort = FALSE, ...) {
 
   stdata <- attr(x, "args")$stdata
-  stnames <- attr(x, "args")$stnames
-  ns <- length(st_get_dimension_values(stdata, stnames[1]))
+  sp_dims <- attr(x, "args")$sp_dims
+  fun_name <- attr(x, "args")$fun_dims[1]
 
   stdata$cluster <- fitted(x, sort = sort)$cluster
   if (is.null(clusters)) clusters <- 1:max(stdata$cluster)
 
-  # convert stars to data frame per region and per cluster
-  auxdata <- stdata |>
-    st_set_dimensions(stnames[1], values = 1:ns) |>
-    as.data.frame()
+  # convert stars to data frame; create single spatial identifier for grouping
+  if (length(sp_dims) == 1) {
+    ns <- length(st_get_dimension_values(stdata, sp_dims))
+    auxdata <- stdata |>
+      st_set_dimensions(sp_dims, values = 1:ns) |>
+      as.data.frame()
+    sp_id_col <- sp_dims
+  } else {
+    auxdata <- as.data.frame(stdata)
+    nx <- length(unique(auxdata[[sp_dims[1]]]))
+    iy_idx <- as.integer(factor(auxdata[[sp_dims[2]]]))
+    ix_idx <- as.integer(factor(auxdata[[sp_dims[1]]]))
+    auxdata$.sp_id <- (iy_idx - 1L) * nx + ix_idx
+    sp_id_col <- ".sp_id"
+  }
+
+  fun_sym <- as.name(fun_name)
   stcluster <- auxdata |>
-    dplyr::group_by(time, cluster) |>
+    dplyr::group_by(!!fun_sym, cluster) |>
     dplyr::summarise(mean_cluster = mean({{ var }}), .groups = "drop")
 
   dplyr::filter(auxdata, cluster %in% clusters) |>
     ggplot() +
-      geom_line(aes(time, {{ var }}, group = !!as.name(stnames[1])), color = "gray50", linewidth = 0.3, ...) +
-      geom_line(aes(time, mean_cluster), dplyr::filter(stcluster, cluster %in% clusters), color = "red", linewidth = 0.4) +
+      geom_line(aes(!!fun_sym, {{ var }}, group = !!as.name(sp_id_col)), color = "gray50", linewidth = 0.3, ...) +
+      geom_line(aes(!!fun_sym, mean_cluster), dplyr::filter(stcluster, cluster %in% clusters), color = "red", linewidth = 0.4) +
       facet_wrap(~ cluster) +
       theme_bw() +
       labs(x = NULL)
@@ -471,4 +505,5 @@ get_membership_and_clusters <- function(x, sample, sort = FALSE, clusters = NULL
   if (is.null(clusters)) clusters <- 1:max(membership)
   list(membership = membership, clusters = clusters)
 }
+
 

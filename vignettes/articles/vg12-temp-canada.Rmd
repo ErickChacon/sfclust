@@ -154,14 +154,14 @@ Based on the previously observed trends, we model the standardized temperature a
 function of:
 
 1. A polynomial trend over `time`.
-2. A random walk to capture autocorrelated temporal variation over `idt`.
+2. A random walk to capture autocorrelated temporal variation over `idf_time`.
 
 We initialize with 35 clusters—one per polygon—and set a strong penalty (`logpen = -300`)
 to discourage overfitting and large number of clusters unless the log marginal likelihood
 improves by at least 300.
 
 ```{r, eval = FALSE, echo = FALSE}
-# formula <- ztemp ~ poly(time, 2) + f(idt, model = "rw1")
+# formula <- ztemp ~ poly(time, 2) + f(idf_time, model = "rw1")
 # geodata <- genclust(domain, nclust = 35)
 #
 # set.seed(123)
@@ -172,7 +172,7 @@ improves by at least 300.
 ```
 
 ```{r, eval = FALSE}
-formula <- ztemp ~ poly(time, 2) + f(idt, model = "rw1")
+formula <- ztemp ~ poly(time, 2) + f(idf_time, model = "rw1")
 geodata <- genclust(domain, nclust = 35)
 
 set.seed(123)
@@ -184,7 +184,7 @@ result
 ```
 
 ```{r, echo = FALSE}
-formula <- ztemp ~ poly(time, 2) + f(idt, model = "rw1")
+formula <- ztemp ~ poly(time, 2) + f(idf_time, model = "rw1")
 geodata <- genclust(domain, nclust = 35)
 result <- readRDS(here::here(file.path("tools", "data", "canweather-mcmc.rds")))
 result

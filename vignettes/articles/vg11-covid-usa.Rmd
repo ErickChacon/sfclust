@@ -41,9 +41,8 @@ usacovid <- readRDS(gzcon(url(paste0(link, "usacovid.rds?raw=true"))))
 usacovid
 ```
 
-Note that the dimension names are `space` and `time`. Since `sfclust` expects them to be
-`c("geometry", "time")`, you must specify the `stnames` argument when using the function
-`sfclust()` of the package.
+Note that the dimension names are `space` and `time`. Since the spatial dimension is not
+the default `"geometry"`, you must specify `sp_dims = "space"` when using `sfclust()`.
 
 ## Exploratory analysis
 
@@ -82,29 +81,29 @@ usacovid |>
 We assume that the logarithm of the relative risk can be explained by:
 
 1. A polynomial trend over `time`
-2. An autoregressive effect over `idt`
+2. An autoregressive effect over `idf_time`
 3. An unstructured random effect across states and times (`id`)
 
-We begin with one cluster per state (49 clusters total). Be sure to set the dimension
-names: `stnames = c("space", "time")`.
+We begin with one cluster per state (49 clusters total). Be sure to set the spatial
+dimension name: `sp_dims = "space"`.
 
 ```{r, eval = FALSE, echo = FALSE}
-# formula <- cases ~ 1 + poly(time, 3) + f(idt, model = "ar1") + f(id)
+# formula <- cases ~ 1 + poly(time, 3) + f(idf_time, model = "ar1") + f(id)
 # geodata <- genclust(st_geometry(usacovid), nclust = 49)
 #
 # set.seed(123)
-# result <- sfclust(usacovid, graphdata = geodata, stnames = c("space", "time"),
+# result <- sfclust(usacovid, graphdata = geodata, sp_dims = "space",
 #     formula = formula, family = "poisson", E = expected,
 #     niter = 4000, burnin = 0, thin = 10, nmessage = 10, nsave = 100,
 #     path_save = file.path("tools", "data", "usacovid-mcmc.rds"))
 ```
 
 ```{r, eval = FALSE}
-formula <- cases ~ 1 + poly(time, 3) + f(idt, model = "ar1") + f(id)
+formula <- cases ~ 1 + poly(time, 3) + f(idf_time, model = "ar1") + f(id)
 geodata <- genclust(st_geometry(usacovid), nclust = 49)
 
 set.seed(123)
-result <- sfclust(usacovid, graphdata = geodata, stnames = c("space", "time"),
+result <- sfclust(usacovid, graphdata = geodata, sp_dims = "space",
     formula = formula, family = "poisson", E = expected,
     niter = 4000, burnin = 0, thin = 10, nmessage = 10, nsave = 100,
     path_save = "usacovid-mcmc.rds")
@@ -112,7 +111,7 @@ result
 ```
 
 ```{r, echo = FALSE}
-formula <- cases ~ 1 + poly(time, 3) + f(idt, model = "ar1") + f(id)
+formula <- cases ~ 1 + poly(time, 3) + f(idf_time, model = "ar1") + f(id)
 geodata <- genclust(st_geometry(usacovid), nclust = 49)
 result <- readRDS(here::here(file.path("tools", "data", "usacovid-mcmc.rds")))
 result

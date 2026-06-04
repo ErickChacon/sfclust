@@ -72,3 +72,42 @@ genclust <- function(x, nclust = 10, weights = NULL){
 
   return(list(graph = graph, mst = mstgraph, membership = partition$membership))
 }
+
+#' Build a 4-connected (Rook) adjacency matrix for a regular grid
+#'
+#' Constructs the sparse symmetric adjacency matrix for an `nx` by `ny` regular grid
+#' under 4-connectivity (each cell connected to its left, right, top, and bottom
+#' neighbors). The flat cell index is `(iy - 1) * nx + ix`.
+#'
+#' @param nx Integer. Number of cells in the x direction (columns).
+#' @param ny Integer. Number of cells in the y direction (rows).
+#'
+#' @return A sparse symmetric `Matrix` of size `(nx * ny) x (nx * ny)` with 1s at
+#'         adjacent cell pairs.
+#'
+#' @examples
+#' library(sfclust)
+#' A <- raster_adjacency(3, 2)
+#' print(A)
+#'
+#' @importFrom Matrix sparseMatrix
+#' @export
+raster_adjacency <- function(nx, ny) {
+  # horizontal neighbors: (ix, iy) -- (ix+1, iy)
+  ix <- rep(seq_len(nx - 1L), ny)
+  iy <- rep(seq_len(ny), each = nx - 1L)
+  from_h <- (iy - 1L) * nx + ix
+  to_h   <- from_h + 1L
+
+  # vertical neighbors: (ix, iy) -- (ix, iy+1)
+  ix <- rep(seq_len(nx), ny - 1L)
+  iy <- rep(seq_len(ny - 1L), each = nx)
+  from_v <- (iy - 1L) * nx + ix
+  to_v   <- from_v + nx
+
+  from <- c(from_h, from_v)
+  to   <- c(to_h,   to_v)
+  n    <- nx * ny
+
+  Matrix::sparseMatrix(i = c(from, to), j = c(to, from), x = 1L, dims = c(n, n))
+}

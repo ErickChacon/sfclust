@@ -20,13 +20,13 @@ test_that('convert stars object to long format', {
   expect_equal(nrow(stdata_k), nk * nt)
   expect_equal(stdata_k$id, as.numeric(outer(which(membership == k), ns * (1:nt - 1), `+`)))
   expect_equal(stdata_k$ids, rep(which(membership == k), nt))
-  expect_equal(stdata_k$idt, rep(1:nt, each = nk))
+  expect_equal(stdata_k$idf_time, rep(1:nt, each = nk))
   expect_equal(stdata_k$cases, as.numeric(outer(which(membership == k), ns * (1:nt - 1), `+`)))
 
   stdata_long <- data_all(stdata)
   expect_equal(stdata_long$id, 1:(ns*nt))
   expect_equal(stdata_long$ids, rep(1:ns, nt))
-  expect_equal(stdata_long$idt, rep(1:nt, each = ns))
+  expect_equal(stdata_long$idf_time, rep(1:nt, each = ns))
   expect_equal(stdata_long$time, rep(time, each = ns))
   expect_equal(stdata_long$cases, 1:(ns*nt))
 
@@ -50,13 +50,13 @@ test_that('convert stars object to long format', {
   expect_equal(nrow(stdata_k), nk * nt)
   expect_equal(stdata_k$id, as.numeric(outer(1:nt, nt * (which(membership == k) - 1), `+`)))
   expect_equal(stdata_k$ids, rep(which(membership == k), each = nt))
-  expect_equal(stdata_k$idt, rep(1:nt, nk))
+  expect_equal(stdata_k$idf_time, rep(1:nt, nk))
   expect_equal(stdata_k$cases, as.numeric(outer(ns * (1:nt-1), which(membership == k), `+`)))
 
   stdata_long <- data_all(stdata)
   expect_equal(stdata_long$id, 1:(ns*nt))
   expect_equal(stdata_long$ids, rep(1:ns, each = nt))
-  expect_equal(stdata_long$idt, rep(1:nt, ns))
+  expect_equal(stdata_long$idf_time, rep(1:nt, ns))
   expect_equal(stdata_long$time, rep(time, ns))
   expect_equal(stdata_long$cases, as.numeric(outer(ns * (1:nt-1), 1:ns, `+`)))
 })
@@ -114,6 +114,35 @@ test_that('compute log marginal correction', {
   formula <- y ~ f(time, model = "rw1") +  f(time2, model = "rw2")
   model <- INLA::inla(formula, data = data, control.compute = list(config = TRUE))
   expect_equal(log_mlik_correction(model), - 5.8514497 - 3.45305292)
+})
+
+test_that('raster stars: data_all and data_each produce correct flat ids', {
+  nx <- 3; ny <- 2; nt <- 4
+  stdata <- st_as_stars(
+    y = array(seq_len(nx * ny * nt), dim = c(nx, ny, nt)),
+    dimensions = st_dimensions(
+      x = 1:nx, y = 1:ny,
+      time = seq(as.Date("2024-01-01"), by = "1 day", length.out = nt)
+    )
+  )
+
+  df <- data_all(stdata, sp_dims = c("x", "y"), fun_dims = "time")
+
+  # total rows = nx * ny * nt
+  expect_equal(nrow(df), nx * ny * nt)
+
+  # flat spatial ids: (iy-1)*nx + ix, varying x fastest then y
+  expected_ids <- rep((rep(1:ny, each = nx) - 1L) * nx + rep(1:nx, ny), nt)
+  expect_equal(df$ids, expected_ids)
+
+  # functional index: ordered time steps
+  expect_equal(sort(unique(df$idf_time)), 1:nt)
+
+  # cluster 1: cells with ids 1 and 2 (ix=1,iy=1 and ix=2,iy=1)
+  membership <- c(1, 1, 2, 2, 2, 2)  # length nx*ny = 6
+  df_k <- data_each(1, membership, stdata, sp_dims = c("x", "y"), fun_dims = "time")
+  expect_equal(nrow(df_k), 2 * nt)
+  expect_true(all(df_k$ids %in% c(1, 2)))
 })
 
 test_that('obtain unique clusters from membership', {

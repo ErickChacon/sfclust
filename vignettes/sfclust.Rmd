@@ -138,16 +138,18 @@ In order to perform Bayesian spatial functional clustering with the model above 
 main function `sfclust`. The main arguments of this function are:
 
 - `stdata`: The spatio-temporal data which should be a `stars` object.
-- `stnames`: Names of the spatial and time dimensions respectively (default:
-`c("geometry", "time")`).
+- `sp_dims`: Names of the spatial dimensions (default: `"geometry"` for vector data, or
+  `c("x", "y")` for raster data).
+- `fun_dims`: Names of the functional dimensions (default: `"time"`).
 - `niter`: Number of iteration for the  Markov chain Monte Carlo algorithm.
 
 Notice that given that `sfclust` uses MCMC and INLA to perform Bayesian inference, it
 accepts any argument of the `INLA::inla` function. Some main arguments are:
 
 - `formula`: expression to define the model with fixed and random effects. `sfclust`
-  pre-process the data and create identifiers for regions `ids`, times `idt` and
-  space-time `id`. You can incluse these identifiers in your formula.
+  pre-process the data and create identifiers for regions `ids`, functional indices
+  `idf_<dimname>` (e.g. `idf_time`) and space-time `id`. You can include these
+  identifiers in your formula.
 - `family`: distribution of the response variable.
 - `Ntrials`: Number of trials in case of a Binomial response.
 - `E`: Expected number of cases for a Poisson response.

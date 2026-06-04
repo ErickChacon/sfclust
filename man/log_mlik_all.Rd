@@ -7,7 +7,8 @@
 log_mlik_all(
   membership,
   stdata,
-  stnames = c("geometry", "time"),
+  sp_dims = "geometry",
+  fun_dims = "time",
   correction = TRUE,
   detailed = FALSE,
   ...
@@ -17,11 +18,15 @@ log_mlik_all(
 \item{membership}{Integer, character or factor vector indicating the cluster membership
 for each spatial unit.}
 
-\item{stdata}{A stars object with spatial-temporal dimensions defined in \code{stnames}, and
-including predictors and response variables.}
+\item{stdata}{A stars object with spatial and functional dimensions defined in \code{sp_dims}
+and \code{fun_dims}, and including predictors and response variables.}
 
-\item{stnames}{The names of the \code{spatial} and \code{temporal} dimensions of the \code{stdata}
-object.}
+\item{sp_dims}{Character vector with the names of the spatial dimensions of \code{stdata}.
+Use a single name (e.g. \code{"geometry"}) for vector geometry data, or two names
+(e.g. \code{c("x", "y")}) for raster data.}
+
+\item{fun_dims}{Character vector with the names of the functional dimensions of \code{stdata}
+(e.g. \code{"time"}).}
 
 \item{correction}{Logical value indicating whether a correction for dispersion.}
 

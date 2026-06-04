@@ -4,19 +4,26 @@
 \alias{data_all}
 \title{Prepare data in long format}
 \usage{
-data_all(stdata, stnames = c("geometry", "time"))
+data_all(stdata, sp_dims = "geometry", fun_dims = "time")
 }
 \arguments{
-\item{stdata}{A stars object containing spatial-temporal dimensions defined in \code{stnames}.}
+\item{stdata}{A stars object containing the spatial and functional dimensions.}
 
-\item{stnames}{The names of the \code{spatial} and \code{temporal} dimensions.}
+\item{sp_dims}{Character vector with the names of the spatial dimensions of \code{stdata}.
+Use a single name (e.g. \code{"geometry"}) for vector geometry data, or two names
+(e.g. \code{c("x", "y")}) for raster data.}
+
+\item{fun_dims}{Character vector with the names of the functional dimensions of \code{stdata}
+(e.g. \code{"time"}).}
 }
 \value{
-A long-format data frame with ids for each observation and  for spatial and
-time indexing.
+A long-format data frame with columns \code{id} (flat array index), \code{ids} (flat
+spatial index, 1 to ns), \verb{idf_<dimname>} for each functional dimension, and
+all variables from \code{stdata}.
 }
 \description{
-Convert spatio-temporal data to long format with indices for time and spatial location.
+Convert spatio-functional data to long format with a flat spatial index (\code{ids}) and
+ordered functional indices (\verb{idf_<dimname>} for each functional dimension).
 }
 \examples{
 

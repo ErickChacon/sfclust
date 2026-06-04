@@ -7,7 +7,8 @@
 sfclust(
   stdata,
   graphdata = NULL,
-  stnames = c("geometry", "time"),
+  sp_dims = "geometry",
+  fun_dims = "time",
   move_prob = c(0.425, 0.425, 0.1, 0.05),
   logpen = log(1 - 0.5),
   correction = TRUE,
@@ -26,9 +27,12 @@ sfclust(
 \item{graphdata}{A list containing the initial graph used for the Bayesian model.
 It should include components like \code{graph}, \code{mst}, and \code{membership} (default is \code{NULL}).}
 
-\item{stnames}{A character vector specifying the spatio-temporal dimension names of
-\code{stdata} that represent spatial geometry and time, respectively (default is
-\code{c("geometry", "time")}).}
+\item{sp_dims}{Character vector with the names of the spatial dimensions of \code{stdata}.
+Use a single name (e.g. \code{"geometry"}) for vector geometry data, or two names
+(e.g. \code{c("x", "y")}) for raster data. Default is \code{"geometry"}.}
+
+\item{fun_dims}{Character vector with the names of the functional dimensions of \code{stdata}
+(e.g. \code{"time"}). Default is \code{"time"}.}
 
 \item{move_prob}{A numeric vector of probabilities for different types of moves in the MCMC process:
 birth, death, change, and hyperparameter moves (default is \code{c(0.425, 0.425, 0.1, 0.05)}).}
@@ -114,7 +118,7 @@ library(sfclust)
 
 # Clustering with Gaussian data
 data(stgaus)
-result <- sfclust(stgaus, formula = y ~ f(idt, model = "rw1"),
+result <- sfclust(stgaus, formula = y ~ f(idf_time, model = "rw1"),
   niter = 10, nmessage = 1)
 print(result)
 summary(result)
@@ -122,7 +126,7 @@ plot(result)
 
 # Clustering with binomial data
 data(stbinom)
-result <- sfclust(stbinom, formula = cases ~ poly(time, 2) + f(id),
+result <- sfclust(stbinom, formula = cases ~ poly(idf_time, 2) + f(id),
   family = "binomial", Ntrials = population, niter = 10, nmessage = 1)
 print(result)
 summary(result)
