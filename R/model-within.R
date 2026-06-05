@@ -5,13 +5,9 @@
 #'
 #' @param membership Integer, character or factor vector indicating the cluster membership
 #'        for each spatial unit.
-#' @param stdata A stars object with spatial and functional dimensions defined in `sp_dims`
-#'        and `fun_dims`, and including predictors and response variables.
-#' @param sp_dims Character vector with the names of the spatial dimensions of `stdata`.
-#'        Use a single name (e.g. `"geometry"`) for vector geometry data, or two names
-#'        (e.g. `c("x", "y")`) for raster data.
-#' @param fun_dims Character vector with the names of the functional dimensions of `stdata`
-#'        (e.g. `"time"`).
+#' @param data A long-format data frame as returned by [data_all()], with columns `id`
+#'        (flat index), `ids` (spatial unit index, 1 to ns), functional index columns
+#'        (`idf_<dimname>`), and all response/covariate variables.
 #' @param correction Logical value indicating whether a correction for dispersion.
 #' @param detailed Logical value indicating whether to return the INLA model instead of
 #'        the log marginal likelihood. The argument `correction` is not applied in this
@@ -39,23 +35,23 @@
 #'   dimensions = dims
 #' )
 #'
-#' log_mlik_all(c(1, 1, 1, 2, 2), stdata,
+#' df <- data_all(stdata)
+#' log_mlik_all(c(1, 1, 1, 2, 2), df,
 #'   formula = cases ~ temperature, family = "poisson", E = expected)
 #'
-#' models = log_mlik_all(c(1, 1, 1, 2, 2), stdata, detailed = TRUE,
+#' models <- log_mlik_all(c(1, 1, 1, 2, 2), df, detailed = TRUE,
 #'   formula = cases ~ temperature, family = "poisson", E = expected)
 #' lapply(models, summary)
 #' }
 #'
 #' @export
-log_mlik_all <- function(membership, stdata, sp_dims = "geometry", fun_dims = "time",
-                         correction = TRUE, detailed = FALSE, ...) {
+log_mlik_all <- function(membership, data, correction = TRUE, detailed = FALSE, ...) {
   clusters <- unique_clusters(membership)
 
   if (detailed) {
-    lapply(clusters, log_mlik_each, membership, stdata, sp_dims, fun_dims, correction, detailed, ...)
+    lapply(clusters, log_mlik_each, membership, data, correction, detailed, ...)
   } else {
-    sapply(clusters, log_mlik_each, membership, stdata, sp_dims, fun_dims, correction, detailed, ...)
+    sapply(clusters, log_mlik_each, membership, data, correction, detailed, ...)
   }
 }
 
@@ -75,9 +71,9 @@ unique_clusters <- function (membership) {
   }
 }
 
-log_mlik_each <- function(k, membership, stdata, sp_dims = "geometry", fun_dims = "time",
-                          correction = TRUE, detailed = FALSE, ...) {
-  inla_data <- data_each(k, membership, stdata, sp_dims, fun_dims)
+log_mlik_each <- function(k, membership, data, correction = TRUE, detailed = FALSE, ...) {
+  inla_data <- data[data$ids %in% which(membership == k), , drop = FALSE]
+  inla_data$id <- seq_len(nrow(inla_data))
   model <- INLA::inla(
     data = inla_data,
     control.predictor = list(compute = TRUE),
