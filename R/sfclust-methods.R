@@ -236,8 +236,23 @@ fitted.sfclust <- function(object, sample = object$clust$id, sort = FALSE, aggre
   pred <- pred[order(pred$id), setdiff(names(pred), "id")]
 
   # save as stars object
-  stars_obj <- attr(object, "args")$stdata[0]
-  for (var_name in names(pred)) stars_obj[[var_name]] <- pred[[var_name]]
+  stdata_ref <- attr(object, "args")$stdata
+  stars_obj  <- stdata_ref[0]
+  valid_ids  <- attr(object, "valid_ids")
+  if (!is.null(valid_ids)) {
+    n_sp    <- prod(dim(stdata_ref)[sp_dims])
+    n_fun   <- prod(dim(stdata_ref)[fun_dims])
+    n_valid <- length(valid_ids)
+    full_idx <- rep(valid_ids, times = n_fun) +
+                rep((seq_len(n_fun) - 1L) * n_sp, each = n_valid)
+    for (var_name in names(pred)) {
+      full_vec <- pred[[var_name]][rep(NA_integer_, n_sp * n_fun)]
+      full_vec[full_idx] <- pred[[var_name]]
+      stars_obj[[var_name]] <- full_vec
+    }
+  } else {
+    for (var_name in names(pred)) stars_obj[[var_name]] <- pred[[var_name]]
+  }
 
   # aggregate if required (geometry case only)
   if (aggregate) {
