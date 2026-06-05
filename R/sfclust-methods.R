@@ -479,7 +479,7 @@ plot_clusters_series <- function(x, var, clusters = NULL, sort = FALSE, ...) {
   fun_name <- attr(x, "args")$fun_dims[1]
 
   stdata$cluster <- fitted(x, sort = sort)$cluster
-  if (is.null(clusters)) clusters <- 1:max(stdata$cluster)
+  if (is.null(clusters)) clusters <- 1:max(stdata$cluster, na.rm = TRUE)
 
   # convert stars to data frame; create single spatial identifier for grouping
   if (length(sp_dims) == 1) {
