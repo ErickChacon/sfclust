@@ -16,6 +16,7 @@ knitr::opts_chunk$set(comment = "#>")
 ```{r include = FALSE}
 path_figures <- here::here(file.path("tools", "figures"))
 save_figures <- dir.exists(path_figures)
+save_figures <- FALSE
 ```
 
 In this vignette we present additional features of the `sfclust` package.
@@ -185,20 +186,19 @@ the scale hyperparameter. To begin, we will run the algorithm for only 50 iterat
 # saveRDS(result2, file.path("inst", "vigdata", "gaussian-mcmc2.rds"))
 ```
 
-```{r, eval = FALSE}
+```{r, eval = TRUE}
 form <- y ~ f(idf_time, model = "rw1",
   hyper = list(prec = list(prior = "normal", param = c(-2, 1)))
 )
 result0 <- sfclust(stgaus, graphdata = initial_cluster, formula = form,
-  logpen = -50, niter = 50, burnin = 10, thin = 2, nmessage = 10,
-  path_save = file.path("inst", "vigdata", "full-gaussian-mcmc1.rds")
+  logpen = -50, niter = 30, burnin = 10, thin = 2, nmessage = 10
 )
 result0
 ```
 
 ```{r, echo = FALSE}
-result0 <- readRDS(system.file("vigdata", "gaussian-mcmc1.rds", package = "sfclust"))
-result0
+# result0 <- readRDS(system.file("vigdata", "gaussian-mcmc1.rds", package = "sfclust"))
+# result0
 ```
 
 The output indicates that after starting with 20 clusters, the algorithm created 11 new
@@ -218,14 +218,14 @@ plot(result0, which = 3)
 To achieve convergence, we can continue the sampling using the `update` function and
 specify the number of new iterations with the `niter` argument:
 
-```{r, eval = FALSE}
-result <- update(result0, niter = 1000)
+```{r, eval = TRUE}
+result <- update(result0, niter = 20)
 result
 ```
 
 ```{r, echo = FALSE}
-result <- readRDS(system.file("vigdata", "gaussian-mcmc2.rds", package = "sfclust"))
-result
+# result <- readRDS(system.file("vigdata", "gaussian-mcmc2.rds", package = "sfclust"))
+# result
 ```
 
 With 2000 additional iterations, there have been many clustering movements. Furthermore,
@@ -247,7 +247,7 @@ if (save_figures) {
 ```
 
 ```{r}
-result_other <- sfclust:::update_within(result, sample = 750)
+result_other <- sfclust:::update_within(result, sample = nrow(result$samples$membership)/2)
 result_other
 ```
 

@@ -16,6 +16,7 @@ knitr::opts_chunk$set(comment = "#>")
 ```{r include = FALSE}
 path_figures <- here::here(file.path("tools", "figures"))
 save_figures <- dir.exists(path_figures)
+save_figures <- FALSE
 ```
 
 In this vignette, we demonstrate the basic use of `sfclust` for spatial clustering.
@@ -183,16 +184,16 @@ with 2000 iterations.
 # saveRDS(result, file.path("inst", "vigdata", "binomial-mcmc.rds"))
 ```
 
-```{r, eval = FALSE}
+```{r, eval = TRUE}
 set.seed(7)
 result <- sfclust(stbinom, formula = cases ~ poly(time, 2) + f(id),
-  family = "binomial", Ntrials = population, niter = 2000)
+  family = "binomial", Ntrials = population, niter = 20)
 names(result)
 ```
 
 ```{r, echo = FALSE}
-result <- readRDS(system.file("vigdata", "binomial-mcmc.rds", package = "sfclust"))
-names(result)
+# result <- readRDS(system.file("vigdata", "binomial-mcmc.rds", package = "sfclust"))
+# names(result)
 ```
 
 The returning object is of class `sfclust`, which is a list of two elements:
@@ -282,13 +283,13 @@ reports the associated log-marginal likelihood.
 summary(result)
 ```
 
-We can also summarize any other sample, such as the 500th iteration. The output clearly
-indicates that the log-marginal likelihood is much smaller in this case. Keep in mind that
-all other `sfclust` methods use the last sample by default, but you can specify a
+We can also summarize any other sample, such as an earlier iteration. The output clearly
+indicates that the log-marginal likelihood is typically smaller in earlier samples. Keep in
+mind that all other `sfclust` methods use the last sample by default, but you can specify a
 different sample if needed.
 
 ```{r}
-summary(result, sample = 500)
+summary(result, sample = max(1, round(nrow(result$samples$membership) / 2)))
 ```
 
 Cluster labels are assigned arbitrarily, but they can be relabeled based on the number of

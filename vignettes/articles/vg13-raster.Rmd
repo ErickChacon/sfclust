@@ -33,6 +33,7 @@ library(dplyr)
 
 ```{r}
 data(testdata)
+# testdata <- aggregate(testdata, by = "week", FUN = function(x) mean(x, na.rm = TRUE))
 testdata
 ```
 
@@ -45,10 +46,8 @@ grid of `r prod(dim(testdata)[c("x","y")])` cells in total, of which
 We start by visualizing NDWI at a few time points to get a sense of the spatial patterns.
 
 ```{r, fig.height = 6}
-idx <- round(seq(1, dim(testdata)["time"], length.out = 20))
-
 ggplot() +
-  geom_stars(aes(fill = ndwi), data = testdata[,,,idx]) +
+  geom_stars(aes(fill = ndwi), data = testdata) +
   facet_wrap(~ time) +
   scale_fill_distiller(palette = "Blues", direction = 1, na.value = "grey90") +
   labs(title = "NDWI raster — selected time points", fill = "NDWI") +
@@ -75,13 +74,8 @@ the 4-connected (rook) adjacency via `raster_adjacency()`, and restricts the gra
 non-NA pixels before constructing the spanning tree.
 
 ```{r}
-nx <- dim(testdata)["x"]
-ny <- dim(testdata)["y"]
-```
-
-```{r, eval = FALSE}
 set.seed(111)
-geodata <- genclust(testdata, nclust = 10)
+geodata <- genclust(testdata, nclust = 10, sp_dims = c("x","y"))
 ```
 
 ## Model fitting
@@ -94,20 +88,13 @@ $$\text{NDWI}_{it} = \beta_0 + \beta_1 t + \beta_2 t^2 + \varepsilon_{it}$$
 where `time` refers to the actual acquisition dates (coerced to numeric by `poly()`)
 and `id` is the flat space-time index used to account for individual observation noise.
 
-```{r, eval = FALSE}
+```{r}
 formula <- ndwi ~ poly(time, 2) + f(id, model = "iid")
 
 result <- sfclust(testdata, graphdata = geodata, formula = formula,
   sp_dims = c("x", "y"), logpen = -50,
-  niter = 20, burnin = 0, thin = 1, nmessage = 10,
-  control.inla = list(control.vb = list(enable = FALSE)),
-  path_save = "raster-mcmc.rds")
-```
-
-```{r, echo = FALSE}
-formula <- ndwi ~ poly(time, 2) + f(id, model = "iid")
-geodata  <- genclust(raster_adjacency(nx, ny), nclust = 10)
-result   <- readRDS(system.file("vigdata", "raster-mcmc.rds", package = "sfclust"))
+  niter = 5, burnin = 0, thin = 1, nmessage = 5,
+  control.inla = list(control.vb = list(enable = FALSE)))
 ```
 
 ## Results
@@ -120,6 +107,7 @@ summary(result, sort = TRUE)
 The traceplot below shows the log marginal likelihood across MCMC samples.
 
 ```{r, fig.height = 4}
+plot(result)
 plot(result, which = 3)
 ```
 
@@ -140,10 +128,10 @@ We can also inspect the fitted values on the raster grid at selected time points
 
 ```{r, fig.height = 6}
 pred <- fitted(result, sort = TRUE)
-idx  <- round(seq(1, dim(pred)["time"], length.out = 20))
-
+pred$time <- NULL
+# idx  <- round(seq(1, dim(pred)["time"], length.out = 20))
 ggplot() +
-  geom_stars(aes(fill = mean_cluster_inv), data = pred[,,,idx]) +
+  geom_stars(aes(fill = mean_cluster), data = pred) +
   facet_wrap(~ time) +
   scale_fill_distiller(palette = "Blues", direction = 1, na.value = "grey90") +
   labs(title = "Fitted NDWI — selected time points", fill = "NDWI") +

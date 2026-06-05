@@ -136,6 +136,7 @@ update_sfclust <- function(x, niter = 100, burnin = 0, thin = 1, nmessage = 10,
   nsamples <- nrow(x$samples$membership)
 
   args <- c(attr(x, "args"), attr(x, "inla_args"))
+  args$fun_col <- NULL
   args$graphdata$mst        <- attr(x, "mst")[[nsamples]]
   args$graphdata$membership <- x$samples$membership[nsamples, ]
 
@@ -150,10 +151,11 @@ update_sfclust <- function(x, niter = 100, burnin = 0, thin = 1, nmessage = 10,
   result <- eval(call, envir = parent.frame())
 
   if (has_stars_metadata(x)) {
-    attr(result, "stdata")    <- attr(x, "stdata")
-    attr(result, "sp_dims")   <- attr(x, "sp_dims")
-    attr(result, "fun_dims")  <- attr(x, "fun_dims")
-    attr(result, "valid_ids") <- attr(x, "valid_ids")
+    attr(result, "stdata")       <- attr(x, "stdata")
+    attr(result, "sp_dims")      <- attr(x, "sp_dims")
+    attr(result, "fun_dims")     <- attr(x, "fun_dims")
+    attr(result, "valid_ids")    <- attr(x, "valid_ids")
+    attr(result, "args")$fun_col <- attr(x, "args")$fun_col
   }
 
   result
@@ -235,11 +237,10 @@ fitted.sfclust <- function(object, sample = object$clust$id, sort = FALSE, aggre
     object$clust$models <- object$clust$models[attr(membership, "order")]
   }
 
-  data    <- attr(object, "args")$data
-  fun_col <- attr(object, "args")$fun_col
+  data <- attr(object, "args")$data
 
   pred <- lapply(1:max(membership), linpred_each,
-                 membership, object$clust$models, data, fun_col)
+                 membership, object$clust$models, data)
   pred <- do.call(rbind, pred)
   pred <- pred[order(pred$id), setdiff(names(pred), "id")]
 
@@ -286,15 +287,13 @@ fitted.sfclust <- function(object, sample = object$clust$id, sort = FALSE, aggre
   stars_obj
 }
 
-linpred_each <- function(k, membership, models, data, fun_col) {
+linpred_each <- function(k, membership, models, data) {
   # get inverse of linear predictor
   link_name <- tolower(models[[k]]$misc$linkfunctions$names)
   inv_link  <- eval(parse(text = paste0("INLA::inla.link.inv", link_name)))
 
   # subset data to cluster k; row order matches INLA's linear predictor
-  cluster_data <- data[data$ids %in% which(membership == k), , drop = FALSE]
-  cols_keep    <- if (!is.null(fun_col)) c("id", fun_col) else "id"
-  df           <- cluster_data[, intersect(cols_keep, names(cluster_data)), drop = FALSE]
+  df <- data[data$ids %in% which(membership == k), , drop = FALSE]
 
   df <- cbind(df, models[[k]]$summary.linear.predictor)
   df$kld      <- NULL
@@ -429,15 +428,17 @@ plot_clusters_map <- function(x, sample = x$clust$id, clusters = NULL, sort = FA
 #' @param sort Logical; if `TRUE`, clusters are relabeled by decreasing size. Default is `FALSE`.
 #' @param legend Logical; if `TRUE`, a color legend is included. Default is `FALSE`.
 #' @param inv_link Logical; if `TRUE` (default), values are shown on the inverse-link (mean) scale.
+#' @param fun_col Character. Name of the column to use as the x-axis (functional dimension).
+#'        If `NULL`, taken from the result's stored args (set automatically by [sfclust()]).
 #' @param ... Additional arguments passed to `geom_line()`.
 #'
 #' @return A `ggplot2` object.
 #'
 #' @export
-plot_clusters_fitted <- function(x, sample = x$clust$id, clusters = NULL, sort = FALSE, legend = FALSE, inv_link = TRUE, ...) {
+plot_clusters_fitted <- function(x, sample = x$clust$id, clusters = NULL, sort = FALSE, legend = FALSE, inv_link = TRUE, fun_col = NULL, ...) {
   nsamples <- check_sample_and_get_nsample(x, sample)
   aux      <- get_membership_and_clusters(x, sample, sort, clusters)
-  fun_col  <- attr(x, "args")$fun_col
+  if (is.null(fun_col)) fun_col <- attr(x, "args")$fun_col
   varname  <- if (!inv_link) "mean_cluster" else "mean_cluster_inv"
 
   df <- as.data.frame(fitted(x, sample = sample, sort = sort))
@@ -486,14 +487,16 @@ plot_log_mlik <- function(x, sample = x$clust$id, ...) {
 #'        a column in the long-format data stored in the result.
 #' @param clusters Optional vector of cluster IDs to include. If `NULL`, all clusters are shown.
 #' @param sort Logical; if `TRUE`, clusters are relabeled by decreasing size. Default is `FALSE`.
+#' @param fun_col Character. Name of the column to use as the x-axis (functional dimension).
+#'        If `NULL`, taken from the result's stored args (set automatically by [sfclust()]).
 #' @param ... Additional arguments passed to `geom_line()` for individual region series.
 #'
 #' @return A `ggplot2` object with one facet per cluster.
 #'
 #' @export
-plot_clusters_series <- function(x, var, clusters = NULL, sort = FALSE, ...) {
+plot_clusters_series <- function(x, var, clusters = NULL, sort = FALSE, fun_col = NULL, ...) {
 
-  fun_col  <- attr(x, "args")$fun_col
+  if (is.null(fun_col)) fun_col <- attr(x, "args")$fun_col
   fitted_df <- as.data.frame(fitted(x, sort = sort))
 
   if (has_stars_metadata(x)) {

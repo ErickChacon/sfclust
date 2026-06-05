@@ -76,18 +76,20 @@ genclust <- function(x, nclust = 10, weights = NULL, sp_dims = NULL){
   }
 
   if (is.null(weights)) weights <- runif(length(x))
+  result <- genclust_adj(x * weights, nclust = nclust)
+  result$valid_ids <- valid_ids
+  return(result)
+}
 
-  # create weighted graph and minimum spanning tree
-  graph <- graph_from_adjacency_matrix(x * weights, mode = "upper", weighted = TRUE)
+# Core MST-based cluster initialization from a pre-weighted adjacency matrix.
+# Returns list(graph, mst, membership).
+genclust_adj <- function(x, nclust = 10) {
+  graph <- graph_from_adjacency_matrix(x, mode = "upper", weighted = TRUE)
   mstgraph <- mst(graph)
   V(mstgraph)$vid <- 1:vcount(mstgraph)
-
-  # partition mst into nclust groups
-  # rmid <- order(E(mstgraph)$weight, decreasing = TRUE)[1:(nclust - 1)]
   rmid <- sample.int(ecount(mstgraph), nclust - 1)
   partition <- components(delete_edges(mstgraph, rmid))
-
-  return(list(graph = graph, mst = mstgraph, membership = partition$membership, valid_ids = valid_ids))
+  list(graph = graph, mst = mstgraph, membership = partition$membership)
 }
 
 #' Build a 4-connected (Rook) adjacency matrix for a regular grid

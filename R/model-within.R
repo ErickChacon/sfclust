@@ -73,7 +73,6 @@ unique_clusters <- function (membership) {
 
 log_mlik_each <- function(k, membership, data, correction = TRUE, detailed = FALSE, ...) {
   inla_data <- data[data$ids %in% which(membership == k), , drop = FALSE]
-  inla_data$id <- seq_len(nrow(inla_data))
   model <- INLA::inla(
     data = inla_data,
     control.predictor = list(compute = TRUE),

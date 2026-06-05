@@ -7,21 +7,18 @@
 #' For working with `stars` spatio-temporal objects, use the [sfclust()] wrapper, which
 #' converts the stars object to long format and calls this function internally.
 #'
-#' @param data A long-format data frame as returned by [data_all()], with columns:
-#'        `id` (flat sequential index), `ids` (spatial unit index, 1 to `ns`),
-#'        `idf_<dimname>` for each functional dimension, and all response/covariate
-#'        variables referenced in `formula`.
-#' @param adjacency A square adjacency matrix (ns × ns) encoding spatial contiguity.
-#'        Can be a dense `matrix` or a sparse `Matrix`. Typically obtained from
-#'        [raster_adjacency()] for raster data or from [genclust()] for vector data.
+#' @param data A long-format data frame with at least columns `id` (unique row index)
+#'        and `ids` (integer spatial unit index, 1 to `ns`), plus any response and
+#'        covariate columns referenced in `formula`.
+#' @param adjacency A square pre-weighted adjacency matrix (ns × ns) encoding spatial
+#'        contiguity and edge weights. Can be a dense `matrix` or a sparse `Matrix`.
+#'        Typically obtained via [igraph::as_adjacency_matrix()] on the graph returned
+#'        by [genclust()] or [genclust_adj()].
 #' @param graphdata A list with components `graph`, `mst`, and `membership` as returned
-#'        by [genclust()]. If `NULL`, [genclust()] is called on `adjacency` with
-#'        `nclust = 10`.
-#' @param ns Integer. Number of spatial units, i.e. `max(data$ids)`. Inferred
-#'        automatically if not provided.
-#' @param fun_col Character. Name of the column in `data` that holds the functional
-#'        dimension values (e.g. `"time"`). Used by plot methods for axis labelling.
-#'        If `NULL`, plot methods requiring a time axis will not work.
+#'        by [genclust()] or [genclust_adj()]. If `NULL`, [genclust_adj()] is called on
+#'        `adjacency` using `nclust` as the initial number of clusters.
+#' @param nclust Integer. Initial number of clusters when `graphdata = NULL`. Ignored if
+#'        `graphdata` is provided (default is `10`).
 #' @param move_prob A numeric vector of probabilities for different types of moves in the MCMC process:
 #'        birth, death, change, and hyperparameter moves (default is `c(0.425, 0.425, 0.1, 0.05)`).
 #' @param logpen A negative numeric value representing the log-scale penalty for
@@ -33,7 +30,7 @@
 #' @param correction A logical indicating whether correction to compute the marginal
 #'        likelihoods should be applied (default is `TRUE`). This depends on the type of
 #'        effects included in the `INLA` model.
-#' @param niter An integer specifying the number of MCMC iterations to perform (default is `100`).
+#' @param niter An integer specifying the number of MCMC iterations after burn-in (default is `100`).
 #' @param burnin An integer specifying the number of burn-in iterations to discard (default is `0`).
 #' @param thin An integer specifying the thinning interval for recording the results (default is `1`).
 #' @param nmessage An integer specifying how often progress messages should be printed (default is `10`).
@@ -98,16 +95,15 @@
 #' }
 #'
 #' @importFrom igraph graph_from_adjacency_matrix mst V E vcount ecount delete_edges components
-#' @export
-sfclust_fit <- function(data, adjacency, graphdata = NULL, ns = max(data$ids),
-                        fun_col = NULL,
+sfclust_fit <- function(data, adjacency, graphdata = NULL,
                         move_prob = c(0.425, 0.425, 0.1, 0.05), logpen = log(1 - 0.5),
+                        nclust = 10,
                         correction = TRUE, niter = 100, burnin = 0, thin = 1,
                         nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
 
   inla_args <- match.call(expand.dots = FALSE)$...
-
-  if (burnin >= niter) stop("`burnin` must be less than `niter`.")
+  # number of regions
+  ns <- nrow(adjacency)
 
   # check if correction is required
   if (correction) {
@@ -118,15 +114,12 @@ sfclust_fit <- function(data, adjacency, graphdata = NULL, ns = max(data$ids),
   }
 
   # initial clustering
-  if (is.null(graphdata)) {
-    graphdata <- genclust(adjacency, nclust = 10)
-  }
-
+  if (is.null(graphdata)) graphdata <- genclust_adj(adjacency, nclust = nclust)
   graph      <- graphdata[["graph"]]
   mstgraph   <- graphdata[["mst"]]
   membership <- graphdata[["membership"]]
 
-  args <- list(data = data, adjacency = adjacency, ns = ns, fun_col = fun_col,
+  args <- list(data = data, adjacency = adjacency,
                graphdata = graphdata, move_prob = move_prob, logpen = logpen,
                correction = correction)
 
@@ -136,8 +129,8 @@ sfclust_fit <- function(data, adjacency, graphdata = NULL, ns = max(data$ids),
   log_mlike  <- sum(log_mlike_vec)
 
   # output objects
-  niter    <- floor((niter - burnin - 1) / thin) * thin + 1 + burnin
-  nsamples <- (niter - burnin - 1) / thin + 1
+  niter_total <- niter + burnin
+  nsamples    <- floor((niter - 1) / thin) + 1
 
   membership_out <- array(0, dim = c(nsamples, ns))
   log_mlike_out  <- numeric(nsamples)
@@ -146,7 +139,7 @@ sfclust_fit <- function(data, adjacency, graphdata = NULL, ns = max(data$ids),
   birth_cnt <- death_cnt <- change_cnt <- hyper_cnt <- 0
 
   # MCMC sampling
-  for (iter in 1:niter) {
+  for (iter in 1:niter_total) {
     rhy <- move_prob[4]
     if (nclust == 1) {
       rb <- 1 - rhy
@@ -399,8 +392,6 @@ sfclust <- function(stdata, graphdata = NULL, sp_dims = "geometry", fun_dims = "
   adjacency  <- igraph::as_adjacency_matrix(graphdata$graph)
 
   result <- sfclust_fit(data, adjacency, graphdata,
-                        ns      = max(data$ids),
-                        fun_col = fun_dims[1],
                         move_prob = move_prob, logpen = logpen,
                         correction = correction, niter = niter,
                         burnin = burnin, thin = thin, nmessage = nmessage,
@@ -408,6 +399,7 @@ sfclust <- function(stdata, graphdata = NULL, sp_dims = "geometry", fun_dims = "
 
   # override inla_args with the correctly captured version from this wrapper call
   attr(result, "inla_args") <- inla_args
+  attr(result, "args")$fun_col <- fun_dims[1]
 
   # attach stars metadata for spatial plot methods and fitted() reconstruction
   attr(result, "stdata")    <- stdata
