@@ -4,13 +4,16 @@
 #' tree (MST), and generates `nclust` clusters. This function is used to initialize
 #' cluster membership in a clustering algorithm, such as `sfclust`.
 #'
-#' @param x An `sf` or `sfc` object representing spatial polygonal data. It can also be
+#' @param x An `sf`, `sfc`, or `stars` object representing spatial data. It can also be
 #'   a `matrix` or `Matrix` object with non-zero values representing weighted
 #'   connectivity between units.
 #' @param nclust Integer, specifying the initial number of clusters.
 #' @param weights Optional `numeric` vector or `matrix` of weights between units in `x`.
 #'   It should have dimensions `n^2`, where `n` is the number of units in `x`. If NULL,
 #'   random weights are assigned.
+#' @param sp_dims Character vector with the names of the spatial dimensions when `x` is a
+#'   `stars` object. If `NULL`, spatial dimensions are auto-detected as those with a
+#'   non-`NA` regular `delta` in `st_dimensions(x)`.
 #'
 #' @return A list with three elements:
 #'   - `graph`: The undirected graph object representing spatial contiguity.
@@ -42,14 +45,27 @@
 #' @import igraph
 #' @importFrom methods as
 #' @importFrom sf st_touches
+#' @importFrom stars st_dimensions
 #' @export
-genclust <- function(x, nclust = 10, weights = NULL){
+genclust <- function(x, nclust = 10, weights = NULL, sp_dims = NULL){
 
   # create adjacency, initial checks and weights if required
-  if (inherits(x, c("sf", "sfc"))) {
+  valid_ids <- NULL
+  if (inherits(x, "stars")) {
+    dims <- st_dimensions(x)
+    if (is.null(sp_dims)) {
+      sp_dims <- names(dims)[!is.na(sapply(dims, function(d) d$delta))]
+      if (length(sp_dims) != 2)
+        stop("Could not auto-detect 2 spatial dimensions from `stars` object. Provide `sp_dims`.")
+    }
+    sp_margins <- match(sp_dims, names(dim(x)))
+    valid_ids <- which(apply(x[[1]], sp_margins, function(v) !all(is.na(v))))
+    A <- raster_adjacency(dim(x)[sp_dims[1]], dim(x)[sp_dims[2]])
+    x <- A[valid_ids, valid_ids, drop = FALSE]
+  } else if (inherits(x, c("sf", "sfc"))) {
     x <- as(st_touches(st_geometry(x)), "matrix")
   } else if (!inherits(x, c("matrix", "Matrix"))) {
-    stop("`x` must be of class `sf`, `sfc`, `matrix` or `Matrix`.")
+    stop("`x` must be of class `stars`, `sf`, `sfc`, `matrix` or `Matrix`.")
   }
 
   if (!is.numeric(nclust) || length(nclust) != 1 || nclust < 1) {
@@ -71,7 +87,7 @@ genclust <- function(x, nclust = 10, weights = NULL){
   rmid <- sample.int(ecount(mstgraph), nclust - 1)
   partition <- components(delete_edges(mstgraph, rmid))
 
-  return(list(graph = graph, mst = mstgraph, membership = partition$membership))
+  return(list(graph = graph, mst = mstgraph, membership = partition$membership, valid_ids = valid_ids))
 }
 
 #' Build a 4-connected (Rook) adjacency matrix for a regular grid

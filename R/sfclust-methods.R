@@ -367,6 +367,12 @@ plot_clusters_map <- function(x, sample = x$clust$id, clusters = NULL, sort = FA
     y_vals <- dims[[sp_dims[2]]]
     sp_grid <- expand.grid(x_vals, y_vals)
     names(sp_grid) <- sp_dims
+    valid_ids <- attr(x, "valid_ids")
+    if (!is.null(valid_ids)) {
+      full_membership <- rep(NA_integer_, nrow(sp_grid))
+      full_membership[valid_ids] <- membership
+      membership <- factor(full_membership)
+    }
     sp_grid$membership <- membership
     gg <- ggplot(sp_grid, aes(!!as.name(sp_dims[1]), !!as.name(sp_dims[2]), fill = membership)) +
       geom_raster() +

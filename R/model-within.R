@@ -178,6 +178,7 @@ correction_required <- function (formula) {
 data_all <- function(stdata, sp_dims = "geometry", fun_dims = "time") {
   validate_stdata_input(stdata, sp_dims, fun_dims)
   stdata[["id"]] <- 1:prod(dim(stdata))
+  valid_ids <- attr(stdata, "valid_ids")
 
   dims <- expand_dimensions(stdata)
 
@@ -200,8 +201,17 @@ data_all <- function(stdata, sp_dims = "geometry", fun_dims = "time") {
   fun_cols <- setNames(as.data.frame(grid[fun_dims]), paste0("idf_", fun_dims))
 
   stdata_df <- as.data.frame(stdata)
-  cbind(stdata_df["id"], ids = ids, fun_cols,
-        stdata_df[, !names(stdata_df) %in% c("id", sp_dims), drop = FALSE])
+  result <- cbind(stdata_df["id"], ids = ids, fun_cols,
+                  stdata_df[, !names(stdata_df) %in% c("id", sp_dims), drop = FALSE])
+
+  # for raster: filter to valid (non-all-NA) pixels and remap ids to analysis indices
+  if (!is.null(valid_ids)) {
+    result <- result[result$ids %in% valid_ids, ]
+    result$ids <- match(result$ids, valid_ids)
+    result$id  <- seq_len(nrow(result))
+  }
+
+  result
 }
 
 #' Prepare data for a cluster

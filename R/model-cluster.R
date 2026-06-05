@@ -121,11 +121,17 @@ sfclust <- function(stdata, graphdata = NULL, sp_dims = "geometry", fun_dims = "
     if (length(sp_dims) == 1) {
       graphdata <- genclust(geoms)
     } else {
-      nx <- dim(stdata)[sp_dims[1]]
-      ny <- dim(stdata)[sp_dims[2]]
-      graphdata <- genclust(raster_adjacency(nx, ny))
+      graphdata <- genclust(stdata, sp_dims = sp_dims)
     }
   }
+
+  # for raster: attach valid_ids to stdata so data_all()/data_each() filter correctly
+  valid_ids <- graphdata[["valid_ids"]]
+  if (!is.null(valid_ids)) {
+    ns <- length(valid_ids)
+    attr(stdata, "valid_ids") <- valid_ids
+  }
+
   graph <- graphdata[["graph"]]
   mstgraph <- graphdata[["mst"]]
   membership <- graphdata[["membership"]]
@@ -295,6 +301,7 @@ sfclust <- function(stdata, graphdata = NULL, sp_dims = "geometry", fun_dims = "
   attr(output, "mst") <- mst_out
   attr(output, "args") <- args
   attr(output, "inla_args") <- inla_args
+  attr(output, "valid_ids") <- valid_ids
   class(output) <- "sfclust"
 
   if (!is.null(path_save)) saveRDS(output, file = path_save)
