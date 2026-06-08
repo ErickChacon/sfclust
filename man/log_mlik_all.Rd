@@ -4,29 +4,15 @@
 \alias{log_mlik_all}
 \title{Fit models and compute the log marginal likelihood for all clusters}
 \usage{
-log_mlik_all(
-  membership,
-  stdata,
-  sp_dims = "geometry",
-  fun_dims = "time",
-  correction = TRUE,
-  detailed = FALSE,
-  ...
-)
+log_mlik_all(membership, data, correction = TRUE, detailed = FALSE, ...)
 }
 \arguments{
 \item{membership}{Integer, character or factor vector indicating the cluster membership
 for each spatial unit.}
 
-\item{stdata}{A stars object with spatial and functional dimensions defined in \code{sp_dims}
-and \code{fun_dims}, and including predictors and response variables.}
-
-\item{sp_dims}{Character vector with the names of the spatial dimensions of \code{stdata}.
-Use a single name (e.g. \code{"geometry"}) for vector geometry data, or two names
-(e.g. \code{c("x", "y")}) for raster data.}
-
-\item{fun_dims}{Character vector with the names of the functional dimensions of \code{stdata}
-(e.g. \code{"time"}).}
+\item{data}{A long-format data frame as returned by \code{\link[=data_all]{data_all()}}, with columns \code{id}
+(flat index), \code{ids} (spatial unit index, 1 to ns), functional index columns
+(\verb{idf_<dimname>}), and all response/covariate variables.}
 
 \item{correction}{Logical value indicating whether a correction for dispersion.}
 
@@ -62,10 +48,11 @@ stdata <- st_as_stars(
   dimensions = dims
 )
 
-log_mlik_all(c(1, 1, 1, 2, 2), stdata,
+df <- data_all(stdata)
+log_mlik_all(c(1, 1, 1, 2, 2), df,
   formula = cases ~ temperature, family = "poisson", E = expected)
 
-models = log_mlik_all(c(1, 1, 1, 2, 2), stdata, detailed = TRUE,
+models <- log_mlik_all(c(1, 1, 1, 2, 2), df, detailed = TRUE,
   formula = cases ~ temperature, family = "poisson", E = expected)
 lapply(models, summary)
 }

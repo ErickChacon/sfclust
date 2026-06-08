@@ -2,9 +2,34 @@
 % Please edit documentation in R/model-cluster.R
 \name{sfclust}
 \alias{sfclust}
+\alias{sfclust.default}
+\alias{sfclust.data.frame}
+\alias{sfclust.stars}
 \title{Bayesian spatial functional clustering}
 \usage{
-sfclust(
+sfclust(x, ...)
+
+\method{sfclust}{default}(x, ...)
+
+\method{sfclust}{data.frame}(
+  data,
+  adjacency,
+  fun_col = NULL,
+  graphdata = NULL,
+  move_prob = c(0.425, 0.425, 0.1, 0.05),
+  logpen = log(1 - 0.5),
+  nclust = 10,
+  correction = TRUE,
+  niter = 100,
+  burnin = 0,
+  thin = 1,
+  nmessage = 10,
+  path_save = NULL,
+  nsave = nmessage,
+  ...
+)
+
+\method{sfclust}{stars}(
   stdata,
   graphdata = NULL,
   sp_dims = "geometry",
@@ -22,72 +47,98 @@ sfclust(
 )
 }
 \arguments{
-\item{stdata}{A stars object containing response variables, covariates, and other necessary data.}
+\item{x}{First argument: a \code{data.frame} (core interface) or a \code{stars} object
+(stars interface). Dispatch is based on this argument's class.}
 
-\item{graphdata}{A list containing the initial graph used for the Bayesian model.
-It should include components like \code{graph}, \code{mst}, and \code{membership} (default is \code{NULL}).}
+\item{...}{Additional arguments such as \code{formula}, \code{family}, and others passed to
+\code{inla()}.}
+
+\item{data}{A long-format data frame with at least columns \code{id} (unique row index)
+and \code{ids} (integer spatial unit index, 1 to \code{ns}), plus any response and
+covariate columns referenced in \code{formula}.}
+
+\item{adjacency}{A square pre-weighted adjacency matrix (ns × ns) encoding spatial
+contiguity and edge weights. Can be a dense \code{matrix} or a sparse \code{Matrix}.
+Typically obtained via \code{\link[igraph:as_adjacency_matrix]{igraph::as_adjacency_matrix()}} on the graph returned
+by \code{\link[=genclust]{genclust()}}.}
+
+\item{fun_col}{Character. Name of the column in \code{data} that holds the functional
+index (e.g. \code{"idf_time"}). Used by plot methods; not required by the
+algorithm itself. Default is \code{NULL}.}
+
+\item{graphdata}{A list with components \code{graph}, \code{mst}, and \code{membership} as returned
+by \code{\link[=genclust]{genclust()}}. If \code{NULL}, it is built automatically.}
+
+\item{move_prob}{A numeric vector of probabilities for the MCMC move types: birth,
+death, change, and hyperparameter (default is \code{c(0.425, 0.425, 0.1, 0.05)}).}
+
+\item{logpen}{A negative numeric value representing the log-scale penalty for
+increasing the number of clusters by one. The number of clusters is assumed to
+follow a geometric prior with probability \code{q}, making this penalty equal to
+\code{log(1 - q)}. For example, if \code{logpen = -50}, then a proposal that increases
+the number of clusters will only be favored if it improves the log marginal
+likelihood by more than 50.}
+
+\item{nclust}{Integer. Initial number of clusters when \code{graphdata = NULL}. Ignored
+if \code{graphdata} is provided (default is \code{10}).}
+
+\item{correction}{A logical indicating whether correction to compute the marginal
+likelihoods should be applied (default is \code{TRUE}). This depends on the type
+of effects included in the \code{INLA} model.}
+
+\item{niter}{An integer specifying the number of MCMC iterations after burn-in
+(default is \code{100}).}
+
+\item{burnin}{An integer specifying the number of burn-in iterations to discard
+(default is \code{0}).}
+
+\item{thin}{An integer specifying the thinning interval for recording the results
+(default is \code{1}).}
+
+\item{nmessage}{An integer specifying how often progress messages should be printed
+(default is \code{10}).}
+
+\item{path_save}{A character string specifying the file path to save the results
+(default is \code{NULL}).}
+
+\item{nsave}{An integer specifying the number of iterations between saved results
+(default is \code{nmessage}).}
+
+\item{stdata}{A \code{stars} object containing response variables, covariates, and other
+necessary data.}
 
 \item{sp_dims}{Character vector with the names of the spatial dimensions of \code{stdata}.
 Use a single name (e.g. \code{"geometry"}) for vector geometry data, or two names
 (e.g. \code{c("x", "y")}) for raster data. Default is \code{"geometry"}.}
 
-\item{fun_dims}{Character vector with the names of the functional dimensions of \code{stdata}
-(e.g. \code{"time"}). Default is \code{"time"}.}
-
-\item{move_prob}{A numeric vector of probabilities for different types of moves in the MCMC process:
-birth, death, change, and hyperparameter moves (default is \code{c(0.425, 0.425, 0.1, 0.05)}).}
-
-\item{logpen}{A negative numeric value representing the log-scale penalty for
-increasing the number of clusters by one. The number of clusters is assumed to
-follow a geometric prior with probability \code{q}, making this penalty equal to
-\code{log(1 - q)}. For example, if \code{logp = -50}, then a proposal that increases the
-number of clusters will only be favored if it improves the log marginal
-likelihood by more than 50.}
-
-\item{correction}{A logical indicating whether correction to compute the marginal
-likelihoods should be applied (default is \code{TRUE}). This depend of the type of
-effect inclused in the \code{INLA} model.}
-
-\item{niter}{An integer specifying the number of MCMC iterations to perform (default is \code{100}).}
-
-\item{burnin}{An integer specifying the number of burn-in iterations to discard (default is \code{0}).}
-
-\item{thin}{An integer specifying the thinning interval for recording the results (default is \code{1}).}
-
-\item{nmessage}{An integer specifying how often progress messages should be printed (default is \code{10}).}
-
-\item{path_save}{A character string specifying the file path to save the results (default is \code{NULL}).}
-
-\item{nsave}{An integer specifying the number of iterations between saved results in the chain
-(default is \code{nmessage}).}
-
-\item{...}{Additional arguments such as \code{formula}, \code{family}, and others that are passed
-to the \code{inla} function.}
+\item{fun_dims}{Character vector with the names of the functional dimensions of
+\code{stdata} (e.g. \code{"time"}). Default is \code{"time"}.}
 }
 \value{
-An \code{sfclust} object containing two main lists: \code{samples} and \code{clust}.
+An \code{sfclust} object (from \code{sfclust.data.frame}) or an \code{sfclust_stars} object
+inheriting from \code{sfclust} (from \code{sfclust.stars}). Both contain:
 \itemize{
-\item The \code{samples} list includes details from the sampling process, such as:
-\itemize{
-\item \code{membership}: The cluster membership assignments for each sample.
-\item \code{log_marginal_likelihood}: The log marginal likelihood for each sample.
-\item \code{move_counts}: The counts of each type of move during the MCMC process.
+\item \code{samples}: MCMC trace with \code{membership}, \code{log_mlike}, and \code{move_counts}.
+\item \code{clust}: selected clustering with \code{id}, \code{membership}, and fitted \code{models}.
 }
-\item The \code{clust} list contains information about the selected clustering, including:
-\itemize{
-\item \code{id}: The identifier of the selected sample (default is the last sample).
-\item \code{membership}: The cluster assignments for the selected sample.
-\item \code{models}: The fitted models for each cluster in the selected sample.
-}
-}
+
+\code{sfclust_stars} additionally carries attributes \code{stdata}, \code{sp_dims}, \code{fun_dims},
+and \code{valid_ids} used by spatial plot methods.
 }
 \description{
-Bayesian detection of neighboring spatial regions with similar functional shapes using
-spanning trees and latent Gaussian models. It ensures spatial contiguity in the
-clusters, handles a large family of latent Gaussian models supported by \code{inla}, and
-allows to work with non-Gaussian likelihoods.
+\code{sfclust()} is the main user-facing function for Bayesian spatial functional
+clustering via reversible-jump MCMC. It dispatches on the class of the first
+argument:
 }
 \details{
+\itemize{
+\item \code{sfclust.data.frame()}: core interface — takes a pre-built long-format data frame
+and a pre-weighted adjacency matrix. Use this when working with any data format
+after converting it yourself.
+\item \code{sfclust.stars()}: stars wrapper — takes a \code{stars} spatio-temporal object,
+converts it to long format, builds the spatial graph, and calls the core algorithm.
+}
+
 This implementation draws inspiration from the methods described in the paper:
 \emph{"Bayesian Clustering of Spatial Functional Data with Application to a Human Mobility
 Study During COVID-19"} by Bohai Zhang, Huiyan Sang, Zhao Tang Luo, and Hui Huang,
@@ -116,7 +167,18 @@ Chacón-Montalván, Paula Moraga:
 \donttest{
 library(sfclust)
 
-# Clustering with Gaussian data
+# Core interface: long-format data frame + adjacency matrix
+library(sf)
+data(stbinom)
+df  <- data_all(stbinom)
+adj <- as(sf::st_touches(st_get_dimension_values(stbinom, "geometry")), "matrix") * 1L
+adj <- adj * runif(length(adj))
+result <- sfclust(df, adj, fun_col = "idf_time",
+  formula = cases ~ poly(idf_time, 2) + f(id),
+  family = "binomial", Ntrials = population, niter = 10, nmessage = 1)
+print(result)
+
+# Stars interface: Gaussian data
 data(stgaus)
 result <- sfclust(stgaus, formula = y ~ f(idf_time, model = "rw1"),
   niter = 10, nmessage = 1)
@@ -124,7 +186,7 @@ print(result)
 summary(result)
 plot(result)
 
-# Clustering with binomial data
+# Stars interface: binomial data
 data(stbinom)
 result <- sfclust(stbinom, formula = cases ~ poly(idf_time, 2) + f(id),
   family = "binomial", Ntrials = population, niter = 10, nmessage = 1)

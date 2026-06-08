@@ -177,6 +177,7 @@ correction_required <- function (formula) {
 #'
 #' data_all(stdata)
 #'
+#' @importFrom stars expand_dimensions
 #' @export
 data_all <- function(stdata, sp_dims = "geometry", fun_dims = "time") {
   validate_stdata_input(stdata, sp_dims, fun_dims)
@@ -246,9 +247,8 @@ data_all <- function(stdata, sp_dims = "geometry", fun_dims = "time") {
 #'
 #' data_each(k = 2, membership = c(1, 1, 1, 2, 2), stdata)
 #'
-#' @import cubelyr stars
+#' @importFrom stars expand_dimensions
 #' @importFrom dplyr filter
-#'
 #' @export
 data_each <- function(k, membership, stdata, sp_dims = "geometry", fun_dims = "time") {
   validate_stdata_input(stdata, sp_dims, fun_dims)

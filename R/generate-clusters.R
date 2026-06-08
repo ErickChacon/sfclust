@@ -42,9 +42,9 @@
 #' print(cluster_ini)
 #' plot(st_sf(x, cluster = factor(cluster_ini$membership)))
 #'
-#' @import igraph
+#' @importFrom igraph graph_from_adjacency_matrix mst V vcount ecount delete_edges components
 #' @importFrom methods as
-#' @importFrom sf st_touches
+#' @importFrom sf st_touches st_geometry
 #' @importFrom stars st_dimensions
 #' @export
 genclust <- function(x, nclust = 10, weights = NULL, sp_dims = NULL){

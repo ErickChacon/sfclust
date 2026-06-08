@@ -4,16 +4,26 @@
 \alias{plot_clusters_series}
 \title{Plot observed time series by cluster}
 \usage{
-plot_clusters_series(x, var, clusters = NULL, sort = FALSE, ...)
+plot_clusters_series(
+  x,
+  var,
+  clusters = NULL,
+  sort = FALSE,
+  fun_col = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{An \code{sfclust} object.}
 
-\item{var}{An unquoted variable name from the \code{stars} object to plot on the y-axis.}
+\item{var}{An unquoted variable name to plot on the y-axis.}
 
 \item{clusters}{Optional vector of cluster IDs to include. If \code{NULL}, all clusters are shown.}
 
 \item{sort}{Logical; if \code{TRUE}, clusters are relabeled by decreasing size. Default is \code{FALSE}.}
+
+\item{fun_col}{Character. Name of the column to use as the x-axis (functional dimension).
+If \code{NULL}, taken from the result's stored args (set automatically by \code{\link[=sfclust]{sfclust()}}).}
 
 \item{...}{Additional arguments passed to \code{geom_line()} for individual region series.}
 }

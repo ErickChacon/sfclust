@@ -1,4 +1,6 @@
-#' @importFrom igraph graph_from_adjacency_matrix mst V E vcount ecount delete_edges components
+#' @importFrom igraph V
+NULL
+
 sfclust_fit <- function(data, adjacency, graphdata = NULL,
                         move_prob = c(0.425, 0.425, 0.1, 0.05), logpen = log(1 - 0.5),
                         nclust = 10,
@@ -334,7 +336,6 @@ sfclust.default <- function(x, ...) {
 }
 
 #' @rdname sfclust
-#' @importFrom igraph as_adjacency_matrix
 #' @export
 sfclust.data.frame <- function(data, adjacency, fun_col = NULL, graphdata = NULL,
                                move_prob = c(0.425, 0.425, 0.1, 0.05),
@@ -355,7 +356,6 @@ sfclust.data.frame <- function(data, adjacency, fun_col = NULL, graphdata = NULL
 }
 
 #' @rdname sfclust
-#' @importFrom igraph as_adjacency_matrix
 #' @importFrom stars st_get_dimension_values
 #' @export
 sfclust.stars <- function(stdata, graphdata = NULL, sp_dims = "geometry",

@@ -4,10 +4,10 @@
 \alias{genclust}
 \title{Generate clusters for spatial clustering}
 \usage{
-genclust(x, nclust = 10, weights = NULL)
+genclust(x, nclust = 10, weights = NULL, sp_dims = NULL)
 }
 \arguments{
-\item{x}{An \code{sf} or \code{sfc} object representing spatial polygonal data. It can also be
+\item{x}{An \code{sf}, \code{sfc}, or \code{stars} object representing spatial data. It can also be
 a \code{matrix} or \code{Matrix} object with non-zero values representing weighted
 connectivity between units.}
 
@@ -16,6 +16,10 @@ connectivity between units.}
 \item{weights}{Optional \code{numeric} vector or \code{matrix} of weights between units in \code{x}.
 It should have dimensions \code{n^2}, where \code{n} is the number of units in \code{x}. If NULL,
 random weights are assigned.}
+
+\item{sp_dims}{Character vector with the names of the spatial dimensions when \code{x} is a
+\code{stars} object. If \code{NULL}, spatial dimensions are auto-detected as those with a
+non-\code{NA} regular \code{delta} in \code{st_dimensions(x)}.}
 }
 \value{
 A list with three elements:

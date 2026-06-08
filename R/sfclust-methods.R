@@ -380,6 +380,8 @@ plot.sfclust_stars <- function(x, sample = x$clust$id, which = 1:3, clusters = N
 #'
 #' @return A `ggplot2` object.
 #'
+#' @importFrom stars expand_dimensions
+#' @importFrom stars st_get_dimension_values
 #' @importFrom ggplot2 facet_wrap
 #' @export
 plot_clusters_map <- function(x, sample = x$clust$id, clusters = NULL, sort = FALSE, legend = FALSE, geom_before = NULL, ...) {
@@ -530,6 +532,8 @@ plot_clusters_series.sfclust <- function(x, var, clusters = NULL, sort = FALSE, 
       labs(x = NULL)
 }
 
+#' @importFrom stars expand_dimensions
+#' @importFrom stars st_get_dimension_values st_set_dimensions
 #' @export
 plot_clusters_series.sfclust_stars <- function(x, var, clusters = NULL, sort = FALSE, fun_col = NULL, ...) {
   if (is.null(fun_col)) fun_col <- attr(x, "args")$fun_col

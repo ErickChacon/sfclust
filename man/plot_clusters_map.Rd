@@ -15,7 +15,7 @@ plot_clusters_map(
 )
 }
 \arguments{
-\item{x}{An \code{sfclust} object.}
+\item{x}{An \code{sfclust_stars} object.}
 
 \item{sample}{Integer specifying the clustering sample to display. Defaults to the last sample.}
 
@@ -34,5 +34,5 @@ A \code{ggplot2} object.
 }
 \description{
 Produces a \code{ggplot2} map of spatial regions colored by their cluster assignment for a
-given MCMC sample of an \code{sfclust} object.
+given MCMC sample of an \code{sfclust_stars} object.
 }

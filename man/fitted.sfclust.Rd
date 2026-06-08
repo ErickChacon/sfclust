@@ -18,13 +18,13 @@ of clustering (membership) samples.}
 elements.}
 
 \item{aggregate}{Logical value indicating if fitted values are desired at cluster
-level.}
+level. Only supported for \code{sfclust_stars} results.}
 
 \item{...}{Additional arguments, currently not used.}
 }
 \value{
-A \code{stars} object with linear predictor fitted values at regions levels. In case
-\code{aggregate = TRUE}, the \code{output} produces an \code{stars} objecto at cluster levels.
+A data frame with fitted values and cluster assignments, keyed by \code{id}.
+For \code{sfclust_stars} objects, a \code{stars} object is returned instead.
 }
 \description{
 This function calculates the fitted values for a specific clustering sample in an
@@ -32,21 +32,13 @@ This function calculates the fitted values for a specific clustering sample in a
 values are computed using the membership assignments and model parameters
 associated with the selected clustering sample.
 }
-\details{
-The function first checks if the provided \code{sample} value is valid (i.e., it is
-within the range of available clustering samples). If the specified \code{sample}
-does not match the current clustering \code{id}, the \code{sfclust} object is updated
-accordingly. It then retrieves the membership assignments and cluster models
-for the selected sample, calculates the linear predictions for each cluster,
-and combines them into a matrix of fitted values.
-}
 \examples{
 
 \donttest{
 library(sfclust)
 
 data(stgaus)
-result <- sfclust(stgaus, formula = y ~ f(idt, model = "rw1"), niter = 10,
+result <- sfclust(stgaus, formula = y ~ f(idf_time, model = "rw1"), niter = 10,
   nmessage = 1)
 
 # Estimated values ordering clusters by size

@@ -11,6 +11,9 @@
 #
 # Note: These functions are used with acknowledgment to the original authors.
 
+#' @importFrom igraph get.edgelist ecount delete_edges components V E head_of tail_of mst
+NULL
+
 # function to get whether an edge is within a cluster or bewteen two clusters
 getEdgeStatus <- function(membership, graph) {
   inc_mat <- get.edgelist(graph, names = F)
