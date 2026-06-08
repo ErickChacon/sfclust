@@ -55,6 +55,14 @@ log_mlik_all <- function(membership, data, correction = TRUE, detailed = FALSE, 
   }
 }
 
+get_data <- function(object) {
+  if (inherits(object, "sfclust_stars")) {
+    data_all(attr(object, "stdata"), attr(object, "sp_dims"), attr(object, "fun_dims"))
+  } else {
+    attr(object, "args")$data
+  }
+}
+
 unique_clusters <- function (membership) {
   if (is.character(membership)) membership <- as.factor(membership)
   if (is.factor(membership)){

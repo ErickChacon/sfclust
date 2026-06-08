@@ -90,9 +90,6 @@ sort_membership <- function(x) {
   x
 }
 
-# TRUE when result carries stars metadata (set by sfclust() wrapper)
-has_stars_metadata <- function(x) !is.null(attr(x, "stdata"))
-
 #' Update MCMC Clustering Procedure
 #'
 #' This function continues the MCMC sampling of a `sfclust` object based on previous results or
@@ -131,12 +128,28 @@ update.sfclust <- function(object, niter = 100, burnin = 0, thin = 1, nmessage =
   }
 }
 
+#' @method update sfclust_stars
+#' @export
+update.sfclust_stars <- function(object, niter = 100, burnin = 0, thin = 1, nmessage = 10,
+                                 sample = NULL, path_save = NULL, nsave = nmessage, ...) {
+  result <- NextMethod()
+  attr(result, "stdata")       <- attr(object, "stdata")
+  attr(result, "sp_dims")      <- attr(object, "sp_dims")
+  attr(result, "fun_dims")     <- attr(object, "fun_dims")
+  attr(result, "valid_ids")    <- attr(object, "valid_ids")
+  attr(result, "args")$fun_col <- attr(object, "args")$fun_col
+  class(result) <- c("sfclust_stars", "sfclust")
+  result
+}
+
 update_sfclust <- function(x, niter = 100, burnin = 0, thin = 1, nmessage = 10,
                            path_save = NULL, nsave = nmessage) {
   nsamples <- nrow(x$samples$membership)
+  fun_col  <- attr(x, "args")$fun_col
 
   args <- c(attr(x, "args"), attr(x, "inla_args"))
-  args$fun_col <- NULL
+  args$fun_col              <- NULL
+  args$data                 <- get_data(x)
   args$graphdata$mst        <- attr(x, "mst")[[nsamples]]
   args$graphdata$membership <- x$samples$membership[nsamples, ]
 
@@ -147,23 +160,14 @@ update_sfclust <- function(x, niter = 100, burnin = 0, thin = 1, nmessage = 10,
   args$path_save <- path_save
   args$nsave     <- nsave
 
-  call   <- as.call(c(list(as.name("sfclust_fit")), args))
-  result <- eval(call, envir = parent.frame())
-
-  if (has_stars_metadata(x)) {
-    attr(result, "stdata")       <- attr(x, "stdata")
-    attr(result, "sp_dims")      <- attr(x, "sp_dims")
-    attr(result, "fun_dims")     <- attr(x, "fun_dims")
-    attr(result, "valid_ids")    <- attr(x, "valid_ids")
-    attr(result, "args")$fun_col <- attr(x, "args")$fun_col
-  }
-
+  result <- eval(as.call(c(list(as.name("sfclust_fit")), args)), envir = parent.frame())
+  attr(result, "args")$fun_col <- fun_col
   result
 }
 
 update_within <- function(x, sample = nrow(x$samples$membership)) {
   args             <- attr(x, "inla_args")
-  args$data        <- attr(x, "args")$data
+  args$data        <- get_data(x)
   args$membership  <- x$samples$membership[sample, ]
   args$correction  <- FALSE
   args$detailed    <- TRUE
@@ -189,19 +193,10 @@ update_within <- function(x, sample = nrow(x$samples$membership)) {
 #' @param sort Logical value indicating if clusters should be relabel based on number of
 #'        elements.
 #' @param aggregate Logical value indicating if fitted values are desired at cluster
-#'        level. Only supported for vector geometry data (stars wrapper results).
+#'        level. Only supported for `sfclust_stars` results.
 #' @param ... Additional arguments, currently not used.
-#' @return For stars wrapper results: a `stars` object with linear predictor fitted values
-#'         at region level. For core (`sfclust_fit`) results: a data frame. In case
-#'         `aggregate = TRUE` (stars only), the output is a `stars` object at cluster level.
-#'
-#' @details
-#' The function first checks if the provided `sample` value is valid (i.e., it is
-#' within the range of available clustering samples). If the specified `sample`
-#' does not match the current clustering `id`, the `sfclust` object is updated
-#' accordingly. It then retrieves the membership assignments and cluster models
-#' for the selected sample, calculates the linear predictions for each cluster,
-#' and combines them into a matrix of fitted values.
+#' @return A data frame with fitted values and cluster assignments, keyed by `id`.
+#'         For `sfclust_stars` objects, a `stars` object is returned instead.
 #'
 #' @examples
 #'
@@ -237,18 +232,19 @@ fitted.sfclust <- function(object, sample = object$clust$id, sort = FALSE, aggre
     object$clust$models <- object$clust$models[attr(membership, "order")]
   }
 
-  data <- attr(object, "args")$data
+  data <- get_data(object)
 
   pred <- lapply(1:max(membership), linpred_each,
                  membership, object$clust$models, data)
   pred <- do.call(rbind, pred)
-  pred <- pred[order(pred$id), setdiff(names(pred), "id")]
+  pred[order(pred$id), setdiff(names(pred), "id")]
+}
 
-  if (!has_stars_metadata(object)) {
-    return(pred)
-  }
+#' @importFrom sf st_within st_union
+#' @export
+fitted.sfclust_stars <- function(object, sample = object$clust$id, sort = FALSE, aggregate = FALSE, ...) {
+  pred <- NextMethod()
 
-  # reconstruct stars object from data frame
   stdata_ref <- attr(object, "stdata")
   sp_dims    <- attr(object, "sp_dims")
   stars_obj  <- stdata_ref[0]
@@ -269,8 +265,8 @@ fitted.sfclust <- function(object, sample = object$clust$id, sort = FALSE, aggre
     for (var_name in names(pred)) stars_obj[[var_name]] <- pred[[var_name]]
   }
 
-  # aggregate if required (vector geometry only)
   if (aggregate) {
+    membership <- object$samples$membership[object$clust$id, ]
     if (length(sp_dims) > 1) {
       warning("`aggregate = TRUE` is not supported for raster data.", call. = FALSE)
     } else {
@@ -313,41 +309,55 @@ linpred_each_corrected <- function(x){
 
 #' Plot function for `sfclust` objects
 #'
-#' This function visualizes the estimated clusters from an `sfclust` object. It can display:
-#' (1) a map of regions colored by their assigned cluster,
-#' (2) the functional shapes of the linear predictors for each cluster,
-#' and (3) a traceplot of the log marginal likelihood.
-#' A conditional legend is added if the number of clusters is less than 10.
+#' Visualizes fitted cluster functions (plot 1) and a log marginal likelihood traceplot
+#' (plot 2). For `sfclust_stars` objects, also includes a spatial map of cluster
+#' assignments (plot 1 in that method, shifting the others to 2 and 3).
 #'
-#' @param x An `sfclust` object containing the clustering results, including the cluster assignments and model parameters.
-#' @param sample Integer specifying the clustering sample number to summarize. Defaults to the last sample.
-#' @param which Integer vector indicating which plot to display. Options are:
-#'        - 1: Map of regions colored by cluster assignment.
-#'        - 2: Functional shapes of the linear predictors for each cluster.
-#'        - 3: Traceplot of the log marginal likelihood.
-#' @param clusters Optional vector specifying which clusters to plot. If `NULL`, all clusters are included.
-#' @param sort Logical value indicating whether clusters should be relabeled based on the number of elements. Default is `FALSE`.
-#' @param legend Logical value indicating whether a legend should be included in the plot. Default is `FALSE`.
-#' @param geom_before An optional `ggplot2` geom layer to add before the cluster map layer (e.g., a background tile). Default is `NULL`.
-#' @param ... Additional arguments passed to the underlying plotting functions.
+#' @param x An `sfclust` object.
+#' @param sample Integer specifying the clustering sample to display. Defaults to the last sample.
+#' @param which Integer vector indicating which plots to show. For `sfclust`: 1 = cluster
+#'        functions, 2 = log marginal likelihood. For `sfclust_stars`: 1 = map, 2 = cluster
+#'        functions, 3 = log marginal likelihood.
+#' @param clusters Optional vector of cluster IDs to include. If `NULL`, all clusters are shown.
+#' @param sort Logical; if `TRUE`, clusters are relabeled by decreasing size. Default is `FALSE`.
+#' @param legend Logical; if `TRUE`, a legend is included. Default is `FALSE`.
+#' @param fun_col Character. Column name for the x-axis of cluster function plots.
+#'        If `NULL`, taken from the result's stored args.
+#' @param ... Additional arguments passed to underlying plot functions.
 #'
-#' @return A composed `patchwork` object displaying the selected subgraphs as specified by `which`.
+#' @return A composed `patchwork` object.
 #'
 #' @importFrom ggplot2 ggplot aes geom_line geom_point scale_x_continuous scale_y_continuous element_blank
 #' @importFrom ggplot2 theme_bw theme_minimal theme labs geom_sf geom_raster
 #' @importFrom patchwork wrap_plots
 #' @importFrom sf st_sf
 #' @export
-plot.sfclust <- function(x, sample = x$clust$id, which = 1:3, clusters = NULL, sort = FALSE,
-                         legend = FALSE, geom_before = NULL, ...) {
+plot.sfclust <- function(x, sample = x$clust$id, which = 1:2, clusters = NULL, sort = FALSE,
+                         legend = FALSE, fun_col = NULL, ...) {
+  figs <- list(gg1 = NA, gg2 = NA)
+  if (1 %in% which) {
+    figs$gg1 <- plot_clusters_fitted(x, sample, clusters, sort, legend, fun_col = fun_col)
+  }
+  if (2 %in% which) {
+    figs$gg2 <- plot_log_mlik(x, sample)
+  }
+  wrap_plots(figs[which])
+}
 
+#' @importFrom ggplot2 ggplot aes geom_line geom_point scale_x_continuous scale_y_continuous element_blank
+#' @importFrom ggplot2 theme_bw theme_minimal theme labs geom_sf geom_raster
+#' @importFrom patchwork wrap_plots
+#' @importFrom sf st_sf
+#' @export
+plot.sfclust_stars <- function(x, sample = x$clust$id, which = 1:3, clusters = NULL, sort = FALSE,
+                               legend = FALSE, geom_before = NULL, fun_col = NULL, ...) {
   figs <- list(gg1 = NA, gg2 = NA, gg3 = NA)
   if (1 %in% which) {
     figs$gg1 <- plot_clusters_map(x, sample, clusters, sort, legend, geom_before)
   }
   if (2 %in% which) {
-    if (!legend || (1 %in% which)) legend = FALSE
-    figs$gg2 <- plot_clusters_fitted(x, sample, clusters, sort, legend)
+    if (!legend || (1 %in% which)) legend <- FALSE
+    figs$gg2 <- plot_clusters_fitted(x, sample, clusters, sort, legend, fun_col = fun_col)
   }
   if (3 %in% which) {
     figs$gg3 <- plot_log_mlik(x, sample)
@@ -358,10 +368,9 @@ plot.sfclust <- function(x, sample = x$clust$id, which = 1:3, clusters = NULL, s
 #' Plot a spatial map of cluster assignments
 #'
 #' Produces a `ggplot2` map of spatial regions colored by their cluster assignment for a
-#' given MCMC sample of an `sfclust` object. Requires the result to have been produced
-#' by [sfclust()] (stars wrapper); not available for [sfclust_fit()] results.
+#' given MCMC sample of an `sfclust_stars` object.
 #'
-#' @param x An `sfclust` object.
+#' @param x An `sfclust_stars` object.
 #' @param sample Integer specifying the clustering sample to display. Defaults to the last sample.
 #' @param clusters Optional vector of cluster IDs to include. If `NULL`, all clusters are shown.
 #' @param sort Logical; if `TRUE`, clusters are relabeled by decreasing size. Default is `FALSE`.
@@ -374,8 +383,8 @@ plot.sfclust <- function(x, sample = x$clust$id, which = 1:3, clusters = NULL, s
 #' @importFrom ggplot2 facet_wrap
 #' @export
 plot_clusters_map <- function(x, sample = x$clust$id, clusters = NULL, sort = FALSE, legend = FALSE, geom_before = NULL, ...) {
-  if (!has_stars_metadata(x)) {
-    stop("`plot_clusters_map()` requires a stars-based result from `sfclust()`. ",
+  if (!inherits(x, "sfclust_stars")) {
+    stop("`plot_clusters_map()` requires an `sfclust_stars` object from `sfclust()`. ",
          "For custom data, build the map directly from `fitted()` output.")
   }
   nsamples <- check_sample_and_get_nsample(x, sample)
@@ -482,9 +491,7 @@ plot_log_mlik <- function(x, sample = x$clust$id, ...) {
 #' for a given variable in an `sfclust` object.
 #'
 #' @param x An `sfclust` object.
-#' @param var An unquoted variable name to plot on the y-axis. For stars-based results this
-#'        refers to a variable in the original `stars` object; for core results it refers to
-#'        a column in the long-format data stored in the result.
+#' @param var An unquoted variable name to plot on the y-axis.
 #' @param clusters Optional vector of cluster IDs to include. If `NULL`, all clusters are shown.
 #' @param sort Logical; if `TRUE`, clusters are relabeled by decreasing size. Default is `FALSE`.
 #' @param fun_col Character. Name of the column to use as the x-axis (functional dimension).
@@ -495,40 +502,61 @@ plot_log_mlik <- function(x, sample = x$clust$id, ...) {
 #'
 #' @export
 plot_clusters_series <- function(x, var, clusters = NULL, sort = FALSE, fun_col = NULL, ...) {
+  UseMethod("plot_clusters_series")
+}
 
+#' @export
+plot_clusters_series.sfclust <- function(x, var, clusters = NULL, sort = FALSE, fun_col = NULL, ...) {
   if (is.null(fun_col)) fun_col <- attr(x, "args")$fun_col
   fitted_df <- as.data.frame(fitted(x, sort = sort))
 
-  if (has_stars_metadata(x)) {
-    stdata  <- attr(x, "stdata")
-    sp_dims <- attr(x, "sp_dims")
+  data    <- get_data(x)
+  auxdata <- data
+  auxdata$cluster <- fitted_df$cluster[match(data$id, fitted_df$id)]
+  if (is.null(clusters)) clusters <- 1:max(auxdata$cluster, na.rm = TRUE)
+  sp_id_col <- "ids"
 
-    stdata$cluster <- fitted(x, sort = sort)$cluster
-    if (is.null(clusters)) clusters <- 1:max(stdata$cluster, na.rm = TRUE)
+  fun_sym   <- as.name(fun_col)
+  stcluster <- auxdata |>
+    dplyr::group_by(!!fun_sym, cluster) |>
+    dplyr::summarise(mean_cluster = mean({{ var }}), .groups = "drop")
 
-    if (length(sp_dims) == 1) {
-      ns <- length(st_get_dimension_values(stdata, sp_dims))
-      auxdata <- stdata |>
-        st_set_dimensions(sp_dims, values = 1:ns) |>
-        as.data.frame()
-      sp_id_col <- sp_dims
-    } else {
-      auxdata <- as.data.frame(stdata)
-      nx <- length(unique(auxdata[[sp_dims[1]]]))
-      iy_idx <- as.integer(factor(auxdata[[sp_dims[2]]]))
-      ix_idx <- as.integer(factor(auxdata[[sp_dims[1]]]))
-      auxdata$.sp_id <- (iy_idx - 1L) * nx + ix_idx
-      sp_id_col <- ".sp_id"
-    }
+  dplyr::filter(auxdata, cluster %in% clusters) |>
+    ggplot() +
+      geom_line(aes(!!fun_sym, {{ var }}, group = !!as.name(sp_id_col)), color = "gray50", linewidth = 0.3, ...) +
+      geom_line(aes(!!fun_sym, mean_cluster), dplyr::filter(stcluster, cluster %in% clusters), color = "red", linewidth = 0.4) +
+      facet_wrap(~ cluster) +
+      theme_bw() +
+      labs(x = NULL)
+}
+
+#' @export
+plot_clusters_series.sfclust_stars <- function(x, var, clusters = NULL, sort = FALSE, fun_col = NULL, ...) {
+  if (is.null(fun_col)) fun_col <- attr(x, "args")$fun_col
+  fitted_df <- as.data.frame(fitted(x, sort = sort))
+
+  stdata  <- attr(x, "stdata")
+  sp_dims <- attr(x, "sp_dims")
+
+  stdata$cluster <- fitted_df$cluster
+  if (is.null(clusters)) clusters <- 1:max(stdata$cluster, na.rm = TRUE)
+
+  if (length(sp_dims) == 1) {
+    ns <- length(st_get_dimension_values(stdata, sp_dims))
+    auxdata <- stdata |>
+      st_set_dimensions(sp_dims, values = 1:ns) |>
+      as.data.frame()
+    sp_id_col <- sp_dims
   } else {
-    data    <- attr(x, "args")$data
-    auxdata <- data
-    auxdata$cluster <- fitted_df$cluster[match(data$id, fitted_df$id)]
-    if (is.null(clusters)) clusters <- 1:max(auxdata$cluster, na.rm = TRUE)
-    sp_id_col <- "ids"
+    auxdata <- as.data.frame(stdata)
+    nx <- length(unique(auxdata[[sp_dims[1]]]))
+    iy_idx <- as.integer(factor(auxdata[[sp_dims[2]]]))
+    ix_idx <- as.integer(factor(auxdata[[sp_dims[1]]]))
+    auxdata$.sp_id <- (iy_idx - 1L) * nx + ix_idx
+    sp_id_col <- ".sp_id"
   }
 
-  fun_sym  <- as.name(fun_col)
+  fun_sym   <- as.name(fun_col)
   stcluster <- auxdata |>
     dplyr::group_by(!!fun_sym, cluster) |>
     dplyr::summarise(mean_cluster = mean({{ var }}), .groups = "drop")
