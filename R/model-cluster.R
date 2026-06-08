@@ -204,7 +204,7 @@ sfclust_fit <- function(data, adjacency, graphdata = NULL,
 #' argument:
 #'
 #' - `sfclust.data.frame()`: core interface — takes a pre-built long-format data frame
-#'   and a pre-weighted adjacency matrix. Use this when working with any data format
+#'   and a weighted adjacency matrix. Use this when working with any data format
 #'   after converting it yourself.
 #' - `sfclust.stars()`: stars wrapper — takes a `stars` spatio-temporal object,
 #'   converts it to long format, builds the spatial graph, and calls the core algorithm.
@@ -214,7 +214,7 @@ sfclust_fit <- function(data, adjacency, graphdata = NULL,
 #' @param data A long-format data frame with at least columns `id` (unique row index)
 #'        and `ids` (integer spatial unit index, 1 to `ns`), plus any response and
 #'        covariate columns referenced in `formula`.
-#' @param adjacency A square pre-weighted adjacency matrix (ns × ns) encoding spatial
+#' @param adjacency A square weighted adjacency matrix (ns × ns) encoding spatial
 #'        contiguity and edge weights. Can be a dense `matrix` or a sparse `Matrix`.
 #'        Typically obtained via [igraph::as_adjacency_matrix()] on the graph returned
 #'        by [genclust()].
