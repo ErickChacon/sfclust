@@ -12,7 +12,7 @@ sfclust(x, ...)
 \method{sfclust}{default}(x, ...)
 
 \method{sfclust}{data.frame}(
-  data,
+  x,
   adjacency,
   fun_col = NULL,
   graphdata = NULL,
@@ -30,7 +30,7 @@ sfclust(x, ...)
 )
 
 \method{sfclust}{stars}(
-  stdata,
+  x,
   graphdata = NULL,
   sp_dims = "geometry",
   fun_dims = "time",
@@ -47,22 +47,23 @@ sfclust(x, ...)
 )
 }
 \arguments{
-\item{x}{First argument: a \code{data.frame} (core interface) or a \code{stars} object
-(stars interface). Dispatch is based on this argument's class.}
+\item{x}{A \code{data.frame} (core interface) or a \code{stars} object (stars interface).
+Dispatch is based on this argument's class.
+For \code{sfclust.data.frame}: a long-format data frame with at least columns \code{id}
+(unique row index) and \code{ids} (integer spatial unit index, 1 to \code{ns}), plus
+any response and covariate columns referenced in \code{formula}.
+For \code{sfclust.stars}: a \code{stars} object containing response variables, covariates,
+and other necessary data.}
 
 \item{...}{Additional arguments such as \code{formula}, \code{family}, and others passed to
 \code{inla()}.}
 
-\item{data}{A long-format data frame with at least columns \code{id} (unique row index)
-and \code{ids} (integer spatial unit index, 1 to \code{ns}), plus any response and
-covariate columns referenced in \code{formula}.}
-
-\item{adjacency}{A square pre-weighted adjacency matrix (ns × ns) encoding spatial
+\item{adjacency}{A square weighted adjacency matrix (ns × ns) encoding spatial
 contiguity and edge weights. Can be a dense \code{matrix} or a sparse \code{Matrix}.
 Typically obtained via \code{\link[igraph:as_adjacency_matrix]{igraph::as_adjacency_matrix()}} on the graph returned
 by \code{\link[=genclust]{genclust()}}.}
 
-\item{fun_col}{Character. Name of the column in \code{data} that holds the functional
+\item{fun_col}{Character. Name of the column in \code{x} that holds the functional
 index (e.g. \code{"idf_time"}). Used by plot methods; not required by the
 algorithm itself. Default is \code{NULL}.}
 
@@ -104,9 +105,6 @@ of effects included in the \code{INLA} model.}
 \item{nsave}{An integer specifying the number of iterations between saved results
 (default is \code{nmessage}).}
 
-\item{stdata}{A \code{stars} object containing response variables, covariates, and other
-necessary data.}
-
 \item{sp_dims}{Character vector with the names of the spatial dimensions of \code{stdata}.
 Use a single name (e.g. \code{"geometry"}) for vector geometry data, or two names
 (e.g. \code{c("x", "y")}) for raster data. Default is \code{"geometry"}.}
@@ -133,7 +131,7 @@ argument:
 \details{
 \itemize{
 \item \code{sfclust.data.frame()}: core interface — takes a pre-built long-format data frame
-and a pre-weighted adjacency matrix. Use this when working with any data format
+and a weighted adjacency matrix. Use this when working with any data format
 after converting it yourself.
 \item \code{sfclust.stars()}: stars wrapper — takes a \code{stars} spatio-temporal object,
 converts it to long format, builds the spatial graph, and calls the core algorithm.
@@ -171,7 +169,7 @@ library(sfclust)
 library(sf)
 data(stbinom)
 df  <- data_all(stbinom)
-adj <- as(sf::st_touches(st_get_dimension_values(stbinom, "geometry")), "matrix") * 1L
+adj <- as(sf::st_touches(stars::st_get_dimension_values(stbinom, "geometry")), "matrix") * 1L
 adj <- adj * runif(length(adj))
 result <- sfclust(df, adj, fun_col = "idf_time",
   formula = cases ~ poly(idf_time, 2) + f(id),

@@ -209,20 +209,20 @@ sfclust_fit <- function(data, adjacency, graphdata = NULL,
 #' - `sfclust.stars()`: stars wrapper — takes a `stars` spatio-temporal object,
 #'   converts it to long format, builds the spatial graph, and calls the core algorithm.
 #'
-#' @param x First argument: a `data.frame` (core interface) or a `stars` object
-#'        (stars interface). Dispatch is based on this argument's class.
-#' @param data A long-format data frame with at least columns `id` (unique row index)
-#'        and `ids` (integer spatial unit index, 1 to `ns`), plus any response and
-#'        covariate columns referenced in `formula`.
+#' @param x A `data.frame` (core interface) or a `stars` object (stars interface).
+#'        Dispatch is based on this argument's class.
+#'        For `sfclust.data.frame`: a long-format data frame with at least columns `id`
+#'        (unique row index) and `ids` (integer spatial unit index, 1 to `ns`), plus
+#'        any response and covariate columns referenced in `formula`.
+#'        For `sfclust.stars`: a `stars` object containing response variables, covariates,
+#'        and other necessary data.
 #' @param adjacency A square weighted adjacency matrix (ns × ns) encoding spatial
 #'        contiguity and edge weights. Can be a dense `matrix` or a sparse `Matrix`.
 #'        Typically obtained via [igraph::as_adjacency_matrix()] on the graph returned
 #'        by [genclust()].
-#' @param fun_col Character. Name of the column in `data` that holds the functional
+#' @param fun_col Character. Name of the column in `x` that holds the functional
 #'        index (e.g. `"idf_time"`). Used by plot methods; not required by the
 #'        algorithm itself. Default is `NULL`.
-#' @param stdata A `stars` object containing response variables, covariates, and other
-#'        necessary data.
 #' @param graphdata A list with components `graph`, `mst`, and `membership` as returned
 #'        by [genclust()]. If `NULL`, it is built automatically.
 #' @param sp_dims Character vector with the names of the spatial dimensions of `stdata`.
@@ -301,7 +301,7 @@ sfclust_fit <- function(data, adjacency, graphdata = NULL,
 #' library(sf)
 #' data(stbinom)
 #' df  <- data_all(stbinom)
-#' adj <- as(sf::st_touches(st_get_dimension_values(stbinom, "geometry")), "matrix") * 1L
+#' adj <- as(sf::st_touches(stars::st_get_dimension_values(stbinom, "geometry")), "matrix") * 1L
 #' adj <- adj * runif(length(adj))
 #' result <- sfclust(df, adj, fun_col = "idf_time",
 #'   formula = cases ~ poly(idf_time, 2) + f(id),
@@ -337,14 +337,14 @@ sfclust.default <- function(x, ...) {
 
 #' @rdname sfclust
 #' @export
-sfclust.data.frame <- function(data, adjacency, fun_col = NULL, graphdata = NULL,
+sfclust.data.frame <- function(x, adjacency, fun_col = NULL, graphdata = NULL,
                                move_prob = c(0.425, 0.425, 0.1, 0.05),
                                logpen = log(1 - 0.5), nclust = 10,
                                correction = TRUE, niter = 100, burnin = 0, thin = 1,
                                nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
   inla_args <- match.call(expand.dots = FALSE)$...
 
-  result <- sfclust_fit(data, adjacency, graphdata,
+  result <- sfclust_fit(x, adjacency, graphdata,
                         move_prob = move_prob, logpen = logpen, nclust = nclust,
                         correction = correction, niter = niter, burnin = burnin,
                         thin = thin, nmessage = nmessage,
@@ -358,7 +358,7 @@ sfclust.data.frame <- function(data, adjacency, fun_col = NULL, graphdata = NULL
 #' @rdname sfclust
 #' @importFrom stars st_get_dimension_values
 #' @export
-sfclust.stars <- function(stdata, graphdata = NULL, sp_dims = "geometry",
+sfclust.stars <- function(x, graphdata = NULL, sp_dims = "geometry",
                           fun_dims = "time",
                           move_prob = c(0.425, 0.425, 0.1, 0.05),
                           logpen = log(1 - 0.5),
@@ -366,20 +366,24 @@ sfclust.stars <- function(stdata, graphdata = NULL, sp_dims = "geometry",
                           nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
   inla_args <- match.call(expand.dots = FALSE)$...
 
+  if (length(sp_dims) > 1) {
+    sp_dims <- intersect(names(dim(x)), sp_dims)
+  }
+
   if (is.null(graphdata)) {
     if (length(sp_dims) == 1) {
-      graphdata <- genclust(st_get_dimension_values(stdata, sp_dims))
+      graphdata <- genclust(st_get_dimension_values(x, sp_dims))
     } else {
-      graphdata <- genclust(stdata, sp_dims = sp_dims)
+      graphdata <- genclust(x, sp_dims = sp_dims)
     }
   }
 
   valid_ids <- graphdata[["valid_ids"]]
   if (!is.null(valid_ids)) {
-    attr(stdata, "valid_ids") <- valid_ids
+    attr(x, "valid_ids") <- valid_ids
   }
 
-  data      <- data_all(stdata, sp_dims, fun_dims)
+  data      <- data_all(x, sp_dims, fun_dims)
   adjacency <- igraph::as_adjacency_matrix(graphdata$graph)
 
   result <- sfclust_fit(data, adjacency, graphdata,
@@ -391,7 +395,7 @@ sfclust.stars <- function(stdata, graphdata = NULL, sp_dims = "geometry",
   attr(result, "inla_args")    <- inla_args
   attr(result, "args")$data    <- NULL
   attr(result, "args")$fun_col <- fun_dims[1]
-  attr(result, "stdata")       <- stdata
+  attr(result, "stdata")       <- x
   attr(result, "sp_dims")      <- sp_dims
   attr(result, "fun_dims")     <- fun_dims
   attr(result, "valid_ids")    <- valid_ids

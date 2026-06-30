@@ -2,58 +2,86 @@
 % Please edit documentation in R/generate-clusters.R
 \name{genclust}
 \alias{genclust}
-\title{Generate clusters for spatial clustering}
+\alias{genclust.default}
+\alias{genclust.matrix}
+\alias{genclust.Matrix}
+\alias{genclust.sfc}
+\alias{genclust.sf}
+\alias{genclust.stars}
+\title{Generate initial cluster assignments}
 \usage{
-genclust(x, nclust = 10, weights = NULL, sp_dims = NULL)
+genclust(x, ...)
+
+\method{genclust}{default}(x, ...)
+
+\method{genclust}{matrix}(x, nclust = 10, weights = NULL, ...)
+
+\method{genclust}{Matrix}(x, nclust = 10, weights = NULL, ...)
+
+\method{genclust}{sfc}(x, nclust = 10, weights = NULL, ...)
+
+\method{genclust}{sf}(x, nclust = 10, weights = NULL, ...)
+
+\method{genclust}{stars}(x, nclust = 10, sp_dims = NULL, ...)
 }
 \arguments{
-\item{x}{An \code{sf}, \code{sfc}, or \code{stars} object representing spatial data. It can also be
-a \code{matrix} or \code{Matrix} object with non-zero values representing weighted
-connectivity between units.}
+\item{x}{Spatial data or adjacency matrix. Accepted classes: \code{matrix}, \code{Matrix},
+\code{sf}, \code{sfc} (vector geometry), or \code{stars} (raster).}
 
-\item{nclust}{Integer, specifying the initial number of clusters.}
+\item{...}{Not used; required for S3 method consistency.}
 
-\item{weights}{Optional \code{numeric} vector or \code{matrix} of weights between units in \code{x}.
-It should have dimensions \code{n^2}, where \code{n} is the number of units in \code{x}. If NULL,
-random weights are assigned.}
+\item{nclust}{Integer. Number of initial clusters (default \code{10}).}
 
-\item{sp_dims}{Character vector with the names of the spatial dimensions when \code{x} is a
-\code{stars} object. If \code{NULL}, spatial dimensions are auto-detected as those with a
-non-\code{NA} regular \code{delta} in \code{st_dimensions(x)}.}
+\item{weights}{Optional numeric vector or matrix of edge weights with \code{n^2} elements,
+where \code{n} is the number of spatial units. Smaller values indicate stronger similarity
+between units. If \code{NULL}, random weights are assigned. Not applicable for \code{stars} input.}
+
+\item{sp_dims}{Character vector with the names of the two spatial dimensions. If
+\code{NULL}, auto-detected as dimensions with a non-\code{NA} regular \code{delta} in
+\code{\link[stars:st_dimensions]{stars::st_dimensions()}}.}
 }
 \value{
-A list with three elements:
+A list with:
 \itemize{
-\item \code{graph}: The undirected graph object representing spatial contiguity.
-\item \code{mst}: The minimum spanning tree.
-\item \code{membership}: The cluster membership for elements in \code{x}.
+\item \code{graph}: undirected igraph object representing spatial contiguity.
+\item \code{mst}: minimum spanning tree of \code{graph}.
+\item \code{membership}: integer vector of cluster assignments (length = number of spatial units).
+\item \code{valid_ids}: integer vector of non-NA pixel indices for \code{stars} input; \code{NULL} otherwise.
 }
 }
 \description{
-Creates an undirected graph from spatial polygonal data, computes its minimum spanning
-tree (MST), and generates \code{nclust} clusters. This function is used to initialize
-cluster membership in a clustering algorithm, such as \code{sfclust}.
+Creates an undirected graph from spatial data or a weighted adjacency matrix,
+computes its minimum spanning tree (MST), and partitions it into \code{nclust} clusters.
+Accepts \code{sf} and \code{sfc} objects (contiguity via \code{\link[sf:geos_binary_pred]{sf::st_touches()}}), weighted
+\code{matrix} or \code{Matrix} objects, and \code{stars} rasters (4-connected grid adjacency for
+non-NA pixels).
 }
 \examples{
 
 library(sfclust)
 library(sf)
+library(stars)
 
+# sfc input
 x <- st_make_grid(cellsize = c(1, 1), offset = c(0, 0), n = c(3, 2))
 
-# using distance between geometries
+# custom weights
 clust <- genclust(x, nclust = 3, weights = st_distance(st_centroid(x)))
-print(clust)
 plot(st_sf(x, cluster = factor(clust$membership)))
 
-# using increasing weights
-cluster_ini <- genclust(x, nclust = 3, weights = 1:36)
-print(cluster_ini)
-plot(st_sf(x, cluster = factor(cluster_ini$membership)))
+# random weights
+clust <- genclust(x, nclust = 3, weights = runif(36))
+plot(st_sf(x, cluster = factor(clust$membership)))
 
-# using on random weights
-cluster_ini <- genclust(x, nclust = 3, weights = runif(36))
-print(cluster_ini)
-plot(st_sf(x, cluster = factor(cluster_ini$membership)))
+# stars raster input
+r <- st_as_stars(matrix(1:35, nrow = 5, ncol = 7))
+clust <- genclust(r, nclust = 4)
+r$clust <- clust$membership
+plot(r["clust"], col = rainbow(4))
+
+# matrix input (weighted adjacency)
+adj <- as(sf::st_touches(x), "matrix") * runif(36)
+clust <- genclust(adj, nclust = 3)
+plot(st_sf(x, cluster = factor(clust$membership)))
 
 }

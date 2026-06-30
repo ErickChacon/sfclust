@@ -6,8 +6,8 @@
 #' @param membership Integer, character or factor vector indicating the cluster membership
 #'        for each spatial unit.
 #' @param data A long-format data frame as returned by [data_all()], with columns `id`
-#'        (flat index), `ids` (spatial unit index, 1 to ns), functional index columns
-#'        (`idf_<dimname>`), and all response/covariate variables.
+#'        (flat array position), `ids` (spatial unit index, 1 to ns), observation index
+#'        columns (`idf_<dimname>`), and all response/covariate variables.
 #' @param correction Logical value indicating whether a correction for dispersion.
 #' @param detailed Logical value indicating whether to return the INLA model instead of
 #'        the log marginal likelihood. The argument `correction` is not applied in this
@@ -57,7 +57,7 @@ log_mlik_all <- function(membership, data, correction = TRUE, detailed = FALSE, 
 
 get_data <- function(object) {
   if (inherits(object, "sfclust_stars")) {
-    data_all(attr(object, "stdata"), attr(object, "sp_dims"), attr(object, "fun_dims"))
+    data_all(attr(object, "stdata"), attr(object, "sp_dims"))
   } else {
     attr(object, "args")$data
   }
@@ -80,7 +80,8 @@ unique_clusters <- function (membership) {
 }
 
 log_mlik_each <- function(k, membership, data, correction = TRUE, detailed = FALSE, ...) {
-  inla_data <- data[data$ids %in% which(membership == k), , drop = FALSE]
+  cluster_units <- which(membership == k)
+  inla_data <- data[data$ids %in% cluster_units, , drop = FALSE]
   model <- INLA::inla(
     data = inla_data,
     control.predictor = list(compute = TRUE),
@@ -148,21 +149,37 @@ correction_required <- function (formula) {
   sapply(effects, all.vars)[need_correction]
 }
 
+# Core spatial index helper: given a long-format data frame of dimension indices
+# and named sp_sizes, returns
+# the flat column-major spatial index (spnames[1] varies fastest). Used by
+# data_all() and create_domain().
+spatial_index <- function(df, sp_sizes) {
+  if (length(sp_sizes) == 1L) {
+    df[[names(sp_sizes)]]
+  } else {
+    strides <- cumprod(c(1L, unname(sp_sizes[-length(sp_sizes)])))
+    as.integer(as.matrix(df[names(sp_sizes)] - 1L) %*% strides) + 1L
+  }
+}
+
 #' Prepare data in long format
 #'
-#' Convert spatio-functional data to long format with a flat spatial index (`ids`) and
-#' ordered functional indices (`idf_<dimname>` for each functional dimension).
+#' Convert spatio-temporal data to long format with a flat spatial index (`ids`) and
+#' ordered observation indices (`idf_<dimname>` for each non-spatial dimension).
+#' This is a pure converter: all rows are returned including cells that are all-NA.
+#' No filtering is applied. Use `filter_df()` downstream to restrict to valid cells.
 #'
-#' @param stdata A stars object containing the spatial and functional dimensions.
-#' @param sp_dims Character vector with the names of the spatial dimensions of `stdata`.
+#' @param x A `stars` object containing the spatial and functional dimensions.
+#' @param spnames Character vector with the names of the spatial dimensions of `x`.
 #'        Use a single name (e.g. `"geometry"`) for vector geometry data, or two names
-#'        (e.g. `c("x", "y")`) for raster data.
-#' @param fun_dims Character vector with the names of the functional dimensions of `stdata`
-#'        (e.g. `"time"`).
+#'        (e.g. `c("x", "y")`) for raster data. Functional dimensions are derived
+#'        automatically as all remaining dimensions.
 #'
-#' @return A long-format data frame with columns `id` (flat array index), `ids` (flat
-#'         spatial index, 1 to ns), `idf_<dimname>` for each functional dimension, and
-#'         all variables from `stdata`.
+#' @return A long-format data frame with columns `id` (flat array position in the original
+#'         stars object, column-major over all dimensions), `ids` (flat spatial index,
+#'         column-major over `spnames`, `spnames[1]` varies fastest), `id_<dimname>` for
+#'         each functional dimension, and all variables from `x`. All rows are
+#'         returned; `ids` is not remapped to `1..n_valid`.
 #'
 #' @examples
 #'
@@ -179,108 +196,32 @@ correction_required <- function (formula) {
 #'
 #' @importFrom stars expand_dimensions
 #' @export
-data_all <- function(stdata, sp_dims = "geometry", fun_dims = "time") {
-  validate_stdata_input(stdata, sp_dims, fun_dims)
-  stdata[["id"]] <- 1:prod(dim(stdata))
-  valid_ids <- attr(stdata, "valid_ids")
+data_all <- function(x, spnames = "geometry") {
+  validate_stdata_input(x, spnames)
+  spnames <- spnames[order(match(spnames, dimnames(x)))]
+  x[["id"]] <- seq_len(prod(dim(x)))
 
-  dims <- expand_dimensions(stdata)
-
-  # replace spatial dim values with sequential indices, functional dims with order
-  sp_sizes <- setNames(sapply(sp_dims, function(d) length(dims[[d]])), sp_dims)
-  for (d in sp_dims) dims[[d]] <- seq_len(sp_sizes[[d]])
-  for (d in fun_dims) dims[[d]] <- order(dims[[d]])
-
-  # full grid; row order matches as.data.frame(stdata)
-  grid <- do.call(expand.grid, dims)
-
-  # flat spatial index (column-major over sp_dims)
-  if (length(sp_dims) == 1) {
-    ids <- grid[[sp_dims]]
-  } else {
-    strides <- cumprod(c(1L, as.integer(sp_sizes[-length(sp_sizes)])))
-    ids <- as.integer(as.matrix(grid[sp_dims] - 1L) %*% strides) + 1L
+  # dimensions in long format
+  dims0 <- expand_dimensions(x)
+  spsizes <- dim(x)[spnames]
+  dims <- list()
+  for (d in names(dims0)) {
+    if (d %in% spnames) dims[[d]] <- seq_len(spsizes[[d]])
+    else dims[[paste0("id_", d)]] <- order(dims0[[d]])
   }
+  dims <- do.call(expand.grid, dims)
+  dims <- cbind(ids = spatial_index(dims, spsizes), dims[!names(dims) %in% spnames])
 
-  fun_cols <- setNames(as.data.frame(grid[fun_dims]), paste0("idf_", fun_dims))
-
-  stdata_df <- as.data.frame(stdata)
-  result <- cbind(stdata_df["id"], ids = ids, fun_cols,
-                  stdata_df[, !names(stdata_df) %in% c("id", sp_dims), drop = FALSE])
-
-  # for raster: filter to valid (non-all-NA) pixels and remap ids to analysis indices
-  if (!is.null(valid_ids)) {
-    result <- result[result$ids %in% valid_ids, ]
-    result$ids <- match(result$ids, valid_ids)
-    result$id  <- seq_len(nrow(result))
-  }
-
-  result
+  # merge dimensions and dataframe
+  df <- as.data.frame(x)
+  cbind(df["id"], dims, df[, !names(df) %in% c("id", spnames), drop = FALSE])
 }
 
-#' Prepare data for a cluster
-#'
-#' Subset a spatio-functional dataset to a single cluster and convert it to long format.
-#'
-#' @param k The cluster number to subset.
-#' @param membership A vector defining the cluster membership for each spatial unit.
-#' @param stdata A stars object containing the spatial and functional dimensions.
-#' @param sp_dims Character vector with the names of the spatial dimensions of `stdata`.
-#'        Use a single name (e.g. `"geometry"`) for vector geometry data, or two names
-#'        (e.g. `c("x", "y")`) for raster data.
-#' @param fun_dims Character vector with the names of the functional dimensions of `stdata`
-#'        (e.g. `"time"`).
-#'
-#' @return A long-format data frame for cluster `k` with columns `id`, `ids`, `idf_<dimname>`
-#'         for each functional dimension, and all variables from `stdata`.
-#'
-#' @examples
-#'
-#' library(sfclust)
-#' library(stars)
-#'
-#' dims <- st_dimensions(
-#'   geometry = st_sfc(lapply(1:5, function(i) st_point(c(i, i)))),
-#'   time = seq(as.Date("2024-01-01"), by = "1 day", length.out = 3)
-#' )
-#' stdata <- st_as_stars(cases = array(1:15, dim = c(5, 3)), dimensions = dims)
-#'
-#' data_each(k = 2, membership = c(1, 1, 1, 2, 2), stdata)
-#'
-#' @importFrom stars expand_dimensions
-#' @importFrom dplyr filter
-#' @export
-data_each <- function(k, membership, stdata, sp_dims = "geometry", fun_dims = "time") {
-  validate_stdata_input(stdata, sp_dims, fun_dims)
-  stdata[["id"]] <- 1:prod(dim(stdata))
-
-  cluster_sp_ids <- which(membership == k)
-
-  if (length(sp_dims) == 1) {
-    stdata <- filter(stdata, !!as.name(sp_dims) %in% cluster_sp_ids)
-
-    dims <- expand_dimensions(stdata)
-    dims[[sp_dims]] <- cluster_sp_ids
-    for (d in fun_dims) dims[[d]] <- order(dims[[d]])
-
-    grid <- do.call(expand.grid, dims)
-    fun_cols <- setNames(as.data.frame(grid[fun_dims]), paste0("idf_", fun_dims))
-
-    stdata_df <- as.data.frame(stdata)
-    cbind(stdata_df["id"], ids = grid[[sp_dims]], fun_cols,
-          stdata_df[, !names(stdata_df) %in% c("id", sp_dims), drop = FALSE])
-  } else {
-    all_data <- data_all(stdata, sp_dims, fun_dims)
-    all_data[all_data$ids %in% cluster_sp_ids, , drop = FALSE]
+validate_stdata_input <- function(x, spnames) {
+  if (!inherits(x, "stars")) {
+    stop("Argument `x` must be a `stars` object.")
   }
-}
-
-validate_stdata_input <- function(stdata, sp_dims, fun_dims) {
-  if (!inherits(stdata, "stars")) {
-    stop("Argument `stdata` must be a `stars` object.")
-  }
-  all_dims <- c(sp_dims, fun_dims)
-  if (any(!(all_dims %in% dimnames(stdata)))) {
-    stop("Dimension names in `sp_dims` and `fun_dims` not found in stars object `stdata`.")
+  if (any(!(spnames %in% dimnames(x)))) {
+    stop("Dimension names in `spnames` not found in stars object.")
   }
 }

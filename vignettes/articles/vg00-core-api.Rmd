@@ -38,10 +38,10 @@ adj <- adj_bin * weights
 ```
 
 ```{r}
-geodata <- sfclust:::genclust_adj(adj, nclust = 10)
+geodata <- genclust(adj, nclust = 10)
 
-result <- sfclust:::sfclust_fit(
-  df, adj, graphdata = geodata,
+result <- sfclust(
+  df, adj, graphdata = geodata, fun_col = "idf_time",
   formula = cases ~ poly(idf_time, 2) + f(id),
   family  = "binomial", Ntrials = population,
   niter = 5, burnin = 0, thin = 1, nmessage = 5
@@ -54,6 +54,6 @@ summary(result)
 ```
 
 ```{r}
-plot_clusters_fitted(result, fun_col = "idf_time")
+plot_clusters_fitted(result)
 plot_log_mlik(result)
 ```

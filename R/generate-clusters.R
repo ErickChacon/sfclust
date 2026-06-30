@@ -12,6 +12,7 @@
 #' @param weights Optional numeric vector or matrix of edge weights with `n^2` elements,
 #'   where `n` is the number of spatial units. Smaller values indicate stronger similarity
 #'   between units. If `NULL`, random weights are assigned. Not applicable for `stars` input.
+#' @param ... Not used; required for S3 method consistency.
 #'
 #' @return A list with:
 #'   - `graph`: undirected igraph object representing spatial contiguity.
@@ -23,17 +24,28 @@
 #'
 #' library(sfclust)
 #' library(sf)
-#'
-#' x <- st_make_grid(cellsize = c(1, 1), offset = c(0, 0), n = c(3, 2))
+#' library(stars)
 #'
 #' # sfc input with custom weights
-#' clust <- genclust(x, nclust = 3, weights = as.numeric(st_distance(st_centroid(x))))
+#' x <- st_make_grid(cellsize = c(1, 1), offset = c(0, 0), n = c(3, 2))
+#' clust <- genclust(x, nclust = 3, weights = st_distance(st_centroid(x)))
 #' plot(st_sf(x, cluster = factor(clust$membership)))
 #'
-#' # matrix input (weighted adjacency)
-#' adj <- as(sf::st_touches(x), "matrix") * runif(36)
-#' clust <- genclust(adj, nclust = 3)
+#' # sfc input with random weights
+#' x <- st_make_grid(cellsize = c(1, 1), offset = c(0, 0), n = c(3, 4))
+#' clust <- genclust(x, nclust = 3, weights = runif(36))
 #' plot(st_sf(x, cluster = factor(clust$membership)))
+#'
+#' # stars raster input
+#' x <- st_as_stars(cluster = matrix(1:35, 5))
+#' clust <- genclust(x, nclust = 4)
+#' x$cluster <- clust$membership
+#' plot(x, col = rainbow(4))
+#'
+#' # matrix input
+#' x <- matrix(c(0,1,0,1, 1,0,1,0, 0,1,0,1, 1,0,1,0), nrow = 4)
+#' clust <- genclust(x, nclust = 2)
+#' clust$membership
 #'
 #' @export
 genclust <- function(x, ...) UseMethod("genclust")
@@ -47,7 +59,7 @@ genclust.default <- function(x, ...) {
 
 #' @rdname genclust
 #' @export
-genclust.matrix <- function(x, nclust = 10, weights = NULL) {
+genclust.matrix <- function(x, nclust = 10, weights = NULL, ...) {
   validate_nclust(nclust, dim(x)[1])
   if (is.null(weights)) weights <- runif(length(x))
   result <- genclust_adj(x * weights, nclust = nclust)
@@ -57,7 +69,7 @@ genclust.matrix <- function(x, nclust = 10, weights = NULL) {
 
 #' @rdname genclust
 #' @export
-genclust.Matrix <- function(x, nclust = 10, weights = NULL) {
+genclust.Matrix <- function(x, nclust = 10, weights = NULL, ...) {
   genclust.matrix(x, nclust = nclust, weights = weights)
 }
 
@@ -65,7 +77,7 @@ genclust.Matrix <- function(x, nclust = 10, weights = NULL) {
 #' @importFrom methods as
 #' @importFrom sf st_touches
 #' @export
-genclust.sfc <- function(x, nclust = 10, weights = NULL) {
+genclust.sfc <- function(x, nclust = 10, weights = NULL, ...) {
   adj <- as(st_touches(x), "matrix") * 1L
   genclust.matrix(adj, nclust = nclust, weights = weights)
 }
@@ -73,7 +85,7 @@ genclust.sfc <- function(x, nclust = 10, weights = NULL) {
 #' @rdname genclust
 #' @importFrom sf st_geometry
 #' @export
-genclust.sf <- function(x, nclust = 10, weights = NULL) {
+genclust.sf <- function(x, nclust = 10, weights = NULL, ...) {
   genclust.sfc(st_geometry(x), nclust = nclust, weights = weights)
 }
 
@@ -84,13 +96,14 @@ genclust.sf <- function(x, nclust = 10, weights = NULL) {
 #'   [stars::st_dimensions()].
 #' @importFrom stars st_dimensions
 #' @export
-genclust.stars <- function(x, nclust = 10, sp_dims = NULL) {
+genclust.stars <- function(x, nclust = 10, sp_dims = NULL, ...) {
   dims <- st_dimensions(x)
   if (is.null(sp_dims)) {
     sp_dims <- names(dims)[!is.na(sapply(dims, function(d) d$delta))]
     if (length(sp_dims) != 2)
       stop("Could not auto-detect 2 spatial dimensions from `stars` object. Provide `sp_dims`.")
   }
+  sp_dims <- intersect(names(dim(x)), sp_dims)
   sp_margins <- match(sp_dims, names(dim(x)))
   valid_ids  <- which(apply(x[[1]], sp_margins, function(v) !all(is.na(v))))
   A   <- raster_adjacency(dim(x)[sp_dims[1]], dim(x)[sp_dims[2]])
@@ -107,7 +120,7 @@ validate_nclust <- function(nclust, n) {
     stop("`nclust` must be smaller than number of regions.")
 }
 
-#' @importFrom igraph graph_from_adjacency_matrix mst V vcount ecount delete_edges components
+#' @importFrom igraph graph_from_adjacency_matrix mst V "V<-" vcount ecount delete_edges components
 #' @importFrom Matrix sparseMatrix
 NULL
 
