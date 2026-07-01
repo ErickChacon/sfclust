@@ -57,7 +57,10 @@ log_mlik_all <- function(membership, data, correction = TRUE, detailed = FALSE, 
 
 get_data <- function(object) {
   if (inherits(object, "sfclust_stars")) {
-    data_all(attr(object, "stdata"), attr(object, "sp_dims"))
+    filter_df(
+      data_all(attr(object, "stdata"), attr(object, "spnames")),
+      create_domain(attr(object, "stdata"), attr(object, "spnames"), attr(object, "args")$response)
+    )
   } else {
     attr(object, "args")$data
   }
@@ -224,4 +227,28 @@ validate_stdata_input <- function(x, spnames) {
   if (any(!(spnames %in% dimnames(x)))) {
     stop("Dimension names in `spnames` not found in stars object.")
   }
+}
+
+
+#' @importFrom stars st_apply
+create_domain <- function(x, spnames, response = NULL) {
+  if (is.null(response)) {
+    st_apply(x[1], spnames, function(v) TRUE)
+  } else {
+    st_apply(x[response], spnames, function(v) any(!is.na(v)))
+  }
+}
+
+#' Filter a long-format data frame to valid spatial cells
+#'
+#' Keeps only rows whose spatial index (`ids`) corresponds to a valid cell in
+#' `domain`, then remaps `ids` to `1..n_valid`.
+#'
+#' @param df A long-format data frame as returned by [data_all()].
+#' @param domain A spatial-only `stars` object as returned by [create_domain()].
+#'
+#' @return A filtered data frame with rows corresponding to valid spatial cells only.
+filter_df <- function(df, domain) {
+  valid_ids <- which(domain[[1]])
+  df[df$ids %in% valid_ids, , drop = FALSE]
 }

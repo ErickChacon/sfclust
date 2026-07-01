@@ -4,26 +4,28 @@
 \alias{data_all}
 \title{Prepare data in long format}
 \usage{
-data_all(stdata, sp_dims = "geometry", fun_dims = "time")
+data_all(x, spnames = "geometry")
 }
 \arguments{
-\item{stdata}{A stars object containing the spatial and functional dimensions.}
+\item{x}{A \code{stars} object containing the spatial and functional dimensions.}
 
-\item{sp_dims}{Character vector with the names of the spatial dimensions of \code{stdata}.
+\item{spnames}{Character vector with the names of the spatial dimensions of \code{x}.
 Use a single name (e.g. \code{"geometry"}) for vector geometry data, or two names
-(e.g. \code{c("x", "y")}) for raster data.}
-
-\item{fun_dims}{Character vector with the names of the functional dimensions of \code{stdata}
-(e.g. \code{"time"}).}
+(e.g. \code{c("x", "y")}) for raster data. Functional dimensions are derived
+automatically as all remaining dimensions.}
 }
 \value{
-A long-format data frame with columns \code{id} (flat array index), \code{ids} (flat
-spatial index, 1 to ns), \verb{idf_<dimname>} for each functional dimension, and
-all variables from \code{stdata}.
+A long-format data frame with columns \code{id} (flat array position in the original
+stars object, column-major over all dimensions), \code{ids} (flat spatial index,
+column-major over \code{spnames}, \code{spnames[1]} varies fastest), \verb{id_<dimname>} for
+each functional dimension, and all variables from \code{x}. All rows are
+returned; \code{ids} is not remapped to \verb{1..n_valid}.
 }
 \description{
-Convert spatio-functional data to long format with a flat spatial index (\code{ids}) and
-ordered functional indices (\verb{idf_<dimname>} for each functional dimension).
+Convert spatio-temporal data to long format with a flat spatial index (\code{ids}) and
+ordered observation indices (\verb{idf_<dimname>} for each non-spatial dimension).
+This is a pure converter: all rows are returned including cells that are all-NA.
+No filtering is applied. Use \code{filter_df()} downstream to restrict to valid cells.
 }
 \examples{
 

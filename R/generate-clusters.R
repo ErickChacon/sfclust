@@ -1,24 +1,24 @@
+
 #' Generate initial cluster assignments
 #'
 #' Creates an undirected graph from spatial data or a weighted adjacency matrix,
 #' computes its minimum spanning tree (MST), and partitions it into `nclust` clusters.
-#' Accepts `sf` and `sfc` objects (contiguity via [sf::st_touches()]), weighted
-#' `matrix` or `Matrix` objects, and `stars` rasters (4-connected grid adjacency for
-#' non-NA pixels).
+#' Accepts weighted `matrix` or `Matrix` objects, and `stars` objects with either
+#' vector geometry (contiguity via [sf::st_touches()]) or raster dimensions
+#' (4-connected grid adjacency for non-NA pixels).
 #'
 #' @param x Spatial data or adjacency matrix. Accepted classes: `matrix`, `Matrix`,
-#'   `sf`, `sfc` (vector geometry), or `stars` (raster).
+#'   or `stars`.
 #' @param nclust Integer. Number of initial clusters (default `10`).
 #' @param weights Optional numeric vector or matrix of edge weights with `n^2` elements,
 #'   where `n` is the number of spatial units. Smaller values indicate stronger similarity
-#'   between units. If `NULL`, random weights are assigned. Not applicable for `stars` input.
+#'   between units. If `NULL`, random weights are assigned.
 #' @param ... Not used; required for S3 method consistency.
 #'
 #' @return A list with:
 #'   - `graph`: undirected igraph object representing spatial contiguity.
 #'   - `mst`: minimum spanning tree of `graph`.
 #'   - `membership`: integer vector of cluster assignments (length = number of spatial units).
-#'   - `valid_ids`: integer vector of non-NA pixel indices for `stars` input; `NULL` otherwise.
 #'
 #' @examples
 #'
@@ -26,15 +26,11 @@
 #' library(sf)
 #' library(stars)
 #'
-#' # sfc input with custom weights
-#' x <- st_make_grid(cellsize = c(1, 1), offset = c(0, 0), n = c(3, 2))
-#' clust <- genclust(x, nclust = 3, weights = st_distance(st_centroid(x)))
-#' plot(st_sf(x, cluster = factor(clust$membership)))
-#'
-#' # sfc input with random weights
-#' x <- st_make_grid(cellsize = c(1, 1), offset = c(0, 0), n = c(3, 4))
-#' clust <- genclust(x, nclust = 3, weights = runif(36))
-#' plot(st_sf(x, cluster = factor(clust$membership)))
+#' # stars object with vector geometry
+#' geom <- st_make_grid(cellsize = c(1, 1), offset = c(0, 0), n = c(3, 2))
+#' x <- st_as_stars(st_sf(z = 1:6, geometry = geom))
+#' clust <- genclust(x, nclust = 3)
+#' plot(st_sf(geom, cluster = factor(clust$membership)))
 #'
 #' # stars raster input
 #' x <- st_as_stars(cluster = matrix(1:35, 5))
@@ -50,21 +46,38 @@
 #' @export
 genclust <- function(x, ...) UseMethod("genclust")
 
+#' @importFrom stars st_dimensions
+#' @importFrom methods as
+#' @importFrom sf st_touches
+create_adj <- function(domain, weights = NULL) {
+  valid_ids <- which(domain[[1]])
+  spnames <- dimnames(domain)
+  if (length(spnames) == 1) {
+    geom <- st_dimensions(domain)[[spnames]]$values
+    adj <- as(st_touches(geom), "matrix") * 1L
+  } else if (length(spnames) == 2) {
+    adj <- raster_adjacency(dim(domain)[[1]], dim(domain)[[2]])
+  } else {
+    stop("create_adj only supports 1 (geometry) or 2 (raster x/y) spatial dimensions.")
+  }
+  if (is.null(weights)) weights <- runif(length(adj))
+  adj <- adj * weights
+  adj[valid_ids, valid_ids, drop = FALSE]
+}
+
 #' @rdname genclust
 #' @export
 genclust.default <- function(x, ...) {
   stop("No genclust method for class '", paste(class(x), collapse = "/"), "'. ",
-       "Provide a matrix, Matrix, sf, sfc, or stars object.")
+       "Provide a matrix, Matrix, or stars object.")
 }
 
 #' @rdname genclust
 #' @export
 genclust.matrix <- function(x, nclust = 10, weights = NULL, ...) {
-  validate_nclust(nclust, dim(x)[1])
+  validate_nclust(nclust, nrow(x))
   if (is.null(weights)) weights <- runif(length(x))
-  result <- genclust_adj(x * weights, nclust = nclust)
-  result$valid_ids <- NULL
-  result
+  genclust_adj(x * weights, nclust = nclust)
 }
 
 #' @rdname genclust
@@ -73,51 +86,42 @@ genclust.Matrix <- function(x, nclust = 10, weights = NULL, ...) {
   genclust.matrix(x, nclust = nclust, weights = weights)
 }
 
-#' @rdname genclust
-#' @importFrom methods as
-#' @importFrom sf st_touches
-#' @export
-genclust.sfc <- function(x, nclust = 10, weights = NULL, ...) {
-  adj <- as(st_touches(x), "matrix") * 1L
-  genclust.matrix(adj, nclust = nclust, weights = weights)
-}
 
-#' @rdname genclust
-#' @importFrom sf st_geometry
-#' @export
-genclust.sf <- function(x, nclust = 10, weights = NULL, ...) {
-  genclust.sfc(st_geometry(x), nclust = nclust, weights = weights)
-}
 
 #' @rdname genclust
 #' @param nclust Integer. Number of initial clusters (default `10`).
-#' @param sp_dims Character vector with the names of the two spatial dimensions. If
+#' @param spnames Character vector with the names of the spatial dimensions. If
 #'   `NULL`, auto-detected as dimensions with a non-`NA` regular `delta` in
 #'   [stars::st_dimensions()].
+#' @param response Character. Name of the attribute in `x` to use for determining
+#'   valid spatial cells (cells where all observations are NA are excluded).
+#'   If `NULL` (default), all spatial cells are treated as valid.
+#' @param weights Optional numeric vector of edge weights with `n^2` elements,
+#'   where `n` is the total number of spatial units (before filtering). If `NULL`,
+#'   random weights are assigned.
 #' @importFrom stars st_dimensions
 #' @export
-genclust.stars <- function(x, nclust = 10, sp_dims = NULL, ...) {
-  dims <- st_dimensions(x)
-  if (is.null(sp_dims)) {
-    sp_dims <- names(dims)[!is.na(sapply(dims, function(d) d$delta))]
-    if (length(sp_dims) != 2)
-      stop("Could not auto-detect 2 spatial dimensions from `stars` object. Provide `sp_dims`.")
+genclust.stars <- function(x, nclust = 10, spnames = NULL, response = NULL, weights = NULL, ...) {
+  if (is.null(spnames)) {
+    dims <- st_dimensions(x)
+    spnames <- names(dims)[!is.na(sapply(dims, function(d) d$delta))]
+    if (length(spnames) != 2) {
+      geom_dims <- names(dims)[sapply(dims, function(d) inherits(d$values, "sfc"))]
+      if (length(geom_dims) == 1) spnames <- geom_dims
+      else stop("Could not auto-detect spatial dimensions from `stars` object. Provide `spnames`.")
+    }
   }
-  sp_dims <- intersect(names(dim(x)), sp_dims)
-  sp_margins <- match(sp_dims, names(dim(x)))
-  valid_ids  <- which(apply(x[[1]], sp_margins, function(v) !all(is.na(v))))
-  A   <- raster_adjacency(dim(x)[sp_dims[1]], dim(x)[sp_dims[2]])
-  adj <- A[valid_ids, valid_ids, drop = FALSE]
-  result <- genclust_adj(adj * runif(length(adj)), nclust = nclust)
-  result$valid_ids <- valid_ids
-  result
+  domain <- create_domain(x, spnames, response)
+  adj <- create_adj(domain, weights)
+  validate_nclust(nclust, nrow(adj))
+  genclust_adj(adj, nclust = nclust)
 }
 
 validate_nclust <- function(nclust, n) {
   if (!is.numeric(nclust) || length(nclust) != 1 || nclust < 1)
     stop("`nclust` must be a positive integer.")
   if (nclust > n)
-    stop("`nclust` must be smaller than number of regions.")
+    stop("`nclust` must be smaller than number of valid spatial units.")
 }
 
 #' @importFrom igraph graph_from_adjacency_matrix mst V "V<-" vcount ecount delete_edges components

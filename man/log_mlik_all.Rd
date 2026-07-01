@@ -11,8 +11,8 @@ log_mlik_all(membership, data, correction = TRUE, detailed = FALSE, ...)
 for each spatial unit.}
 
 \item{data}{A long-format data frame as returned by \code{\link[=data_all]{data_all()}}, with columns \code{id}
-(flat index), \code{ids} (spatial unit index, 1 to ns), functional index columns
-(\verb{idf_<dimname>}), and all response/covariate variables.}
+(flat array position), \code{ids} (spatial unit index, 1 to ns), observation index
+columns (\verb{idf_<dimname>}), and all response/covariate variables.}
 
 \item{correction}{Logical value indicating whether a correction for dispersion.}
 

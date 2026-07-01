@@ -10,7 +10,7 @@ test_that("genclust input validation", {
   expect_error(genclust(x, nclust = 0), "`nclust` must be a positive integer.")
   expect_error(genclust(x, nclust = -1), "`nclust` must be a positive integer.")
   expect_error(genclust(x, nclust = "3"), "`nclust` must be a positive integer.")
-  expect_error(genclust(x, nclust = 10), "`nclust` must be smaller than number of regions.")
+  expect_error(genclust(x, nclust = 10), "`nclust` must be smaller than number of valid spatial units.")
 })
 
 test_that("genclust for matrix input", {
@@ -23,12 +23,13 @@ test_that("genclust for matrix input", {
   expect_equal(unname(cluster_ini$membership), c(1, 2, 2, 2, 2, 3))
 })
 
-test_that("genclust for sfc objects", {
-  x <- st_make_grid(cellsize = c(1, 1), offset = c(0, 0), n = c(3, 2))
+test_that("genclust for stars with vector geometry", {
+  geom <- st_make_grid(cellsize = c(1, 1), offset = c(0, 0), n = c(3, 2))
+  x <- st_as_stars(st_sf(z = 1:6, geometry = geom))
 
-  ## weights based in distance
+  ## weights based on distance
   set.seed(42)
-  cluster_ini <- genclust(x, nclust = 3, weights = st_distance(st_centroid(x)))
+  cluster_ini <- genclust(x, nclust = 3, weights = st_distance(st_centroid(geom)))
 
   i <- c(1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 5)
   j <- c(2, 4, 5, 3, 4, 5, 6, 5, 6, 5, 6)
@@ -44,7 +45,7 @@ test_that("genclust for sfc objects", {
 
   ## weights as sequence
   set.seed(42)
-  cluster_ini <- genclust(x, nclust = 3, weights = 1:length(x)^2)
+  cluster_ini <- genclust(x, nclust = 3, weights = 1:6^2)
 
   i <- c(1, 1, 1, 2, 2, 2, 2, 3, 3, 4, 5)
   j <- c(2, 4, 5, 3, 4, 5, 6, 5, 6, 5, 6)
@@ -66,8 +67,7 @@ test_that("genclust for stars raster input", {
   clust <- genclust(x, nclust = 4)
 
   expect_equal(length(clust$membership), 35)
-  expect_false(is.null(clust$valid_ids))
-  expect_equal(length(clust$valid_ids), 35)
+  expect_null(clust$valid_ids)
   expect_equal(length(unique(clust$membership)), 4)
   expect_true(igraph::is_igraph(clust$graph))
   expect_true(igraph::is_igraph(clust$mst))

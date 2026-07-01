@@ -32,8 +32,8 @@ sfclust(x, ...)
 \method{sfclust}{stars}(
   x,
   graphdata = NULL,
-  sp_dims = "geometry",
-  fun_dims = "time",
+  spnames = "geometry",
+  response = names(x)[1],
   move_prob = c(0.425, 0.425, 0.1, 0.05),
   logpen = log(1 - 0.5),
   correction = TRUE,
@@ -105,7 +105,7 @@ of effects included in the \code{INLA} model.}
 \item{nsave}{An integer specifying the number of iterations between saved results
 (default is \code{nmessage}).}
 
-\item{sp_dims}{Character vector with the names of the spatial dimensions of \code{stdata}.
+\item{spnames}{Character vector with the names of the spatial dimensions of \code{stdata}.
 Use a single name (e.g. \code{"geometry"}) for vector geometry data, or two names
 (e.g. \code{c("x", "y")}) for raster data. Default is \code{"geometry"}.}
 
@@ -120,7 +120,7 @@ inheriting from \code{sfclust} (from \code{sfclust.stars}). Both contain:
 \item \code{clust}: selected clustering with \code{id}, \code{membership}, and fitted \code{models}.
 }
 
-\code{sfclust_stars} additionally carries attributes \code{stdata}, \code{sp_dims}, \code{fun_dims},
+\code{sfclust_stars} additionally carries attributes \code{stdata}, \code{spnames}, \code{fun_dims},
 and \code{valid_ids} used by spatial plot methods.
 }
 \description{

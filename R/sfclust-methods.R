@@ -134,7 +134,7 @@ update.sfclust_stars <- function(object, niter = 100, burnin = 0, thin = 1, nmes
                                  sample = NULL, path_save = NULL, nsave = nmessage, ...) {
   result <- NextMethod()
   attr(result, "stdata")       <- attr(object, "stdata")
-  attr(result, "sp_dims")      <- attr(object, "sp_dims")
+  attr(result, "spnames")      <- attr(object, "spnames")
   attr(result, "fun_dims")     <- attr(object, "fun_dims")
   attr(result, "valid_ids")    <- attr(object, "valid_ids")
   attr(result, "args")$fun_col <- attr(object, "args")$fun_col
@@ -246,13 +246,13 @@ fitted.sfclust_stars <- function(object, sample = object$clust$id, sort = FALSE,
   pred <- NextMethod()
 
   stdata_ref <- attr(object, "stdata")
-  sp_dims    <- attr(object, "sp_dims")
+  spnames    <- attr(object, "spnames")
   stars_obj  <- stdata_ref[0]
   valid_ids  <- attr(object, "valid_ids")
 
   if (!is.null(valid_ids)) {
-    n_sp     <- prod(dim(stdata_ref)[sp_dims])
-    n_fun    <- prod(dim(stdata_ref)[setdiff(names(dim(stdata_ref)), sp_dims)])
+    n_sp     <- prod(dim(stdata_ref)[spnames])
+    n_fun    <- prod(dim(stdata_ref)[setdiff(names(dim(stdata_ref)), spnames)])
     n_valid  <- length(valid_ids)
     full_idx <- rep(valid_ids, times = n_fun) +
                 rep((seq_len(n_fun) - 1L) * n_sp, each = n_valid)
@@ -267,7 +267,7 @@ fitted.sfclust_stars <- function(object, sample = object$clust$id, sort = FALSE,
 
   if (aggregate) {
     membership <- object$samples$membership[object$clust$id, ]
-    if (length(sp_dims) > 1) {
+    if (length(spnames) > 1) {
       warning("`aggregate = TRUE` is not supported for raster data.", call. = FALSE)
     } else {
       geom_clusters <- lapply(
@@ -392,23 +392,23 @@ plot_clusters_map <- function(x, sample = x$clust$id, clusters = NULL, sort = FA
   nsamples <- check_sample_and_get_nsample(x, sample)
   aux      <- get_membership_and_clusters(x, sample, sort, clusters)
   stdata   <- attr(x, "stdata")
-  sp_dims  <- attr(x, "sp_dims")
+  spnames  <- attr(x, "spnames")
 
   membership <- aux$membership
   membership[!(membership %in% aux$clusters)] <- NA
   membership <- factor(membership)
 
-  if (length(sp_dims) == 1) {
-    geoms <- st_get_dimension_values(stdata, sp_dims)
+  if (length(spnames) == 1) {
+    geoms <- st_get_dimension_values(stdata, spnames)
     gg <- ggplot(st_sf(geometry = geoms, membership = membership))
     if (!is.null(geom_before)) gg <- gg + geom_before
     gg <- gg + geom_sf(aes(fill = membership), shape = 21, ...)
   } else {
     dims    <- expand_dimensions(stdata)
-    x_vals  <- dims[[sp_dims[1]]]
-    y_vals  <- dims[[sp_dims[2]]]
+    x_vals  <- dims[[spnames[1]]]
+    y_vals  <- dims[[spnames[2]]]
     sp_grid <- expand.grid(x_vals, y_vals)
-    names(sp_grid) <- sp_dims
+    names(sp_grid) <- spnames
     valid_ids <- attr(x, "valid_ids")
     if (!is.null(valid_ids)) {
       full_membership <- rep(NA_integer_, nrow(sp_grid))
@@ -416,7 +416,7 @@ plot_clusters_map <- function(x, sample = x$clust$id, clusters = NULL, sort = FA
       membership <- factor(full_membership)
     }
     sp_grid$membership <- membership
-    gg <- ggplot(sp_grid, aes(!!as.name(sp_dims[1]), !!as.name(sp_dims[2]), fill = membership)) +
+    gg <- ggplot(sp_grid, aes(!!as.name(spnames[1]), !!as.name(spnames[2]), fill = membership)) +
       geom_raster() +
       ggplot2::coord_equal()
     if (!is.null(geom_before)) gg <- gg + geom_before
@@ -540,22 +540,22 @@ plot_clusters_series.sfclust_stars <- function(x, var, clusters = NULL, sort = F
   fitted_df <- as.data.frame(fitted(x, sort = sort))
 
   stdata  <- attr(x, "stdata")
-  sp_dims <- attr(x, "sp_dims")
+  spnames <- attr(x, "spnames")
 
   stdata$cluster <- fitted_df$cluster
   if (is.null(clusters)) clusters <- 1:max(stdata$cluster, na.rm = TRUE)
 
-  if (length(sp_dims) == 1) {
-    ns <- length(st_get_dimension_values(stdata, sp_dims))
+  if (length(spnames) == 1) {
+    ns <- length(st_get_dimension_values(stdata, spnames))
     auxdata <- stdata |>
-      st_set_dimensions(sp_dims, values = 1:ns) |>
+      st_set_dimensions(spnames, values = 1:ns) |>
       as.data.frame()
-    sp_id_col <- sp_dims
+    sp_id_col <- spnames
   } else {
     auxdata <- as.data.frame(stdata)
-    nx <- length(unique(auxdata[[sp_dims[1]]]))
-    iy_idx <- as.integer(factor(auxdata[[sp_dims[2]]]))
-    ix_idx <- as.integer(factor(auxdata[[sp_dims[1]]]))
+    nx <- length(unique(auxdata[[spnames[1]]]))
+    iy_idx <- as.integer(factor(auxdata[[spnames[2]]]))
+    ix_idx <- as.integer(factor(auxdata[[spnames[1]]]))
     auxdata$.sp_id <- (iy_idx - 1L) * nx + ix_idx
     sp_id_col <- ".sp_id"
   }
