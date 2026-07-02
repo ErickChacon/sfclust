@@ -41,7 +41,7 @@ test_that("genclust for stars with vector geometry", {
   A <- sparseMatrix(i = i, j = j, x = 1, dims = c(6, 6), symmetric = TRUE)
   expect_equal(unname(as_adjacency_matrix(cluster_ini$mst)), as(A, "generalMatrix"))
 
-  expect_equal(unname(cluster_ini$membership), c(1, 2, 2, 3, 3, 2))
+  expect_equal(unname(cluster_ini$membership), c(1, 2, 3, 1, 1, 3))
 
   ## weights as sequence
   set.seed(42)
@@ -67,7 +67,7 @@ test_that("genclust for stars raster input", {
   clust <- genclust(x, nclust = 4)
 
   expect_equal(length(clust$membership), 35)
-  expect_null(clust$valid_ids)
+  expect_equal(clust$valid_ids, 1:35)
   expect_equal(length(unique(clust$membership)), 4)
   expect_true(igraph::is_igraph(clust$graph))
   expect_true(igraph::is_igraph(clust$mst))

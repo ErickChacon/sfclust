@@ -18,7 +18,9 @@
 #' @return A list with:
 #'   - `graph`: undirected igraph object representing spatial contiguity.
 #'   - `mst`: minimum spanning tree of `graph`.
-#'   - `membership`: integer vector of cluster assignments (length = number of spatial units).
+#'   - `membership`: integer vector of cluster assignments (length = number of valid spatial units).
+#'   - `valid_ids`: integer vector of flat spatial positions included in the graph
+#'     (only present for `stars` input; `NULL` for matrix/Matrix input).
 #'
 #' @examples
 #'
@@ -46,22 +48,23 @@
 #' @export
 genclust <- function(x, ...) UseMethod("genclust")
 
-#' @importFrom stars st_dimensions
+
+
+#' @importFrom stars st_dimensions st_get_dimension_values
 #' @importFrom methods as
 #' @importFrom sf st_touches
-create_adj <- function(domain, weights = NULL) {
-  valid_ids <- which(domain[[1]])
+create_adj <- function(domain, weights = NULL, valid_ids = which(domain[[1]])) {
   spnames <- dimnames(domain)
   if (length(spnames) == 1) {
-    geom <- st_dimensions(domain)[[spnames]]$values
-    adj <- as(st_touches(geom), "matrix") * 1L
+    geom <- st_get_dimension_values(domain, spnames)
+    adj <- as(st_touches(geom), "sparseMatrix")
   } else if (length(spnames) == 2) {
     adj <- raster_adjacency(dim(domain)[[1]], dim(domain)[[2]])
   } else {
     stop("create_adj only supports 1 (geometry) or 2 (raster x/y) spatial dimensions.")
   }
   if (is.null(weights)) weights <- runif(length(adj))
-  adj <- adj * weights
+  adj <- as(adj * weights, "CsparseMatrix")
   adj[valid_ids, valid_ids, drop = FALSE]
 }
 
@@ -102,6 +105,17 @@ genclust.Matrix <- function(x, nclust = 10, weights = NULL, ...) {
 #' @importFrom stars st_dimensions
 #' @export
 genclust.stars <- function(x, nclust = 10, spnames = NULL, response = NULL, weights = NULL, ...) {
+  spnames   <- detect_spnames(x, spnames)
+  domain    <- create_domain(x, spnames, response)
+  valid_ids <- which(domain[[1]])
+  adj       <- create_adj(domain, weights, valid_ids)
+  validate_nclust(nclust, nrow(adj))
+  result <- genclust_adj(adj, nclust = min(nclust, nrow(adj)))
+  result$valid_ids <- valid_ids
+  result
+}
+
+detect_spnames <- function(x, spnames = NULL) {
   if (is.null(spnames)) {
     dims <- st_dimensions(x)
     spnames <- names(dims)[!is.na(sapply(dims, function(d) d$delta))]
@@ -111,10 +125,7 @@ genclust.stars <- function(x, nclust = 10, spnames = NULL, response = NULL, weig
       else stop("Could not auto-detect spatial dimensions from `stars` object. Provide `spnames`.")
     }
   }
-  domain <- create_domain(x, spnames, response)
-  adj <- create_adj(domain, weights)
-  validate_nclust(nclust, nrow(adj))
-  genclust_adj(adj, nclust = nclust)
+  spnames[order(match(spnames, dimnames(x)))]
 }
 
 validate_nclust <- function(nclust, n) {

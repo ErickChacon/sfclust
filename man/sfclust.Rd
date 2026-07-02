@@ -13,12 +13,11 @@ sfclust(x, ...)
 
 \method{sfclust}{data.frame}(
   x,
-  adjacency,
+  graphdata,
+  adjacency = NULL,
   fun_col = NULL,
-  graphdata = NULL,
   move_prob = c(0.425, 0.425, 0.1, 0.05),
   logpen = log(1 - 0.5),
-  nclust = 10,
   correction = TRUE,
   niter = 100,
   burnin = 0,
@@ -58,6 +57,9 @@ and other necessary data.}
 \item{...}{Additional arguments such as \code{formula}, \code{family}, and others passed to
 \code{inla()}.}
 
+\item{graphdata}{A list with components \code{graph}, \code{mst}, and \code{membership} as returned
+by \code{\link[=genclust]{genclust()}}. If \code{NULL}, it is built automatically.}
+
 \item{adjacency}{A square weighted adjacency matrix (ns × ns) encoding spatial
 contiguity and edge weights. Can be a dense \code{matrix} or a sparse \code{Matrix}.
 Typically obtained via \code{\link[igraph:as_adjacency_matrix]{igraph::as_adjacency_matrix()}} on the graph returned
@@ -66,9 +68,6 @@ by \code{\link[=genclust]{genclust()}}.}
 \item{fun_col}{Character. Name of the column in \code{x} that holds the functional
 index (e.g. \code{"idf_time"}). Used by plot methods; not required by the
 algorithm itself. Default is \code{NULL}.}
-
-\item{graphdata}{A list with components \code{graph}, \code{mst}, and \code{membership} as returned
-by \code{\link[=genclust]{genclust()}}. If \code{NULL}, it is built automatically.}
 
 \item{move_prob}{A numeric vector of probabilities for the MCMC move types: birth,
 death, change, and hyperparameter (default is \code{c(0.425, 0.425, 0.1, 0.05)}).}
@@ -79,9 +78,6 @@ follow a geometric prior with probability \code{q}, making this penalty equal to
 \code{log(1 - q)}. For example, if \code{logpen = -50}, then a proposal that increases
 the number of clusters will only be favored if it improves the log marginal
 likelihood by more than 50.}
-
-\item{nclust}{Integer. Initial number of clusters when \code{graphdata = NULL}. Ignored
-if \code{graphdata} is provided (default is \code{10}).}
 
 \item{correction}{A logical indicating whether correction to compute the marginal
 likelihoods should be applied (default is \code{TRUE}). This depends on the type
@@ -111,6 +107,9 @@ Use a single name (e.g. \code{"geometry"}) for vector geometry data, or two name
 
 \item{fun_dims}{Character vector with the names of the functional dimensions of
 \code{stdata} (e.g. \code{"time"}). Default is \code{"time"}.}
+
+\item{nclust}{Integer. Initial number of clusters when \code{graphdata = NULL}. Ignored
+if \code{graphdata} is provided (default is \code{10}).}
 }
 \value{
 An \code{sfclust} object (from \code{sfclust.data.frame}) or an \code{sfclust_stars} object

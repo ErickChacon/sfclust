@@ -5,9 +5,10 @@
 #'
 #' @param membership Integer, character or factor vector indicating the cluster membership
 #'        for each spatial unit.
-#' @param data A long-format data frame as returned by [data_all()], with columns `id`
-#'        (flat array position), `ids` (spatial unit index, 1 to ns), observation index
-#'        columns (`idf_<dimname>`), and all response/covariate variables.
+#' @param data A long-format data frame as returned by [filter_df()], with columns `id`
+#'        (flat array position), `ids` (flat spatial position), `sid` (valid-cell rank,
+#'        1 to n_valid, matching `membership` indices), observation index columns
+#'        (`id_<dimname>`), and all response/covariate variables.
 #' @param correction Logical value indicating whether a correction for dispersion.
 #' @param detailed Logical value indicating whether to return the INLA model instead of
 #'        the log marginal likelihood. The argument `correction` is not applied in this
@@ -56,14 +57,7 @@ log_mlik_all <- function(membership, data, correction = TRUE, detailed = FALSE, 
 }
 
 get_data <- function(object) {
-  if (inherits(object, "sfclust_stars")) {
-    filter_df(
-      data_all(attr(object, "stdata"), attr(object, "spnames")),
-      create_domain(attr(object, "stdata"), attr(object, "spnames"), attr(object, "args")$response)
-    )
-  } else {
-    attr(object, "args")$data
-  }
+  attr(object, "data")
 }
 
 unique_clusters <- function (membership) {
@@ -84,7 +78,7 @@ unique_clusters <- function (membership) {
 
 log_mlik_each <- function(k, membership, data, correction = TRUE, detailed = FALSE, ...) {
   cluster_units <- which(membership == k)
-  inla_data <- data[data$ids %in% cluster_units, , drop = FALSE]
+  inla_data <- data[data$sid %in% cluster_units, , drop = FALSE]
   model <- INLA::inla(
     data = inla_data,
     control.predictor = list(compute = TRUE),
@@ -241,14 +235,21 @@ create_domain <- function(x, spnames, response = NULL) {
 
 #' Filter a long-format data frame to valid spatial cells
 #'
-#' Keeps only rows whose spatial index (`ids`) corresponds to a valid cell in
-#' `domain`, then remaps `ids` to `1..n_valid`.
+#' Keeps only rows whose spatial index (`ids`) appears in `valid_ids` and adds
+#' a `sid` column (1..n_valid) giving each valid cell's rank among the valid
+#' cells. `sid` matches the indexing of `membership` vectors returned by
+#' [genclust()]. If `valid_ids` is `NULL`, all rows are kept and `sid` is
+#' assigned by rank of `ids`.
 #'
 #' @param df A long-format data frame as returned by [data_all()].
-#' @param domain A spatial-only `stars` object as returned by [create_domain()].
+#' @param valid_ids Integer vector of valid flat spatial positions, as returned
+#'   in `genclust(...)$valid_ids`. If `NULL`, all spatial cells are treated as valid.
 #'
-#' @return A filtered data frame with rows corresponding to valid spatial cells only.
-filter_df <- function(df, domain) {
-  valid_ids <- which(domain[[1]])
-  df[df$ids %in% valid_ids, , drop = FALSE]
+#' @return A filtered data frame with rows corresponding to valid spatial cells only,
+#'   with an additional `sid` column (integer, 1..n_valid).
+filter_df <- function(df, valid_ids = NULL) {
+  if (is.null(valid_ids)) valid_ids <- sort(unique(df$ids))
+  df_filtered <- df[df$ids %in% valid_ids, , drop = FALSE]
+  df_filtered$sid <- match(df_filtered$ids, valid_ids)
+  df_filtered
 }

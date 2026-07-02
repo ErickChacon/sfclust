@@ -110,8 +110,7 @@ with 20 clusters:
 
 ```{r}
 set.seed(123)
-regions <- st_geometry(stgaus)
-initial_cluster <- genclust(regions, nclust = 20)
+initial_cluster <- genclust(stgaus, nclust = 20)
 names(initial_cluster)
 ```
 
@@ -187,7 +186,7 @@ the scale hyperparameter. To begin, we will run the algorithm for only 50 iterat
 ```
 
 ```{r, eval = TRUE}
-form <- y ~ f(idf_time, model = "rw1",
+form <- y ~ f(id_time, model = "rw1",
   hyper = list(prec = list(prior = "normal", param = c(-2, 1)))
 )
 result0 <- sfclust(stgaus, graphdata = initial_cluster, formula = form,

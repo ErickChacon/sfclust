@@ -200,10 +200,9 @@ test_that("data_all: no filtering — NA cells are kept", {
   expect_equal(sort(unique(df$ids)), seq_len(nx * ny))
 })
 
-# --- log_mlik_each ids remapping ---------------------------------------
+# --- log_mlik_each sid-based subsetting --------------------------------
 
-test_that("log_mlik_each: ids remapped to 1..nk before passing to INLA", {
-  # verify that inla_data$ids is 1..nk after filtering, not the global ids
+test_that("log_mlik_each: sid correctly selects cluster rows for vector geometry", {
   ns <- 6; nt <- 3
   space <- st_sfc(lapply(seq_len(ns), function(i) st_point(c(i, i))))
   time  <- seq(as.Date("2024-01-01"), by = "1 day", length.out = nt)
@@ -211,16 +210,52 @@ test_that("log_mlik_each: ids remapped to 1..nk before passing to INLA", {
     cases = array(rpois(ns * nt, 5), dim = c(ns, nt)),
     dimensions = st_dimensions(geometry = space, time = time)
   )
-  df <- data_all(stdata)
+  domain <- create_domain(stdata, "geometry")
+  df <- filter_df(data_all(stdata), which(domain[[1]]))
   membership <- c(1, 1, 2, 2, 2, 3)
 
-  # cluster 2 has global ids 3, 4, 5 → should be remapped to 1, 2, 3
+  # no NAs: sid == ids == 1..ns; cluster 2 has sid 3, 4, 5
   cluster_units <- which(membership == 2)
-  inla_data <- df[df$ids %in% cluster_units, , drop = FALSE]
-  inla_data$ids <- match(inla_data$ids, cluster_units)
+  inla_data <- df[df$sid %in% cluster_units, , drop = FALSE]
 
-  expect_equal(sort(unique(inla_data$ids)), 1:3)
+  expect_equal(sort(unique(inla_data$sid)), 3:5)
+  expect_equal(sort(unique(inla_data$ids)), 3:5)
   expect_equal(nrow(inla_data), 3 * nt)
+})
+
+# --- ids vs membership mismatch for raster with NAs -------------------
+
+test_that("log_mlik_each: ids mismatch for raster with NA cells", {
+  # 3x2 raster where flat position 2 (cell x=2, y=1) is NA
+  # valid flat positions: 1, 3, 4, 5, 6  (n_valid = 5)
+  nx <- 3; ny <- 2; nt <- 2
+  vals <- array(seq_len(nx * ny * nt), dim = c(nx, ny, nt))
+  vals[2, 1, ] <- NA
+  x <- st_as_stars(
+    val = vals,
+    dimensions = st_dimensions(
+      x = 1:nx, y = 1:ny,
+      time = seq(as.Date("2024-01-01"), by = "1 day", length.out = nt)
+    )
+  )
+
+  domain <- create_domain(x, c("x", "y"), "val")
+  df <- filter_df(data_all(x, c("x", "y")), which(domain[[1]]))
+
+  # valid_ids maps valid unit index (1..5) -> flat position
+  valid_ids <- which(domain[[1]])   # c(1, 3, 4, 5, 6)
+
+  # membership over n_valid = 5 units
+  membership <- c(1, 2, 1, 2, 1)
+
+  # correct flat positions for cluster 1: valid units 1, 3, 5 -> flat 1, 4, 6
+  correct_flat_ids <- valid_ids[which(membership == 1)]  # c(1, 4, 6)
+
+  # sid = 1..n_valid; which(membership == 1) = c(1, 3, 5) matches sid correctly
+  cluster_units <- which(membership == 1)
+  selected_ids <- sort(unique(df$ids[df$sid %in% cluster_units]))
+
+  expect_equal(selected_ids, sort(correct_flat_ids))
 })
 
 # --- log marginal likelihood correction --------------------------------

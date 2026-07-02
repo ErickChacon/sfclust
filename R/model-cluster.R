@@ -1,15 +1,14 @@
 #' @importFrom igraph V
 NULL
 
-sfclust_fit <- function(data, adjacency, graphdata = NULL,
+sfclust_fit <- function(data, graphdata,
                         move_prob = c(0.425, 0.425, 0.1, 0.05), logpen = log(1 - 0.5),
-                        nclust = 10,
                         correction = TRUE, niter = 100, burnin = 0, thin = 1,
                         nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
 
   inla_args <- match.call(expand.dots = FALSE)$...
-  # number of regions
-  ns <- nrow(adjacency)
+  args <- list(data = data, graphdata = graphdata, move_prob = move_prob, logpen = logpen,
+               correction = correction)
 
   # check if correction is required
   if (correction) {
@@ -19,16 +18,14 @@ sfclust_fit <- function(data, adjacency, graphdata = NULL,
     }
   }
 
+  if (is.null(data$sid)) data$sid <- match(data$ids, sort(unique(data$ids)))
+
   # initial clustering
-  if (is.null(graphdata)) graphdata <- genclust_adj(adjacency, nclust = nclust)
   graph      <- graphdata[["graph"]]
   mstgraph   <- graphdata[["mst"]]
   membership <- graphdata[["membership"]]
 
-  args <- list(data = data, adjacency = adjacency,
-               graphdata = graphdata, move_prob = move_prob, logpen = logpen,
-               correction = correction)
-
+  ns         <- length(membership)
   nclust     <- max(membership)
   edge_status <- getEdgeStatus(membership, mstgraph)
   log_mlike_vec <- log_mlik_all(membership, data, correction, detailed = FALSE, ...)
@@ -190,6 +187,7 @@ sfclust_fit <- function(data, adjacency, graphdata = NULL,
   attr(output, "mst")       <- mst_out
   attr(output, "args")      <- args
   attr(output, "inla_args") <- inla_args
+  attr(output, "data")      <- data
   class(output) <- "sfclust"
 
   if (!is.null(path_save)) saveRDS(output, file = path_save)
@@ -220,16 +218,17 @@ sfclust_fit <- function(data, adjacency, graphdata = NULL,
 #'        contiguity and edge weights. Can be a dense `matrix` or a sparse `Matrix`.
 #'        Typically obtained via [igraph::as_adjacency_matrix()] on the graph returned
 #'        by [genclust()].
-#' @param fun_col Character. Name of the column in `x` that holds the functional
+#' @param fnames Character. Name of the column in `x` that holds the functional
 #'        index (e.g. `"idf_time"`). Used by plot methods; not required by the
 #'        algorithm itself. Default is `NULL`.
 #' @param graphdata A list with components `graph`, `mst`, and `membership` as returned
 #'        by [genclust()]. If `NULL`, it is built automatically.
 #' @param spnames Character vector with the names of the spatial dimensions of `stdata`.
 #'        Use a single name (e.g. `"geometry"`) for vector geometry data, or two names
-#'        (e.g. `c("x", "y")`) for raster data. Default is `"geometry"`.
-#' @param fun_dims Character vector with the names of the functional dimensions of
-#'        `stdata` (e.g. `"time"`). Default is `"time"`.
+#'        (e.g. `c("x", "y")`) for raster data. If `NULL` (default), auto-detected
+#'        from the `stars` object dimensions.
+#' @param spnames Character vector with the names of the spatial dimensions of `x`.
+#'        If `NULL` (default), auto-detected from the `stars` object dimensions.
 #' @param move_prob A numeric vector of probabilities for the MCMC move types: birth,
 #'        death, change, and hyperparameter (default is `c(0.425, 0.425, 0.1, 0.05)`).
 #' @param logpen A negative numeric value representing the log-scale penalty for
@@ -284,8 +283,8 @@ sfclust_fit <- function(data, adjacency, graphdata = NULL,
 #' - `samples`: MCMC trace with `membership`, `log_mlike`, and `move_counts`.
 #' - `clust`: selected clustering with `id`, `membership`, and fitted `models`.
 #'
-#' `sfclust_stars` additionally carries attributes `stdata`, `spnames`, `fun_dims`,
-#' and `valid_ids` used by spatial plot methods.
+#' `sfclust_stars` additionally carries attributes `stdata`, `spnames`, `fnames`,
+#' used by spatial plot methods.
 #'
 #' @author
 #' Ruiman Zhong \email{ruiman.zhong@kaust.edu.sa},
@@ -303,7 +302,7 @@ sfclust_fit <- function(data, adjacency, graphdata = NULL,
 #' df  <- data_all(stbinom)
 #' adj <- as(sf::st_touches(stars::st_get_dimension_values(stbinom, "geometry")), "matrix") * 1L
 #' adj <- adj * runif(length(adj))
-#' result <- sfclust(df, adj, fun_col = "idf_time",
+#' result <- sfclust(df, adj, fnames = "idf_time",
 #'   formula = cases ~ poly(idf_time, 2) + f(id),
 #'   family = "binomial", Ntrials = population, niter = 10, nmessage = 1)
 #' print(result)
@@ -337,66 +336,68 @@ sfclust.default <- function(x, ...) {
 
 #' @rdname sfclust
 #' @export
-sfclust.data.frame <- function(x, adjacency, fun_col = NULL, graphdata = NULL,
+sfclust.data.frame <- function(x, adjacency, graphdata = NULL, fnames = NULL,
+                               nclust = 10,
                                move_prob = c(0.425, 0.425, 0.1, 0.05),
-                               logpen = log(1 - 0.5), nclust = 10,
+                               logpen = log(1 - 0.5),
                                correction = TRUE, niter = 100, burnin = 0, thin = 1,
                                nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
   inla_args <- match.call(expand.dots = FALSE)$...
 
-  result <- sfclust_fit(x, adjacency, graphdata,
-                        move_prob = move_prob, logpen = logpen, nclust = nclust,
+  if (is.null(graphdata)) graphdata <- genclust_adj(adjacency * runif(length(adjacency)), nclust = nclust)
+
+  result <- sfclust_fit(x, graphdata,
+                        move_prob = move_prob, logpen = logpen,
                         correction = correction, niter = niter, burnin = burnin,
                         thin = thin, nmessage = nmessage,
                         path_save = path_save, nsave = nsave, ...)
 
-  attr(result, "inla_args")    <- inla_args
-  attr(result, "args")$fun_col <- fun_col
+  attr(result, "inla_args") <- inla_args
+  attr(result, "fnames")    <- fnames
   result
 }
 
 #' @rdname sfclust
 #' @importFrom stars st_get_dimension_values
 #' @export
-sfclust.stars <- function(x, graphdata = NULL, spnames = "geometry",
-                          response = names(x)[1],
+sfclust.stars <- function(x, nclust = 10, graphdata = NULL, spnames = NULL,
                           move_prob = c(0.425, 0.425, 0.1, 0.05),
                           logpen = log(1 - 0.5),
                           correction = TRUE, niter = 100, burnin = 0, thin = 1,
                           nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
   inla_args <- match.call(expand.dots = FALSE)$...
+  spnames <- detect_spnames(x, spnames)
+  fnames  <- setdiff(dimnames(x), spnames)
 
-  spnames   <- spnames[order(match(spnames, dimnames(x)))]
-  fun_dims  <- setdiff(dimnames(x), spnames)
-  domain    <- create_domain(x, spnames, response)
-  valid_ids <- which(domain[[1]])
-
+  # initial clustering
   if (is.null(graphdata)) {
-    adj_init  <- create_adj(domain)
-    graphdata <- genclust_adj(adj_init * runif(length(adj_init)), nclust = 10L)
+    response  <- detect_response(eval(inla_args$formula), names(x))
+    graphdata <- genclust(x, spnames = spnames, response = response, nclust = nclust)
   }
 
-  data      <- filter_df(data_all(x, spnames), domain)
-  adjacency <- igraph::as_adjacency_matrix(graphdata$graph)
-
-  result <- sfclust_fit(data, adjacency, graphdata,
+  # filter and execute model
+  data <- filter_df(data_all(x, spnames), graphdata$valid_ids)
+  result <- sfclust_fit(data, graphdata,
                         move_prob = move_prob, logpen = logpen,
                         correction = correction, niter = niter,
                         burnin = burnin, thin = thin, nmessage = nmessage,
                         path_save = path_save, nsave = nsave, ...)
 
-  attr(result, "inla_args")    <- inla_args
-  attr(result, "args")$data    <- NULL
-  attr(result, "args")$fun_col <- fun_dims[1]
-  attr(result, "stdata")       <- x
+  attr(result, "inla_args") <- inla_args
+  attr(result, "args")$data <- NULL
+  attr(result, "stdata")    <- x
   attr(result, "spnames")      <- spnames
-  attr(result, "fun_dims")     <- fun_dims
-  attr(result, "valid_ids")    <- valid_ids
+  attr(result, "fnames")       <- fnames
   class(result) <- c("sfclust_stars", "sfclust")
 
   result
 }
 
+
+detect_response <- function(formula, var_names) {
+  lhs_vars <- all.vars(formula[[2]])
+  lhs_vars[lhs_vars %in% var_names][1]
+}
 
 log_mlik_ratio <- function(move_type, move, log_mlike_vec, data, correction = TRUE, ...) {
   # update local marginal likelihoods for split move

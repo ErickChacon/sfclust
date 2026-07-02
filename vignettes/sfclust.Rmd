@@ -149,7 +149,7 @@ accepts any argument of the `INLA::inla` function. Some main arguments are:
 
 - `formula`: expression to define the model with fixed and random effects. `sfclust`
   pre-process the data and create identifiers for regions `ids`, functional indices
-  `idf_<dimname>` (e.g. `idf_time`) and space-time `id`. You can include these
+  `id_<dimname>` (e.g. `id_time`) and space-time `id`. You can include these
   identifiers in your formula.
 - `family`: distribution of the response variable.
 - `Ntrials`: Number of trials in case of a Binomial response.
