@@ -50,6 +50,7 @@ stdata <- st_as_stars(
 )
 
 df <- data_all(stdata)
+df$sid <- df$ids
 log_mlik_all(c(1, 1, 1, 2, 2), df,
   formula = cases ~ temperature, family = "poisson", E = expected)
 

@@ -37,6 +37,7 @@
 #' )
 #'
 #' df <- data_all(stdata)
+#' df$sid <- df$ids
 #' log_mlik_all(c(1, 1, 1, 2, 2), df,
 #'   formula = cases ~ temperature, family = "poisson", E = expected)
 #'
@@ -158,7 +159,7 @@ spatial_index <- function(df, sp_sizes) {
 #' Prepare data in long format
 #'
 #' Convert spatio-temporal data to long format with a flat spatial index (`ids`) and
-#' ordered observation indices (`idf_<dimname>` for each non-spatial dimension).
+#' ordered observation indices (`id_<dimname>` for each non-spatial dimension).
 #' This is a pure converter: all rows are returned including cells that are all-NA.
 #' No filtering is applied. Use `filter_df()` downstream to restrict to valid cells.
 #'

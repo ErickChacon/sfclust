@@ -67,7 +67,7 @@ by \code{\link[=genclust]{genclust()}}.}
 by \code{\link[=genclust]{genclust()}}. If \code{NULL}, it is built automatically.}
 
 \item{fnames}{Character. Name of the column in \code{x} that holds the functional
-index (e.g. \code{"idf_time"}). Used by plot methods; not required by the
+index (e.g. \code{"id_time"}). Used by plot methods; not required by the
 algorithm itself. Default is \code{NULL}.}
 
 \item{nclust}{Integer. Initial number of clusters when \code{graphdata = NULL}. Ignored
@@ -167,14 +167,14 @@ data(stbinom)
 df  <- data_all(stbinom)
 adj <- as(sf::st_touches(stars::st_get_dimension_values(stbinom, "geometry")), "matrix") * 1L
 adj <- adj * runif(length(adj))
-result <- sfclust(df, adj, fnames = "idf_time",
-  formula = cases ~ poly(idf_time, 2) + f(id),
+result <- sfclust(df, adj, fnames = "id_time",
+  formula = cases ~ poly(id_time, 2) + f(id),
   family = "binomial", Ntrials = population, niter = 10, nmessage = 1)
 print(result)
 
 # Stars interface: Gaussian data
 data(stgaus)
-result <- sfclust(stgaus, formula = y ~ f(idf_time, model = "rw1"),
+result <- sfclust(stgaus, formula = y ~ f(id_time, model = "rw1"),
   niter = 10, nmessage = 1)
 print(result)
 summary(result)
@@ -182,7 +182,7 @@ plot(result)
 
 # Stars interface: binomial data
 data(stbinom)
-result <- sfclust(stbinom, formula = cases ~ poly(idf_time, 2) + f(id),
+result <- sfclust(stbinom, formula = cases ~ poly(id_time, 2) + f(id),
   family = "binomial", Ntrials = population, niter = 10, nmessage = 1)
 print(result)
 summary(result)

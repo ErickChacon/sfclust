@@ -195,7 +195,7 @@ update_within <- function(x, sample = nrow(x$samples$membership)) {
 #' library(sfclust)
 #'
 #' data(stgaus)
-#' result <- sfclust(stgaus, formula = y ~ f(idf_time, model = "rw1"), niter = 10,
+#' result <- sfclust(stgaus, formula = y ~ f(id_time, model = "rw1"), niter = 10,
 #'   nmessage = 1)
 #'
 #' # Estimated values ordering clusters by size

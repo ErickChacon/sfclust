@@ -23,7 +23,7 @@ returned; \code{ids} is not remapped to \verb{1..n_valid}.
 }
 \description{
 Convert spatio-temporal data to long format with a flat spatial index (\code{ids}) and
-ordered observation indices (\verb{idf_<dimname>} for each non-spatial dimension).
+ordered observation indices (\verb{id_<dimname>} for each non-spatial dimension).
 This is a pure converter: all rows are returned including cells that are all-NA.
 No filtering is applied. Use \code{filter_df()} downstream to restrict to valid cells.
 }

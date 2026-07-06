@@ -70,5 +70,31 @@
 #' @name stgaus
 "stgaus"
 
+#' Spatio-temporal NDWI raster data
+#'
+#' A `stars` raster object containing the Normalized Difference Water Index (NDWI)
+#' observed over a spatial grid in UTM zone 30N across 102 weekly time points. Used
+#' to demonstrate raster-based spatial functional clustering with `sfclust`.
+#'
+#' @format A `stars` object with:
+#' \describe{
+#'   \item{ndwi}{Normalized Difference Water Index (numeric). Non-NA values define the study area mask.}
+#'   \item{dimensions}{Three dimensions: \code{x} (26 columns), \code{y} (27 rows),
+#'     \code{time} (102 dates from 2025-05-15 to 2025-12-01). CRS: WGS 84 / UTM zone 30N.}
+#' }
+#'
+#' @usage data(testdata)
+#'
+#' @examples
+#'
+#' library(sfclust)
+#' library(stars)
+#'
+#' data(testdata)
+#' testdata
+#'
+#' @name testdata
+"testdata"
+
 ## ggplot variables used in NSE contexts
 globalVariables(c("log_mlike", "time", "mean_cluster", "cluster"))
