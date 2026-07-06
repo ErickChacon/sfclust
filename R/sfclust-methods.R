@@ -227,7 +227,7 @@ fitted.sfclust <- function(object, sample = object$clust$id, sort = FALSE, aggre
   pred <- lapply(1:max(membership), linpred_each, membership,
                  object$clust$models, attr(object, "fit_args")$data)
   pred <- do.call(rbind, pred)
-  pred <- pred[order(pred$id), setdiff(names(pred), "id")]
+  pred <- pred[order(pred$id), ]
 
   if (aggregate) {
     fnames <- attr(object, "input_args")$fnames
@@ -486,44 +486,20 @@ plot_clusters_series <- function(x, var, clusters = NULL, sort = FALSE, fnames =
 #' @export
 plot_clusters_series.sfclust <- function(x, var, clusters = NULL, sort = FALSE, fnames = NULL, ...) {
   if (is.null(fnames)) fnames <- resolve_fnames(x)
-  fitted_df <- as.data.frame(fitted(x, sort = sort))
 
-  data    <- attr(x, "fit_args")$data
-  auxdata <- data
-  auxdata$cluster <- fitted_df$cluster[match(data$id, fitted_df$id)]
+  # data with clusters
+  fitted_df <- fitted.sfclust(x, sort = sort)
+  auxdata <- attr(x, "fit_args")$data
+  auxdata$cluster <- fitted_df$cluster[match(auxdata$id, fitted_df$id)]
   if (is.null(clusters)) clusters <- 1:max(auxdata$cluster, na.rm = TRUE)
-  sp_id_col <- "ids"
 
+  # data summary per group
   fun_sym   <- as.name(fnames)
   stcluster <- auxdata |>
     dplyr::group_by(!!fun_sym, cluster) |>
     dplyr::summarise(mean_cluster = mean({{ var }}), .groups = "drop")
 
-  dplyr::filter(auxdata, cluster %in% clusters) |>
-    ggplot() +
-      geom_line(aes(!!fun_sym, {{ var }}, group = !!as.name(sp_id_col)), color = "gray50", linewidth = 0.3, ...) +
-      geom_line(aes(!!fun_sym, mean_cluster), dplyr::filter(stcluster, cluster %in% clusters), color = "red", linewidth = 0.4) +
-      facet_wrap(~ cluster) +
-      theme_bw() +
-      labs(x = NULL)
-}
-
-#' @importFrom stars expand_dimensions
-#' @importFrom stars st_get_dimension_values
-#' @export
-plot_clusters_series.sfclust_stars <- function(x, var, clusters = NULL, sort = FALSE, fnames = NULL, ...) {
-  if (is.null(fnames)) fnames <- resolve_fnames(x)
-  fitted_df <- as.data.frame(fitted(x, sort = sort))
-
-  auxdata         <- attr(x, "fit_args")$data
-  auxdata$cluster <- fitted_df$cluster[auxdata$id]
-  if (is.null(clusters)) clusters <- 1:max(auxdata$cluster, na.rm = TRUE)
-
-  fun_sym   <- as.name(fnames)
-  stcluster <- auxdata |>
-    dplyr::group_by(!!fun_sym, cluster) |>
-    dplyr::summarise(mean_cluster = mean({{ var }}), .groups = "drop")
-
+  # visualize
   dplyr::filter(auxdata, cluster %in% clusters) |>
     ggplot() +
       geom_line(aes(!!fun_sym, {{ var }}, group = !!as.name("ids")), color = "gray50", linewidth = 0.3, ...) +
@@ -537,8 +513,7 @@ plot_clusters_series.sfclust_stars <- function(x, var, clusters = NULL, sort = F
 resolve_fnames <- function(x) {
   fnames <- attr(x, "input_args")$fnames
   if (length(fnames) != 1L)
-    stop("Plotting requires exactly one functional dimension; found ",
-         length(fnames), ". Specify `fnames` explicitly.")
+    stop("Requires exactly one functional dimension (", length(fnames), " found). Set `fnames`.")
   fnames
 }
 
