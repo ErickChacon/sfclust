@@ -11,7 +11,7 @@ plot_clusters_fitted(
   sort = FALSE,
   legend = FALSE,
   inv_link = TRUE,
-  fun_col = NULL,
+  fnames = NULL,
   ...
 )
 }
@@ -28,7 +28,7 @@ plot_clusters_fitted(
 
 \item{inv_link}{Logical; if \code{TRUE} (default), values are shown on the inverse-link (mean) scale.}
 
-\item{fun_col}{Character. Name of the column to use as the x-axis (functional dimension).
+\item{fnames}{Character. Name of the column to use as the x-axis (functional dimension).
 If \code{NULL}, taken from the result's stored args (set automatically by \code{\link[=sfclust]{sfclust()}}).}
 
 \item{...}{Additional arguments passed to \code{geom_line()}.}

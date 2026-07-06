@@ -56,10 +56,6 @@ log_mlik_all <- function(membership, data, correction = TRUE, detailed = FALSE, 
   }
 }
 
-get_data <- function(object) {
-  attr(object, "data")
-}
-
 unique_clusters <- function (membership) {
   if (is.character(membership)) membership <- as.factor(membership)
   if (is.factor(membership)){

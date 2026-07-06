@@ -25,7 +25,7 @@ print.sfclust <- function(x, ...) {
 
   cat("\nClustering hyperparameters:\n")
   hypernames <- c("log(1-q)", "birth", "death", "change", "hyper")
-  print(setNames(c(attr(x, "args")$logpen, attr(x, "args")$move_prob), hypernames), ...)
+  print(setNames(c(attr(x, "fit_args")$logpen, attr(x, "fit_args")$move_prob), hypernames), ...)
 
   cat("\nClustering movement counts:\n")
   print(x$samples$move_counts, ...)
@@ -133,9 +133,7 @@ update.sfclust <- function(object, niter = 100, burnin = 0, thin = 1, nmessage =
 update.sfclust_stars <- function(object, niter = 100, burnin = 0, thin = 1, nmessage = 10,
                                  sample = NULL, path_save = NULL, nsave = nmessage, ...) {
   result <- NextMethod()
-  attr(result, "stdata")  <- attr(object, "stdata")
-  attr(result, "spnames") <- attr(object, "spnames")
-  attr(result, "fnames")  <- attr(object, "fnames")
+  attr(result, "input_args") <- attr(object, "input_args")
   class(result) <- c("sfclust_stars", "sfclust")
   result
 }
@@ -144,29 +142,28 @@ update_sfclust <- function(x, niter = 100, burnin = 0, thin = 1, nmessage = 10,
                            path_save = NULL, nsave = nmessage) {
   nsamples <- nrow(x$samples$membership)
 
-  args <- c(attr(x, "args"), attr(x, "inla_args"))
-  args$data                 <- get_data(x)
-  args$graphdata$mst        <- attr(x, "mst")[[nsamples]]
-  args$graphdata$membership <- x$samples$membership[nsamples, ]
+  fit_args <- c(attr(x, "fit_args"), attr(x, "inla_args"))
+  fit_args$graphdata$mst        <- attr(x, "mst")[[nsamples]]
+  fit_args$graphdata$membership <- x$samples$membership[nsamples, ]
 
-  args$niter     <- niter
-  args$burnin    <- burnin
-  args$thin      <- thin
-  args$nmessage  <- nmessage
-  args$path_save <- path_save
-  args$nsave     <- nsave
+  fit_args$niter     <- niter
+  fit_args$burnin    <- burnin
+  fit_args$thin      <- thin
+  fit_args$nmessage  <- nmessage
+  fit_args$path_save <- path_save
+  fit_args$nsave     <- nsave
 
-  eval(as.call(c(list(as.name("sfclust_fit")), args)), envir = parent.frame())
+  eval(as.call(c(list(as.name("sfclust_fit")), fit_args)), envir = parent.frame())
 }
 
 update_within <- function(x, sample = nrow(x$samples$membership)) {
-  args             <- attr(x, "inla_args")
-  args$data        <- get_data(x)
-  args$membership  <- x$samples$membership[sample, ]
-  args$correction  <- FALSE
-  args$detailed    <- TRUE
+  inla_args             <- attr(x, "inla_args")
+  inla_args$data        <- attr(x, "fit_args")$data
+  inla_args$membership  <- x$samples$membership[sample, ]
+  inla_args$correction  <- FALSE
+  inla_args$detailed    <- TRUE
 
-  call <- as.call(c(list(as.name("log_mlik_all")), args))
+  call <- as.call(c(list(as.name("log_mlik_all")), inla_args))
   x$clust$id     <- sample
   x$clust$models <- eval(call, envir = parent.frame())
   x
@@ -226,38 +223,45 @@ fitted.sfclust <- function(object, sample = object$clust$id, sort = FALSE, aggre
     object$clust$models <- object$clust$models[attr(membership, "order")]
   }
 
-  data <- get_data(object)
-
-  pred <- lapply(1:max(membership), linpred_each,
-                 membership, object$clust$models, data)
+  # obtain fitted values
+  pred <- lapply(1:max(membership), linpred_each, membership,
+                 object$clust$models, attr(object, "fit_args")$data)
   pred <- do.call(rbind, pred)
-  pred[order(pred$id), setdiff(names(pred), "id")]
+  pred <- pred[order(pred$id), setdiff(names(pred), "id")]
+
+  if (aggregate) {
+    fnames <- attr(object, "input_args")$fnames
+    pred <- unique(pred[c("cluster", fnames, "mean_cluster", "mean_cluster_inv")])
+  }
+
+  pred
 }
 
 #' @importFrom sf st_within st_union
 #' @export
 fitted.sfclust_stars <- function(object, sample = object$clust$id, sort = FALSE, aggregate = FALSE, ...) {
-  pred <- NextMethod()
+  pred <- NextMethod(aggregate = FALSE)
 
-  stdata_ref <- attr(object, "stdata")
-  spnames    <- attr(object, "spnames")
-  stars_obj  <- stdata_ref[0]
-  ids        <- attr(object, "data")$id
+  stars_obj <- attr(object, "input_args")$stars
+  spnames   <- attr(object, "input_args")$spnames
+  id       <- attr(object, "fit_args")$data$id
 
-  n_total  <- prod(dim(stdata_ref))
+  # fill variables into a stars object
+  n_total  <- prod(dim(stars_obj))
   for (var_name in names(pred)) {
     full_vec <- rep(NA_real_, n_total)
-    full_vec[ids] <- pred[[var_name]]
+    full_vec[id] <- pred[[var_name]]
     stars_obj[[var_name]] <- full_vec
   }
 
   if (aggregate) {
-    membership <- object$samples$membership[object$clust$id, ]
+    membership <- object$samples$membership[sample, ]
+    if (sort) membership <- sort_membership(membership)
     if (length(spnames) > 1) {
       warning("`aggregate = TRUE` is not supported for raster data.", call. = FALSE)
     } else {
       geom_clusters <- lapply(
-        split(st_geometry(stdata_ref), membership),
+        split(st_geometry(stars_obj), membership),
         function(x) st_union(st_geometry(x))
       )
       geom_clusters <- do.call(c, geom_clusters)
@@ -274,13 +278,13 @@ linpred_each <- function(k, membership, models, data) {
   link_name <- tolower(models[[k]]$misc$linkfunctions$names)
   inv_link  <- eval(parse(text = paste0("INLA::inla.link.inv", link_name)))
 
-  # subset data to cluster k; row order matches INLA's linear predictor
+  # linear predictor per region
   df <- data[data$sid %in% which(membership == k), , drop = FALSE]
-
   df <- cbind(df, models[[k]]$summary.linear.predictor)
   df$kld      <- NULL
   df$mean_inv <- inv_link(df$mean)
 
+  # linear predictor per cluster
   df$cluster          <- k
   df$mean_cluster     <- linpred_each_corrected(models[[k]])
   df$mean_cluster_inv <- inv_link(df$mean_cluster)
@@ -366,45 +370,33 @@ plot.sfclust_stars <- function(x, sample = x$clust$id, which = 1:3, clusters = N
 #'
 #' @return A `ggplot2` object.
 #'
-#' @importFrom stars expand_dimensions
-#' @importFrom stars st_get_dimension_values
+#' @importFrom stars geom_stars st_as_stars st_dimensions
 #' @importFrom ggplot2 facet_wrap
 #' @export
 plot_clusters_map <- function(x, sample = x$clust$id, clusters = NULL, sort = FALSE, legend = FALSE, geom_before = NULL, ...) {
   if (!inherits(x, "sfclust_stars")) {
-    stop("`plot_clusters_map()` requires an `sfclust_stars` object from `sfclust()`. ",
-         "For custom data, build the map directly from `fitted()` output.")
+    stop("`plot_clusters_map()` requires an `sfclust_stars` object from `sfclust()`.")
   }
   nsamples <- check_sample_and_get_nsample(x, sample)
-  aux      <- get_membership_and_clusters(x, sample, sort, clusters)
-  stdata   <- attr(x, "stdata")
-  spnames  <- attr(x, "spnames")
+  stars_obj <- attr(x, "input_args")$stars
+  spnames   <- attr(x, "input_args")$spnames
 
+  # filter memebership if required
+  aux      <- get_membership_and_clusters(x, sample, sort, clusters)
   membership <- aux$membership
   membership[!(membership %in% aux$clusters)] <- NA
-  membership <- factor(membership)
 
-  if (length(spnames) == 1) {
-    geoms <- st_get_dimension_values(stdata, spnames)
-    gg <- ggplot(st_sf(geometry = geoms, membership = membership))
-    if (!is.null(geom_before)) gg <- gg + geom_before
-    gg <- gg + geom_sf(aes(fill = membership), shape = 21, ...)
-  } else {
-    dims    <- expand_dimensions(stdata)
-    x_vals  <- dims[[spnames[1]]]
-    y_vals  <- dims[[spnames[2]]]
-    sp_grid <- expand.grid(x_vals, y_vals)
-    names(sp_grid) <- spnames
-    valid_ids <- sort(unique(attr(x, "data")$ids))
-    full_membership <- rep(NA_integer_, nrow(sp_grid))
-    full_membership[valid_ids] <- membership
-    membership <- factor(full_membership)
-    sp_grid$membership <- membership
-    gg <- ggplot(sp_grid, aes(!!as.name(spnames[1]), !!as.name(spnames[2]), fill = membership)) +
-      geom_raster() +
-      ggplot2::coord_equal()
-    if (!is.null(geom_before)) gg <- gg + geom_before
-  }
+  # create spatial only stars object
+  sp_dims   <- st_dimensions(stars_obj)[spnames]
+  mem_array <- array(NA_integer_, dim(sp_dims))
+  mem_array[attr(x, "fit_args")$graphdata$valid_ids] <- membership
+  sp_stars <- st_as_stars(membership = mem_array, dimensions = sp_dims)
+  sp_stars$membership <- factor(sp_stars$membership)
+
+  # visualize
+  gg <- ggplot()
+  if (!is.null(geom_before)) gg <- gg + geom_before
+  gg <- gg + geom_stars(data = sp_stars, aes(fill = membership), ...)
   gg <- gg +
     labs(fill = NULL, subtitle = paste("Clustering:", sample, "/", nsamples)) +
     theme_bw()
@@ -496,7 +488,7 @@ plot_clusters_series.sfclust <- function(x, var, clusters = NULL, sort = FALSE, 
   if (is.null(fnames)) fnames <- resolve_fnames(x)
   fitted_df <- as.data.frame(fitted(x, sort = sort))
 
-  data    <- get_data(x)
+  data    <- attr(x, "fit_args")$data
   auxdata <- data
   auxdata$cluster <- fitted_df$cluster[match(data$id, fitted_df$id)]
   if (is.null(clusters)) clusters <- 1:max(auxdata$cluster, na.rm = TRUE)
@@ -517,32 +509,15 @@ plot_clusters_series.sfclust <- function(x, var, clusters = NULL, sort = FALSE, 
 }
 
 #' @importFrom stars expand_dimensions
-#' @importFrom stars st_get_dimension_values st_set_dimensions
+#' @importFrom stars st_get_dimension_values
 #' @export
 plot_clusters_series.sfclust_stars <- function(x, var, clusters = NULL, sort = FALSE, fnames = NULL, ...) {
   if (is.null(fnames)) fnames <- resolve_fnames(x)
   fitted_df <- as.data.frame(fitted(x, sort = sort))
 
-  stdata  <- attr(x, "stdata")
-  spnames <- attr(x, "spnames")
-
-  stdata$cluster <- fitted_df$cluster
-  if (is.null(clusters)) clusters <- 1:max(stdata$cluster, na.rm = TRUE)
-
-  if (length(spnames) == 1) {
-    ns <- length(st_get_dimension_values(stdata, spnames))
-    auxdata <- stdata |>
-      st_set_dimensions(spnames, values = 1:ns) |>
-      as.data.frame()
-    sp_id_col <- spnames
-  } else {
-    auxdata <- as.data.frame(stdata)
-    nx <- length(unique(auxdata[[spnames[1]]]))
-    iy_idx <- as.integer(factor(auxdata[[spnames[2]]]))
-    ix_idx <- as.integer(factor(auxdata[[spnames[1]]]))
-    auxdata$.sp_id <- (iy_idx - 1L) * nx + ix_idx
-    sp_id_col <- ".sp_id"
-  }
+  auxdata         <- attr(x, "fit_args")$data
+  auxdata$cluster <- fitted_df$cluster[auxdata$id]
+  if (is.null(clusters)) clusters <- 1:max(auxdata$cluster, na.rm = TRUE)
 
   fun_sym   <- as.name(fnames)
   stcluster <- auxdata |>
@@ -551,7 +526,7 @@ plot_clusters_series.sfclust_stars <- function(x, var, clusters = NULL, sort = F
 
   dplyr::filter(auxdata, cluster %in% clusters) |>
     ggplot() +
-      geom_line(aes(!!fun_sym, {{ var }}, group = !!as.name(sp_id_col)), color = "gray50", linewidth = 0.3, ...) +
+      geom_line(aes(!!fun_sym, {{ var }}, group = !!as.name("ids")), color = "gray50", linewidth = 0.3, ...) +
       geom_line(aes(!!fun_sym, mean_cluster), dplyr::filter(stcluster, cluster %in% clusters), color = "red", linewidth = 0.4) +
       facet_wrap(~ cluster) +
       theme_bw() +
@@ -560,7 +535,7 @@ plot_clusters_series.sfclust_stars <- function(x, var, clusters = NULL, sort = F
 
 
 resolve_fnames <- function(x) {
-  fnames <- attr(x, "fnames")
+  fnames <- attr(x, "input_args")$fnames
   if (length(fnames) != 1L)
     stop("Plotting requires exactly one functional dimension; found ",
          length(fnames), ". Specify `fnames` explicitly.")

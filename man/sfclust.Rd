@@ -13,9 +13,10 @@ sfclust(x, ...)
 
 \method{sfclust}{data.frame}(
   x,
-  graphdata,
-  adjacency = NULL,
-  fun_col = NULL,
+  adjacency,
+  graphdata = NULL,
+  fnames = NULL,
+  nclust = 10,
   move_prob = c(0.425, 0.425, 0.1, 0.05),
   logpen = log(1 - 0.5),
   correction = TRUE,
@@ -30,9 +31,9 @@ sfclust(x, ...)
 
 \method{sfclust}{stars}(
   x,
+  nclust = 10,
   graphdata = NULL,
-  spnames = "geometry",
-  response = names(x)[1],
+  spnames = NULL,
   move_prob = c(0.425, 0.425, 0.1, 0.05),
   logpen = log(1 - 0.5),
   correction = TRUE,
@@ -57,17 +58,20 @@ and other necessary data.}
 \item{...}{Additional arguments such as \code{formula}, \code{family}, and others passed to
 \code{inla()}.}
 
-\item{graphdata}{A list with components \code{graph}, \code{mst}, and \code{membership} as returned
-by \code{\link[=genclust]{genclust()}}. If \code{NULL}, it is built automatically.}
-
 \item{adjacency}{A square weighted adjacency matrix (ns × ns) encoding spatial
 contiguity and edge weights. Can be a dense \code{matrix} or a sparse \code{Matrix}.
 Typically obtained via \code{\link[igraph:as_adjacency_matrix]{igraph::as_adjacency_matrix()}} on the graph returned
 by \code{\link[=genclust]{genclust()}}.}
 
-\item{fun_col}{Character. Name of the column in \code{x} that holds the functional
+\item{graphdata}{A list with components \code{graph}, \code{mst}, and \code{membership} as returned
+by \code{\link[=genclust]{genclust()}}. If \code{NULL}, it is built automatically.}
+
+\item{fnames}{Character. Name of the column in \code{x} that holds the functional
 index (e.g. \code{"idf_time"}). Used by plot methods; not required by the
 algorithm itself. Default is \code{NULL}.}
+
+\item{nclust}{Integer. Initial number of clusters when \code{graphdata = NULL}. Ignored
+if \code{graphdata} is provided (default is \code{10}).}
 
 \item{move_prob}{A numeric vector of probabilities for the MCMC move types: birth,
 death, change, and hyperparameter (default is \code{c(0.425, 0.425, 0.1, 0.05)}).}
@@ -101,15 +105,8 @@ of effects included in the \code{INLA} model.}
 \item{nsave}{An integer specifying the number of iterations between saved results
 (default is \code{nmessage}).}
 
-\item{spnames}{Character vector with the names of the spatial dimensions of \code{stdata}.
-Use a single name (e.g. \code{"geometry"}) for vector geometry data, or two names
-(e.g. \code{c("x", "y")}) for raster data. Default is \code{"geometry"}.}
-
-\item{fun_dims}{Character vector with the names of the functional dimensions of
-\code{stdata} (e.g. \code{"time"}). Default is \code{"time"}.}
-
-\item{nclust}{Integer. Initial number of clusters when \code{graphdata = NULL}. Ignored
-if \code{graphdata} is provided (default is \code{10}).}
+\item{spnames}{Character vector with the names of the spatial dimensions of \code{x}.
+If \code{NULL} (default), auto-detected from the \code{stars} object dimensions.}
 }
 \value{
 An \code{sfclust} object (from \code{sfclust.data.frame}) or an \code{sfclust_stars} object
@@ -119,8 +116,8 @@ inheriting from \code{sfclust} (from \code{sfclust.stars}). Both contain:
 \item \code{clust}: selected clustering with \code{id}, \code{membership}, and fitted \code{models}.
 }
 
-\code{sfclust_stars} additionally carries attributes \code{stdata}, \code{spnames}, \code{fun_dims},
-and \code{valid_ids} used by spatial plot methods.
+\code{sfclust_stars} additionally carries \code{input_args} with \code{stars} (structural shell
+of the input), \code{spnames}, and \code{fnames}, used by spatial plot methods.
 }
 \description{
 \code{sfclust()} is the main user-facing function for Bayesian spatial functional
@@ -170,7 +167,7 @@ data(stbinom)
 df  <- data_all(stbinom)
 adj <- as(sf::st_touches(stars::st_get_dimension_values(stbinom, "geometry")), "matrix") * 1L
 adj <- adj * runif(length(adj))
-result <- sfclust(df, adj, fun_col = "idf_time",
+result <- sfclust(df, adj, fnames = "idf_time",
   formula = cases ~ poly(idf_time, 2) + f(id),
   family = "binomial", Ntrials = population, niter = 10, nmessage = 1)
 print(result)

@@ -4,14 +4,7 @@
 \alias{plot_clusters_series}
 \title{Plot observed time series by cluster}
 \usage{
-plot_clusters_series(
-  x,
-  var,
-  clusters = NULL,
-  sort = FALSE,
-  fun_col = NULL,
-  ...
-)
+plot_clusters_series(x, var, clusters = NULL, sort = FALSE, fnames = NULL, ...)
 }
 \arguments{
 \item{x}{An \code{sfclust} object.}
@@ -22,7 +15,7 @@ plot_clusters_series(
 
 \item{sort}{Logical; if \code{TRUE}, clusters are relabeled by decreasing size. Default is \code{FALSE}.}
 
-\item{fun_col}{Character. Name of the column to use as the x-axis (functional dimension).
+\item{fnames}{Character. Name of the column to use as the x-axis (functional dimension).
 If \code{NULL}, taken from the result's stored args (set automatically by \code{\link[=sfclust]{sfclust()}}).}
 
 \item{...}{Additional arguments passed to \code{geom_line()} for individual region series.}

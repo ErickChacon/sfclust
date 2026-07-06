@@ -43,7 +43,9 @@ A list with:
 \itemize{
 \item \code{graph}: undirected igraph object representing spatial contiguity.
 \item \code{mst}: minimum spanning tree of \code{graph}.
-\item \code{membership}: integer vector of cluster assignments (length = number of spatial units).
+\item \code{membership}: integer vector of cluster assignments (length = number of valid spatial units).
+\item \code{valid_ids}: integer vector of flat spatial positions included in the graph
+(only present for \code{stars} input; \code{NULL} for matrix/Matrix input).
 }
 }
 \description{

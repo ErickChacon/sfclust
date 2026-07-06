@@ -11,7 +11,7 @@
   clusters = NULL,
   sort = FALSE,
   legend = FALSE,
-  fun_col = NULL,
+  fnames = NULL,
   ...
 )
 }
@@ -30,7 +30,7 @@ functions, 3 = log marginal likelihood.}
 
 \item{legend}{Logical; if \code{TRUE}, a legend is included. Default is \code{FALSE}.}
 
-\item{fun_col}{Character. Column name for the x-axis of cluster function plots.
+\item{fnames}{Character. Column name for the x-axis of cluster function plots.
 If \code{NULL}, taken from the result's stored args.}
 
 \item{...}{Additional arguments passed to underlying plot functions.}

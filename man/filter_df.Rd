@@ -4,17 +4,22 @@
 \alias{filter_df}
 \title{Filter a long-format data frame to valid spatial cells}
 \usage{
-filter_df(df, domain)
+filter_df(df, valid_ids = NULL)
 }
 \arguments{
 \item{df}{A long-format data frame as returned by \code{\link[=data_all]{data_all()}}.}
 
-\item{domain}{A spatial-only \code{stars} object as returned by \code{\link[=create_domain]{create_domain()}}.}
+\item{valid_ids}{Integer vector of valid flat spatial positions, as returned
+in \code{genclust(...)$valid_ids}. If \code{NULL}, all spatial cells are treated as valid.}
 }
 \value{
-A filtered data frame with rows corresponding to valid spatial cells only.
+A filtered data frame with rows corresponding to valid spatial cells only,
+with an additional \code{sid} column (integer, 1..n_valid).
 }
 \description{
-Keeps only rows whose spatial index (\code{ids}) corresponds to a valid cell in
-\code{domain}, then remaps \code{ids} to \verb{1..n_valid}.
+Keeps only rows whose spatial index (\code{ids}) appears in \code{valid_ids} and adds
+a \code{sid} column (1..n_valid) giving each valid cell's rank among the valid
+cells. \code{sid} matches the indexing of \code{membership} vectors returned by
+\code{\link[=genclust]{genclust()}}. If \code{valid_ids} is \code{NULL}, all rows are kept and \code{sid} is
+assigned by rank of \code{ids}.
 }

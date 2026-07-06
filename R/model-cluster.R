@@ -7,8 +7,8 @@ sfclust_fit <- function(data, graphdata,
                         nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
 
   inla_args <- match.call(expand.dots = FALSE)$...
-  args <- list(data = data, graphdata = graphdata, move_prob = move_prob, logpen = logpen,
-               correction = correction)
+  fit_args <- list(data = data, graphdata = graphdata, move_prob = move_prob, logpen = logpen,
+                   correction = correction)
 
   # check if correction is required
   if (correction) {
@@ -162,7 +162,7 @@ sfclust_fit <- function(data, graphdata,
           )
         )
         attr(output, "mst")       <- mst_out
-        attr(output, "args")      <- args
+        attr(output, "fit_args")  <- fit_args
         attr(output, "inla_args") <- inla_args
         class(output) <- "sfclust"
         saveRDS(output, file = path_save)
@@ -185,9 +185,8 @@ sfclust_fit <- function(data, graphdata,
     )
   )
   attr(output, "mst")       <- mst_out
-  attr(output, "args")      <- args
+  attr(output, "fit_args")  <- fit_args
   attr(output, "inla_args") <- inla_args
-  attr(output, "data")      <- data
   class(output) <- "sfclust"
 
   if (!is.null(path_save)) saveRDS(output, file = path_save)
@@ -283,8 +282,8 @@ sfclust_fit <- function(data, graphdata,
 #' - `samples`: MCMC trace with `membership`, `log_mlike`, and `move_counts`.
 #' - `clust`: selected clustering with `id`, `membership`, and fitted `models`.
 #'
-#' `sfclust_stars` additionally carries attributes `stdata`, `spnames`, `fnames`,
-#' used by spatial plot methods.
+#' `sfclust_stars` additionally carries `input_args` with `stars` (structural shell
+#' of the input), `spnames`, and `fnames`, used by spatial plot methods.
 #'
 #' @author
 #' Ruiman Zhong \email{ruiman.zhong@kaust.edu.sa},
@@ -352,8 +351,8 @@ sfclust.data.frame <- function(x, adjacency, graphdata = NULL, fnames = NULL,
                         thin = thin, nmessage = nmessage,
                         path_save = path_save, nsave = nsave, ...)
 
-  attr(result, "inla_args") <- inla_args
-  attr(result, "fnames")    <- fnames
+  attr(result, "inla_args")  <- inla_args
+  attr(result, "input_args") <- list(fnames = fnames)
   result
 }
 
@@ -383,11 +382,8 @@ sfclust.stars <- function(x, nclust = 10, graphdata = NULL, spnames = NULL,
                         burnin = burnin, thin = thin, nmessage = nmessage,
                         path_save = path_save, nsave = nsave, ...)
 
-  attr(result, "inla_args") <- inla_args
-  attr(result, "args")$data <- NULL
-  attr(result, "stdata")    <- x
-  attr(result, "spnames")      <- spnames
-  attr(result, "fnames")       <- fnames
+  attr(result, "inla_args")  <- inla_args
+  attr(result, "input_args") <- list(stars = x[0], spnames = spnames, fnames = fnames)
   class(result) <- c("sfclust_stars", "sfclust")
 
   result
