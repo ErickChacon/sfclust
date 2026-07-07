@@ -83,17 +83,18 @@
 #'     \code{time} (86 dates from 2025-05-15 to 2025-12-01). CRS: WGS 84 / UTM zone 30N.}
 #' }
 #'
-#' @usage data(stndwi)
+#' @usage data(chapa)
 #'
 #' @examples
 #'
 #' library(sfclust)
 #'
-#' data(stndwi)
-#' stndwi
+#' data(chapa)
+#' chapa
+#' plot(chapa["ndwi2"])
 #'
-#' @name stndwi
-"stndwi"
+#' @name chapa
+"chapa"
 
 ## ggplot variables used in NSE contexts
 globalVariables(c("log_mlike", "time", "mean_cluster", "cluster"))

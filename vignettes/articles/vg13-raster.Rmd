@@ -18,7 +18,7 @@ data. Unlike the polygon- or point-based examples in other vignettes, here the s
 units are regular grid cells identified by their `x` and `y` coordinates. This exercises
 the raster support introduced via `sp_dims = c("x", "y")` and `raster_adjacency()`.
 
-The dataset used is `stndwi`, a `stars` raster object containing the Normalized
+The dataset used is `chapa`, a `stars` raster object containing the Normalized
 Difference Water Index 2 (NDWI22) derived from Sentinel-2 satellite imagery over
 El Chaparrillo, an agricultural research center in Spain, with 86 acquisition dates
 spanning May–December 2025.
@@ -33,14 +33,14 @@ library(dplyr)
 ```
 
 ```{r}
-data(stndwi)
-# stndwi <- aggregate(stndwi, by = "week", FUN = function(x) mean(x, na.rm = TRUE))
-stndwi
+data(chapa)
+# chapa <- aggregate(chapa, by = "week", FUN = function(x) mean(x, na.rm = TRUE))
+chapa
 ```
 
-The raster has `r dim(stndwi)["x"]` columns and `r dim(stndwi)["y"]` rows, giving a
-grid of `r prod(dim(stndwi)[c("x","y")])` cells in total, of which
-`r sum(!is.na(stndwi[["ndwi2"]][,,1]))` are non-NA (the study area mask).
+The raster has `r dim(chapa)["x"]` columns and `r dim(chapa)["y"]` rows, giving a
+grid of `r prod(dim(chapa)[c("x","y")])` cells in total, of which
+`r sum(!is.na(chapa[["ndwi2"]][,,1]))` are non-NA (the study area mask).
 
 ## Exploratory analysis
 
@@ -48,7 +48,7 @@ We start by visualizing NDWI2 at a few time points to get a sense of the spatial
 
 ```{r, fig.height = 6}
 ggplot() +
-  geom_stars(aes(fill = ndwi2), data = stndwi) +
+  geom_stars(aes(fill = ndwi2), data = chapa) +
   facet_wrap(~ time) +
   scale_fill_distiller(palette = "Blues", direction = 1, na.value = "grey90") +
   labs(title = "NDWI2 raster — selected time points", fill = "NDWI2") +
@@ -59,7 +59,7 @@ ggplot() +
 We can also plot the pixel-level time series to see how NDWI2 evolves over the season.
 
 ```{r, fig.height = 4}
-as_tibble(stndwi) |>
+as_tibble(chapa) |>
   filter(!is.na(ndwi2)) |>
   mutate(pixel = paste(x, y, sep = "-")) |>
   ggplot(aes(time, ndwi2, group = pixel)) +
@@ -76,7 +76,7 @@ non-NA pixels before constructing the spanning tree.
 
 ```{r}
 set.seed(111)
-geodata <- genclust(stndwi, nclust = 20, spnames = c("x","y"), response = "ndwi2")
+geodata <- genclust(chapa, nclust = 20, spnames = c("x","y"), response = "ndwi2")
 ```
 
 ## Model fitting
@@ -92,7 +92,7 @@ and `id` is the flat space-time index used to account for individual observation
 ```{r}
 formula <- ndwi2 ~ poly(time, 2) + f(id, model = "iid")
 
-result <- sfclust(stndwi, graphdata = geodata, formula = formula,
+result <- sfclust(chapa, graphdata = geodata, formula = formula,
   spnames = c("x", "y"), logpen = -50,
   niter = 200, burnin = 0, thin = 1, nmessage = 5,
   control.inla = list(control.vb = list(enable = FALSE)))
