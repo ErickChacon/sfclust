@@ -1,8 +1,8 @@
 ---
-title: "Clustering raster spatio-temporal data (NDWI)"
+title: "Clustering raster spatio-temporal data (NDWI2)"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Clustering raster spatio-temporal data (NDWI)}
+  %\VignetteIndexEntry{Clustering raster spatio-temporal data (NDWI2)}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -18,8 +18,9 @@ data. Unlike the polygon- or point-based examples in other vignettes, here the s
 units are regular grid cells identified by their `x` and `y` coordinates. This exercises
 the raster support introduced via `sp_dims = c("x", "y")` and `raster_adjacency()`.
 
-The dataset used is `testdata`, a `stars` raster object containing the Normalized
-Difference Water Index (NDWI) over a study area, with 102 irregular acquisition dates
+The dataset used is `stndwi`, a `stars` raster object containing the Normalized
+Difference Water Index 2 (NDWI22) derived from Sentinel-2 satellite imagery over
+El Chaparrillo, an agricultural research center in Spain, with 86 acquisition dates
 spanning May–December 2025.
 
 ## Load packages and data
@@ -32,38 +33,38 @@ library(dplyr)
 ```
 
 ```{r}
-data(testdata)
-# testdata <- aggregate(testdata, by = "week", FUN = function(x) mean(x, na.rm = TRUE))
-testdata
+data(stndwi)
+# stndwi <- aggregate(stndwi, by = "week", FUN = function(x) mean(x, na.rm = TRUE))
+stndwi
 ```
 
-The raster has `r dim(testdata)["x"]` columns and `r dim(testdata)["y"]` rows, giving a
-grid of `r prod(dim(testdata)[c("x","y")])` cells in total, of which
-`r sum(!is.na(testdata[["ndwi"]][,,1]))` are non-NA (the study area mask).
+The raster has `r dim(stndwi)["x"]` columns and `r dim(stndwi)["y"]` rows, giving a
+grid of `r prod(dim(stndwi)[c("x","y")])` cells in total, of which
+`r sum(!is.na(stndwi[["ndwi2"]][,,1]))` are non-NA (the study area mask).
 
 ## Exploratory analysis
 
-We start by visualizing NDWI at a few time points to get a sense of the spatial patterns.
+We start by visualizing NDWI2 at a few time points to get a sense of the spatial patterns.
 
 ```{r, fig.height = 6}
 ggplot() +
-  geom_stars(aes(fill = ndwi), data = testdata) +
+  geom_stars(aes(fill = ndwi2), data = stndwi) +
   facet_wrap(~ time) +
   scale_fill_distiller(palette = "Blues", direction = 1, na.value = "grey90") +
-  labs(title = "NDWI raster — selected time points", fill = "NDWI") +
+  labs(title = "NDWI2 raster — selected time points", fill = "NDWI2") +
   theme_bw() +
   theme(legend.position = "bottom")
 ```
 
-We can also plot the pixel-level time series to see how NDWI evolves over the season.
+We can also plot the pixel-level time series to see how NDWI2 evolves over the season.
 
 ```{r, fig.height = 4}
-as_tibble(testdata) |>
-  filter(!is.na(ndwi)) |>
+as_tibble(stndwi) |>
+  filter(!is.na(ndwi2)) |>
   mutate(pixel = paste(x, y, sep = "-")) |>
-  ggplot(aes(time, ndwi, group = pixel)) +
+  ggplot(aes(time, ndwi2, group = pixel)) +
   geom_line(alpha = 0.15, linewidth = 0.3, color = "steelblue") +
-  labs(title = "NDWI time series per pixel", x = "Date", y = "NDWI") +
+  labs(title = "NDWI2 time series per pixel", x = "Date", y = "NDWI2") +
   theme_bw()
 ```
 
@@ -75,25 +76,25 @@ non-NA pixels before constructing the spanning tree.
 
 ```{r}
 set.seed(111)
-geodata <- genclust(testdata, nclust = 10, sp_dims = c("x","y"))
+geodata <- genclust(stndwi, nclust = 20, spnames = c("x","y"), response = "ndwi2")
 ```
 
 ## Model fitting
 
-We model NDWI within each cluster as a quadratic polynomial in time plus an
+We model NDWI2 within each cluster as a quadratic polynomial in time plus an
 individual-level noise term per observation:
 
-$$\text{NDWI}_{it} = \beta_0 + \beta_1 t + \beta_2 t^2 + \varepsilon_{it}$$
+$$\text{NDWI2}_{it} = \beta_0 + \beta_1 t + \beta_2 t^2 + \varepsilon_{it}$$
 
 where `time` refers to the actual acquisition dates (coerced to numeric by `poly()`)
 and `id` is the flat space-time index used to account for individual observation noise.
 
 ```{r}
-formula <- ndwi ~ poly(time, 2) + f(id, model = "iid")
+formula <- ndwi2 ~ poly(time, 2) + f(id, model = "iid")
 
-result <- sfclust(testdata, graphdata = geodata, formula = formula,
-  sp_dims = c("x", "y"), logpen = -50,
-  niter = 5, burnin = 0, thin = 1, nmessage = 5,
+result <- sfclust(stndwi, graphdata = geodata, formula = formula,
+  spnames = c("x", "y"), logpen = -50,
+  niter = 200, burnin = 0, thin = 1, nmessage = 5,
   control.inla = list(control.vb = list(enable = FALSE)))
 ```
 
@@ -108,7 +109,7 @@ The traceplot below shows the log marginal likelihood across MCMC samples.
 
 ```{r, fig.height = 4}
 plot(result)
-plot(result, which = 3)
+plot(result, which = 1)
 ```
 
 The map below shows the spatial distribution of the inferred clusters over the raster
@@ -118,7 +119,7 @@ grid.
 plot_clusters_map(result, sort = TRUE, legend = TRUE)
 ```
 
-The fitted cluster functions show the estimated mean NDWI trajectory for each cluster.
+The fitted cluster functions show the estimated mean NDWI2 trajectory for each cluster.
 
 ```{r, fig.height = 4}
 plot_clusters_fitted(result, sort = TRUE, legend = TRUE)
@@ -134,7 +135,7 @@ ggplot() +
   geom_stars(aes(fill = mean_cluster), data = pred) +
   facet_wrap(~ time) +
   scale_fill_distiller(palette = "Blues", direction = 1, na.value = "grey90") +
-  labs(title = "Fitted NDWI — selected time points", fill = "NDWI") +
+  labs(title = "Fitted NDWI2 — selected time points", fill = "NDWI2") +
   theme_bw(base_size = 7) +
   theme(legend.position = "bottom")
 ```
@@ -143,5 +144,5 @@ Finally, we overlay the observed pixel time series per cluster with the estimate
 mean.
 
 ```{r, fig.height = 4}
-plot_clusters_series(result, ndwi, sort = TRUE)
+plot_clusters_series(result, ndwi2, sort = TRUE)
 ```
