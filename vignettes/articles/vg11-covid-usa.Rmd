@@ -89,7 +89,7 @@ dimension name: `sp_dims = "space"`.
 
 ```{r, eval = FALSE, echo = FALSE}
 # formula <- cases ~ 1 + poly(time, 3) + f(idf_time, model = "ar1") + f(id)
-# geodata <- genclust(st_geometry(usacovid), nclust = 49)
+# geodata <- genclust(usacovid, nclust = 49)
 #
 # set.seed(123)
 # result <- sfclust(usacovid, graphdata = geodata, sp_dims = "space",
@@ -100,7 +100,7 @@ dimension name: `sp_dims = "space"`.
 
 ```{r, eval = FALSE}
 formula <- cases ~ 1 + poly(time, 3) + f(idf_time, model = "ar1") + f(id)
-geodata <- genclust(st_geometry(usacovid), nclust = 49)
+geodata <- genclust(usacovid, nclust = 49)
 
 set.seed(123)
 result <- sfclust(usacovid, graphdata = geodata, sp_dims = "space",
@@ -112,7 +112,7 @@ result
 
 ```{r, echo = FALSE}
 formula <- cases ~ 1 + poly(time, 3) + f(idf_time, model = "ar1") + f(id)
-geodata <- genclust(st_geometry(usacovid), nclust = 49)
+geodata <- genclust(usacovid, nclust = 49)
 result <- readRDS(here::here(file.path("tools", "data", "usacovid-mcmc.rds")))
 result
 ```

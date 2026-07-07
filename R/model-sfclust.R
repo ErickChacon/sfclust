@@ -1,6 +1,204 @@
-#' @importFrom igraph V
-NULL
+#' Bayesian spatial functional clustering
+#'
+#' `sfclust()` is the main user-facing function for Bayesian spatial functional
+#' clustering via reversible-jump MCMC. It dispatches on the class of the first
+#' argument:
+#'
+#' - `sfclust.data.frame()`: core interface — takes a pre-built long-format data frame
+#'   and a weighted adjacency matrix. Use this when working with any data format
+#'   after converting it yourself.
+#' - `sfclust.stars()`: stars wrapper — takes a `stars` spatio-temporal object,
+#'   converts it to long format, builds the spatial graph, and calls the core algorithm.
+#'
+#' @param x A `data.frame` (core interface) or a `stars` object (stars interface).
+#'        Dispatch is based on this argument's class.
+#'        For `sfclust.data.frame`: a long-format data frame with at least columns `id`
+#'        (unique row index) and `ids` (integer spatial unit index, 1 to `ns`), plus
+#'        any response and covariate columns referenced in `formula`.
+#'        For `sfclust.stars`: a `stars` object containing response variables, covariates,
+#'        and other necessary data.
+#' @param adjacency A square weighted adjacency matrix (ns × ns) encoding spatial
+#'        contiguity and edge weights. Can be a dense `matrix` or a sparse `Matrix`.
+#'        Typically obtained via [igraph::as_adjacency_matrix()] on the graph returned
+#'        by [genclust()].
+#' @param fnames Character. Name of the column in `x` that holds the functional
+#'        index (e.g. `"id_time"`). Used by plot methods; not required by the
+#'        algorithm itself. Default is `NULL`.
+#' @param graphdata A list with components `graph`, `mst`, and `membership` as returned
+#'        by [genclust()]. If `NULL`, it is built automatically.
+#' @param spnames Character vector with the names of the spatial dimensions of `stdata`.
+#'        Use a single name (e.g. `"geometry"`) for vector geometry data, or two names
+#'        (e.g. `c("x", "y")`) for raster data. If `NULL` (default), auto-detected
+#'        from the `stars` object dimensions.
+#' @param spnames Character vector with the names of the spatial dimensions of `x`.
+#'        If `NULL` (default), auto-detected from the `stars` object dimensions.
+#' @param move_prob A numeric vector of probabilities for the MCMC move types: birth,
+#'        death, change, and hyperparameter (default is `c(0.425, 0.425, 0.1, 0.05)`).
+#' @param logpen A negative numeric value representing the log-scale penalty for
+#'        increasing the number of clusters by one. The number of clusters is assumed to
+#'        follow a geometric prior with probability `q`, making this penalty equal to
+#'        `log(1 - q)`. For example, if `logpen = -50`, then a proposal that increases
+#'        the number of clusters will only be favored if it improves the log marginal
+#'        likelihood by more than 50.
+#' @param nclust Integer. Initial number of clusters when `graphdata = NULL`. Ignored
+#'        if `graphdata` is provided (default is `10`).
+#' @param correction A logical indicating whether correction to compute the marginal
+#'        likelihoods should be applied (default is `TRUE`). This depends on the type
+#'        of effects included in the `INLA` model.
+#' @param niter An integer specifying the number of MCMC iterations after burn-in
+#'        (default is `100`).
+#' @param burnin An integer specifying the number of burn-in iterations to discard
+#'        (default is `0`).
+#' @param thin An integer specifying the thinning interval for recording the results
+#'        (default is `1`).
+#' @param nmessage An integer specifying how often progress messages should be printed
+#'        (default is `10`).
+#' @param path_save A character string specifying the file path to save the results
+#'        (default is `NULL`).
+#' @param nsave An integer specifying the number of iterations between saved results
+#'        (default is `nmessage`).
+#' @param ... Additional arguments such as `formula`, `family`, and others passed to
+#'        `inla()`.
+#'
+#' @details
+#' This implementation draws inspiration from the methods described in the paper:
+#' *"Bayesian Clustering of Spatial Functional Data with Application to a Human Mobility
+#' Study During COVID-19"* by Bohai Zhang, Huiyan Sang, Zhao Tang Luo, and Hui Huang,
+#' published in *The Annals of Applied Statistics*, 2023. For further details on the
+#' methodology, please refer to:
+#' - The paper: \doi{doi:10.1214/22-AOAS1643}
+#' - Supplementary material: \doi{doi:10.1214/22-AOAS1643SUPPB}
+#'
+#' The MCMC algorithm in this implementation is largely based on the supplementary
+#' material provided in the paper. However, we have generalized the computation of the
+#' marginal likelihood ratio by leveraging INLA (Integrated Nested Laplace Approximation).
+#' This generalization enables integration over all parameters and hyperparameters,
+#' allowing for inference within a broader family of distribution functions and model
+#' terms, thereby extending the scope and flexibility of the original approach.
+#' Further details of our approach can be found in our paper *"Bayesian spatial functional
+#' data clustering: applications in disease surveillance"* by Ruiman Zhong, Erick A.
+#' Chacón-Montalván, Paula Moraga:
+#' - The paper: <https://doi.org/10.1002/sim.70597>
+#'
+#' @return
+#' An `sfclust` object (from `sfclust.data.frame`) or an `sfclust_stars` object
+#' inheriting from `sfclust` (from `sfclust.stars`). Both contain:
+#' - `samples`: MCMC trace with `membership`, `log_mlike`, and `move_counts`.
+#' - `clust`: selected clustering with `id`, `membership`, and fitted `models`.
+#'
+#' `sfclust_stars` additionally carries `input_args` with `stars` (structural shell
+#' of the input), `spnames`, and `fnames`, used by spatial plot methods.
+#'
+#' @author
+#' Ruiman Zhong \email{ruiman.zhong@kaust.edu.sa},
+#' Erick A. Chacón-Montalván \email{erick.chaconmontalvan@wur.nl},
+#' Paula Moraga \email{paula.moraga@kaust.edu.sa}
+#'
+#' @examples
+#'
+#' \donttest{
+#' library(sfclust)
+#'
+#' # Core interface: long-format data frame + adjacency matrix
+#' library(sf)
+#' data(stbinom)
+#' df  <- data_all(stbinom)
+#' adj <- as(sf::st_touches(stars::st_get_dimension_values(stbinom, "geometry")), "matrix") * 1L
+#' adj <- adj * runif(length(adj))
+#' result <- sfclust(df, adj, fnames = "id_time",
+#'   formula = cases ~ poly(id_time, 2) + f(id),
+#'   family = "binomial", Ntrials = population, niter = 10, nmessage = 1)
+#' print(result)
+#'
+#' # Stars interface: Gaussian data
+#' data(stgaus)
+#' result <- sfclust(stgaus, formula = y ~ f(id_time, model = "rw1"),
+#'   niter = 10, nmessage = 1)
+#' print(result)
+#' summary(result)
+#' plot(result)
+#'
+#' # Stars interface: binomial data
+#' data(stbinom)
+#' result <- sfclust(stbinom, formula = cases ~ poly(id_time, 2) + f(id),
+#'   family = "binomial", Ntrials = population, niter = 10, nmessage = 1)
+#' print(result)
+#' summary(result)
+#' plot(result)
+#' }
+#'
+#' @export
+sfclust <- function(x, ...) UseMethod("sfclust")
 
+#' @rdname sfclust
+#' @export
+sfclust.default <- function(x, ...) {
+  stop("No sfclust method for class '", paste(class(x), collapse = "/"), "'. ",
+       "Provide a data.frame (core interface) or a stars object.")
+}
+
+#' @rdname sfclust
+#' @export
+sfclust.data.frame <- function(x, adjacency, graphdata = NULL, fnames = NULL,
+                               nclust = 10,
+                               move_prob = c(0.425, 0.425, 0.1, 0.05),
+                               logpen = log(1 - 0.5),
+                               correction = TRUE, niter = 100, burnin = 0, thin = 1,
+                               nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
+  inla_args <- match.call(expand.dots = FALSE)$...
+
+  if (is.null(graphdata)) graphdata <- genclust_adj(adjacency * runif(length(adjacency)), nclust = nclust)
+
+  result <- sfclust_fit(x, graphdata,
+                        move_prob = move_prob, logpen = logpen,
+                        correction = correction, niter = niter, burnin = burnin,
+                        thin = thin, nmessage = nmessage,
+                        path_save = path_save, nsave = nsave, ...)
+
+  attr(result, "inla_args")  <- inla_args
+  attr(result, "input_args") <- list(fnames = fnames)
+  result
+}
+
+#' @rdname sfclust
+#' @importFrom stars st_get_dimension_values
+#' @export
+sfclust.stars <- function(x, nclust = 10, graphdata = NULL, spnames = NULL,
+                          move_prob = c(0.425, 0.425, 0.1, 0.05),
+                          logpen = log(1 - 0.5),
+                          correction = TRUE, niter = 100, burnin = 0, thin = 1,
+                          nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
+  inla_args <- match.call(expand.dots = FALSE)$...
+  spnames <- detect_spnames(x, spnames)
+  fnames  <- setdiff(dimnames(x), spnames)
+
+  # initial clustering
+  if (is.null(graphdata)) {
+    response  <- detect_response(eval(inla_args$formula), names(x))
+    graphdata <- genclust(x, spnames = spnames, response = response, nclust = nclust)
+  }
+
+  # filter and execute model
+  data <- filter_df(data_all(x, spnames), graphdata$valid_ids)
+  result <- sfclust_fit(data, graphdata,
+                        move_prob = move_prob, logpen = logpen,
+                        correction = correction, niter = niter,
+                        burnin = burnin, thin = thin, nmessage = nmessage,
+                        path_save = path_save, nsave = nsave, ...)
+
+  attr(result, "inla_args")  <- inla_args
+  attr(result, "input_args") <- list(stars = x[0], spnames = spnames, fnames = fnames)
+  class(result) <- c("sfclust_stars", "sfclust")
+
+  result
+}
+
+detect_response <- function(formula, var_names) {
+  lhs_vars <- all.vars(formula[[2]])
+  lhs_vars[lhs_vars %in% var_names][1]
+}
+
+#' @importFrom igraph V
 sfclust_fit <- function(data, graphdata,
                         move_prob = c(0.425, 0.425, 0.1, 0.05), logpen = log(1 - 0.5),
                         correction = TRUE, niter = 100, burnin = 0, thin = 1,
@@ -191,208 +389,6 @@ sfclust_fit <- function(data, graphdata,
 
   if (!is.null(path_save)) saveRDS(output, file = path_save)
   return(output)
-}
-
-
-#' Bayesian spatial functional clustering
-#'
-#' `sfclust()` is the main user-facing function for Bayesian spatial functional
-#' clustering via reversible-jump MCMC. It dispatches on the class of the first
-#' argument:
-#'
-#' - `sfclust.data.frame()`: core interface — takes a pre-built long-format data frame
-#'   and a weighted adjacency matrix. Use this when working with any data format
-#'   after converting it yourself.
-#' - `sfclust.stars()`: stars wrapper — takes a `stars` spatio-temporal object,
-#'   converts it to long format, builds the spatial graph, and calls the core algorithm.
-#'
-#' @param x A `data.frame` (core interface) or a `stars` object (stars interface).
-#'        Dispatch is based on this argument's class.
-#'        For `sfclust.data.frame`: a long-format data frame with at least columns `id`
-#'        (unique row index) and `ids` (integer spatial unit index, 1 to `ns`), plus
-#'        any response and covariate columns referenced in `formula`.
-#'        For `sfclust.stars`: a `stars` object containing response variables, covariates,
-#'        and other necessary data.
-#' @param adjacency A square weighted adjacency matrix (ns × ns) encoding spatial
-#'        contiguity and edge weights. Can be a dense `matrix` or a sparse `Matrix`.
-#'        Typically obtained via [igraph::as_adjacency_matrix()] on the graph returned
-#'        by [genclust()].
-#' @param fnames Character. Name of the column in `x` that holds the functional
-#'        index (e.g. `"id_time"`). Used by plot methods; not required by the
-#'        algorithm itself. Default is `NULL`.
-#' @param graphdata A list with components `graph`, `mst`, and `membership` as returned
-#'        by [genclust()]. If `NULL`, it is built automatically.
-#' @param spnames Character vector with the names of the spatial dimensions of `stdata`.
-#'        Use a single name (e.g. `"geometry"`) for vector geometry data, or two names
-#'        (e.g. `c("x", "y")`) for raster data. If `NULL` (default), auto-detected
-#'        from the `stars` object dimensions.
-#' @param spnames Character vector with the names of the spatial dimensions of `x`.
-#'        If `NULL` (default), auto-detected from the `stars` object dimensions.
-#' @param move_prob A numeric vector of probabilities for the MCMC move types: birth,
-#'        death, change, and hyperparameter (default is `c(0.425, 0.425, 0.1, 0.05)`).
-#' @param logpen A negative numeric value representing the log-scale penalty for
-#'        increasing the number of clusters by one. The number of clusters is assumed to
-#'        follow a geometric prior with probability `q`, making this penalty equal to
-#'        `log(1 - q)`. For example, if `logpen = -50`, then a proposal that increases
-#'        the number of clusters will only be favored if it improves the log marginal
-#'        likelihood by more than 50.
-#' @param nclust Integer. Initial number of clusters when `graphdata = NULL`. Ignored
-#'        if `graphdata` is provided (default is `10`).
-#' @param correction A logical indicating whether correction to compute the marginal
-#'        likelihoods should be applied (default is `TRUE`). This depends on the type
-#'        of effects included in the `INLA` model.
-#' @param niter An integer specifying the number of MCMC iterations after burn-in
-#'        (default is `100`).
-#' @param burnin An integer specifying the number of burn-in iterations to discard
-#'        (default is `0`).
-#' @param thin An integer specifying the thinning interval for recording the results
-#'        (default is `1`).
-#' @param nmessage An integer specifying how often progress messages should be printed
-#'        (default is `10`).
-#' @param path_save A character string specifying the file path to save the results
-#'        (default is `NULL`).
-#' @param nsave An integer specifying the number of iterations between saved results
-#'        (default is `nmessage`).
-#' @param ... Additional arguments such as `formula`, `family`, and others passed to
-#'        `inla()`.
-#'
-#' @details
-#' This implementation draws inspiration from the methods described in the paper:
-#' *"Bayesian Clustering of Spatial Functional Data with Application to a Human Mobility
-#' Study During COVID-19"* by Bohai Zhang, Huiyan Sang, Zhao Tang Luo, and Hui Huang,
-#' published in *The Annals of Applied Statistics*, 2023. For further details on the
-#' methodology, please refer to:
-#' - The paper: \doi{doi:10.1214/22-AOAS1643}
-#' - Supplementary material: \doi{doi:10.1214/22-AOAS1643SUPPB}
-#'
-#' The MCMC algorithm in this implementation is largely based on the supplementary
-#' material provided in the paper. However, we have generalized the computation of the
-#' marginal likelihood ratio by leveraging INLA (Integrated Nested Laplace Approximation).
-#' This generalization enables integration over all parameters and hyperparameters,
-#' allowing for inference within a broader family of distribution functions and model
-#' terms, thereby extending the scope and flexibility of the original approach.
-#' Further details of our approach can be found in our paper *"Bayesian spatial functional
-#' data clustering: applications in disease surveillance"* by Ruiman Zhong, Erick A.
-#' Chacón-Montalván, Paula Moraga:
-#' - The paper: <https://doi.org/10.1002/sim.70597>
-#'
-#' @return
-#' An `sfclust` object (from `sfclust.data.frame`) or an `sfclust_stars` object
-#' inheriting from `sfclust` (from `sfclust.stars`). Both contain:
-#' - `samples`: MCMC trace with `membership`, `log_mlike`, and `move_counts`.
-#' - `clust`: selected clustering with `id`, `membership`, and fitted `models`.
-#'
-#' `sfclust_stars` additionally carries `input_args` with `stars` (structural shell
-#' of the input), `spnames`, and `fnames`, used by spatial plot methods.
-#'
-#' @author
-#' Ruiman Zhong \email{ruiman.zhong@kaust.edu.sa},
-#' Erick A. Chacón-Montalván \email{erick.chaconmontalvan@kaust.edu.sa},
-#' Paula Moraga \email{paula.moraga@kaust.edu.sa}
-#'
-#' @examples
-#'
-#' \donttest{
-#' library(sfclust)
-#'
-#' # Core interface: long-format data frame + adjacency matrix
-#' library(sf)
-#' data(stbinom)
-#' df  <- data_all(stbinom)
-#' adj <- as(sf::st_touches(stars::st_get_dimension_values(stbinom, "geometry")), "matrix") * 1L
-#' adj <- adj * runif(length(adj))
-#' result <- sfclust(df, adj, fnames = "id_time",
-#'   formula = cases ~ poly(id_time, 2) + f(id),
-#'   family = "binomial", Ntrials = population, niter = 10, nmessage = 1)
-#' print(result)
-#'
-#' # Stars interface: Gaussian data
-#' data(stgaus)
-#' result <- sfclust(stgaus, formula = y ~ f(id_time, model = "rw1"),
-#'   niter = 10, nmessage = 1)
-#' print(result)
-#' summary(result)
-#' plot(result)
-#'
-#' # Stars interface: binomial data
-#' data(stbinom)
-#' result <- sfclust(stbinom, formula = cases ~ poly(id_time, 2) + f(id),
-#'   family = "binomial", Ntrials = population, niter = 10, nmessage = 1)
-#' print(result)
-#' summary(result)
-#' plot(result)
-#' }
-#'
-#' @export
-sfclust <- function(x, ...) UseMethod("sfclust")
-
-#' @rdname sfclust
-#' @export
-sfclust.default <- function(x, ...) {
-  stop("No sfclust method for class '", paste(class(x), collapse = "/"), "'. ",
-       "Provide a data.frame (core interface) or a stars object.")
-}
-
-#' @rdname sfclust
-#' @export
-sfclust.data.frame <- function(x, adjacency, graphdata = NULL, fnames = NULL,
-                               nclust = 10,
-                               move_prob = c(0.425, 0.425, 0.1, 0.05),
-                               logpen = log(1 - 0.5),
-                               correction = TRUE, niter = 100, burnin = 0, thin = 1,
-                               nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
-  inla_args <- match.call(expand.dots = FALSE)$...
-
-  if (is.null(graphdata)) graphdata <- genclust_adj(adjacency * runif(length(adjacency)), nclust = nclust)
-
-  result <- sfclust_fit(x, graphdata,
-                        move_prob = move_prob, logpen = logpen,
-                        correction = correction, niter = niter, burnin = burnin,
-                        thin = thin, nmessage = nmessage,
-                        path_save = path_save, nsave = nsave, ...)
-
-  attr(result, "inla_args")  <- inla_args
-  attr(result, "input_args") <- list(fnames = fnames)
-  result
-}
-
-#' @rdname sfclust
-#' @importFrom stars st_get_dimension_values
-#' @export
-sfclust.stars <- function(x, nclust = 10, graphdata = NULL, spnames = NULL,
-                          move_prob = c(0.425, 0.425, 0.1, 0.05),
-                          logpen = log(1 - 0.5),
-                          correction = TRUE, niter = 100, burnin = 0, thin = 1,
-                          nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
-  inla_args <- match.call(expand.dots = FALSE)$...
-  spnames <- detect_spnames(x, spnames)
-  fnames  <- setdiff(dimnames(x), spnames)
-
-  # initial clustering
-  if (is.null(graphdata)) {
-    response  <- detect_response(eval(inla_args$formula), names(x))
-    graphdata <- genclust(x, spnames = spnames, response = response, nclust = nclust)
-  }
-
-  # filter and execute model
-  data <- filter_df(data_all(x, spnames), graphdata$valid_ids)
-  result <- sfclust_fit(data, graphdata,
-                        move_prob = move_prob, logpen = logpen,
-                        correction = correction, niter = niter,
-                        burnin = burnin, thin = thin, nmessage = nmessage,
-                        path_save = path_save, nsave = nsave, ...)
-
-  attr(result, "inla_args")  <- inla_args
-  attr(result, "input_args") <- list(stars = x[0], spnames = spnames, fnames = fnames)
-  class(result) <- c("sfclust_stars", "sfclust")
-
-  result
-}
-
-
-detect_response <- function(formula, var_names) {
-  lhs_vars <- all.vars(formula[[2]])
-  lhs_vars[lhs_vars %in% var_names][1]
 }
 
 log_mlik_ratio <- function(move_type, move, log_mlike_vec, data, correction = TRUE, ...) {

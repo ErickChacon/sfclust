@@ -1,4 +1,3 @@
-
 #' Generate initial cluster assignments
 #'
 #' Creates an undirected graph from spatial data or a weighted adjacency matrix,
@@ -48,26 +47,6 @@
 #' @export
 genclust <- function(x, ...) UseMethod("genclust")
 
-
-
-#' @importFrom stars st_dimensions st_get_dimension_values
-#' @importFrom methods as
-#' @importFrom sf st_touches
-create_adj <- function(domain, weights = NULL, valid_ids = which(domain[[1]])) {
-  spnames <- dimnames(domain)
-  if (length(spnames) == 1) {
-    geom <- st_get_dimension_values(domain, spnames)
-    adj <- as(st_touches(geom), "sparseMatrix")
-  } else if (length(spnames) == 2) {
-    adj <- raster_adjacency(dim(domain)[[1]], dim(domain)[[2]])
-  } else {
-    stop("create_adj only supports 1 (geometry) or 2 (raster x/y) spatial dimensions.")
-  }
-  if (is.null(weights)) weights <- runif(length(adj))
-  adj <- as(adj * weights, "CsparseMatrix")
-  adj[valid_ids, valid_ids, drop = FALSE]
-}
-
 #' @rdname genclust
 #' @export
 genclust.default <- function(x, ...) {
@@ -88,8 +67,6 @@ genclust.matrix <- function(x, nclust = 10, weights = NULL, ...) {
 genclust.Matrix <- function(x, nclust = 10, weights = NULL, ...) {
   genclust.matrix(x, nclust = nclust, weights = weights)
 }
-
-
 
 #' @rdname genclust
 #' @param nclust Integer. Number of initial clusters (default `10`).
@@ -115,19 +92,6 @@ genclust.stars <- function(x, nclust = 10, spnames = NULL, response = NULL, weig
   result
 }
 
-detect_spnames <- function(x, spnames = NULL) {
-  if (is.null(spnames)) {
-    dims <- st_dimensions(x)
-    spnames <- names(dims)[!is.na(sapply(dims, function(d) d$delta))]
-    if (length(spnames) != 2) {
-      geom_dims <- names(dims)[sapply(dims, function(d) inherits(d$values, "sfc"))]
-      if (length(geom_dims) == 1) spnames <- geom_dims
-      else stop("Could not auto-detect spatial dimensions from `stars` object. Provide `spnames`.")
-    }
-  }
-  spnames[order(match(spnames, dimnames(x)))]
-}
-
 validate_nclust <- function(nclust, n) {
   if (!is.numeric(nclust) || length(nclust) != 1 || nclust < 1)
     stop("`nclust` must be a positive integer.")
@@ -135,10 +99,36 @@ validate_nclust <- function(nclust, n) {
     stop("`nclust` must be smaller than number of valid spatial units.")
 }
 
+#' @importFrom stars st_apply
+create_domain <- function(x, spnames, response = NULL) {
+  if (is.null(response)) {
+    st_apply(x[1], spnames, function(v) TRUE)
+  } else {
+    st_apply(x[response], spnames, function(v) any(!is.na(v)))
+  }
+}
+
+#' @importFrom stars st_dimensions st_get_dimension_values
+#' @importFrom methods as
+#' @importFrom sf st_touches
+create_adj <- function(domain, weights = NULL, valid_ids = which(domain[[1]])) {
+  spnames <- dimnames(domain)
+  if (length(spnames) == 1) {
+    geom <- st_get_dimension_values(domain, spnames)
+    adj <- as(st_touches(geom), "sparseMatrix")
+  } else if (length(spnames) == 2) {
+    adj <- raster_adjacency(dim(domain)[[1]], dim(domain)[[2]])
+  } else {
+    stop("create_adj only supports 1 (geometry) or 2 (raster x/y) spatial dimensions.")
+  }
+  if (is.null(weights)) weights <- runif(length(adj))
+  adj <- as(adj * weights, "CsparseMatrix")
+  adj[valid_ids, valid_ids, drop = FALSE]
+}
+
 #' @importFrom igraph graph_from_adjacency_matrix mst V "V<-" vcount ecount delete_edges components
 #' @importFrom Matrix sparseMatrix
 NULL
-
 genclust_adj <- function(x, nclust = 10) {
   graph <- graph_from_adjacency_matrix(x, mode = "upper", weighted = TRUE)
   mstgraph <- mst(graph)

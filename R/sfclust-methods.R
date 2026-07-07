@@ -36,7 +36,6 @@ print.sfclust <- function(x, ...) {
   invisible(x)
 }
 
-
 #' Summary method for sfclust objects
 #'
 #' This function summarizes the cluster assignments from the desired clustering `sample`.
@@ -508,7 +507,6 @@ plot_clusters_series.sfclust <- function(x, var, clusters = NULL, sort = FALSE, 
       theme_bw() +
       labs(x = NULL)
 }
-
 
 resolve_fnames <- function(x) {
   fnames <- attr(x, "input_args")$fnames
