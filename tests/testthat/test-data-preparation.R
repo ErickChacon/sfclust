@@ -200,6 +200,46 @@ test_that("data_all: no filtering — NA cells are kept", {
   expect_equal(sort(unique(df$ids)), seq_len(nx * ny))
 })
 
+test_that("data_all: raster with NA — ids assign correct flat positions", {
+  # 3x2 raster: flat positions are col-major over x then y: 1,2,3,4,5,6
+  # cell (x=2, y=1) is flat position 2; we set it NA
+  nx <- 3; ny <- 2; nt <- 2
+  vals <- array(seq_len(nx * ny * nt), dim = c(nx, ny, nt))
+  vals[2, 1, ] <- NA
+  stdata <- st_as_stars(
+    val = vals,
+    dimensions = st_dimensions(x = 1:nx, y = 1:ny,
+      time = seq(as.Date("2024-01-01"), by = "1 day", length.out = nt))
+  )
+  df <- data_all(stdata, spnames = c("x", "y"))
+
+  # flat position 2 (x=2, y=1) must appear in ids and carry NA val
+  rows_flat2 <- df[df$ids == 2, ]
+  expect_equal(nrow(rows_flat2), nt)
+  expect_true(all(is.na(rows_flat2$val)))
+
+  # flat position 1 (x=1, y=1) must be non-NA
+  rows_flat1 <- df[df$ids == 1, ]
+  expect_false(any(is.na(rows_flat1$val)))
+})
+
+test_that("data_all: vector geometry with NA values in response", {
+  ns <- 4; nt <- 3
+  space <- st_sfc(lapply(seq_len(ns), function(i) st_point(c(i, i))))
+  time  <- seq(as.Date("2024-01-01"), by = "1 day", length.out = nt)
+  vals  <- array(seq_len(ns * nt), dim = c(ns, nt))
+  vals[2, ] <- NA  # region 2 is all NA
+  stdata <- st_as_stars(y = vals, dimensions = st_dimensions(geometry = space, time = time))
+
+  df <- data_all(stdata)
+
+  # data_all keeps NA rows — filtering is filter_df's job
+  expect_equal(nrow(df), ns * nt)
+  expect_equal(sort(unique(df$ids)), seq_len(ns))
+  rows_na <- df[df$ids == 2, ]
+  expect_true(all(is.na(rows_na$y)))
+})
+
 # --- filter_df ---------------------------------------------------------
 
 test_that("filter_df: sid correctly selects cluster rows for vector geometry", {
@@ -221,6 +261,25 @@ test_that("filter_df: sid correctly selects cluster rows for vector geometry", {
   expect_equal(sort(unique(inla_data$sid)), 3:5)
   expect_equal(sort(unique(inla_data$ids)), 3:5)
   expect_equal(nrow(inla_data), 3 * nt)
+})
+
+test_that("filter_df: row count is n_valid * nt and no NA response after filtering", {
+  nx <- 3; ny <- 2; nt <- 3
+  vals <- array(seq_len(nx * ny * nt), dim = c(nx, ny, nt))
+  vals[2, 1, ] <- NA  # flat position 2 is NA
+  x <- st_as_stars(
+    val = vals,
+    dimensions = st_dimensions(
+      x = 1:nx, y = 1:ny,
+      time = seq(as.Date("2024-01-01"), by = "1 day", length.out = nt)
+    )
+  )
+  domain   <- create_domain(x, c("x", "y"), "val")
+  valid_ids <- which(domain[[1]])  # 5 valid cells out of 6
+  df <- filter_df(data_all(x, c("x", "y")), valid_ids)
+
+  expect_equal(nrow(df), length(valid_ids) * nt)
+  expect_false(any(is.na(df$val)))
 })
 
 test_that("filter_df: sid remapped to 1..n_valid for raster with NA cells", {

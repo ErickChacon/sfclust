@@ -25,8 +25,10 @@ make_sfclust_vec <- function() {
   )
   set.seed(42)
   gd <- genclust(x, nclust = 2)
-  sfclust(x, graphdata = gd, formula = y ~ 1, family = "gaussian",
-          niter = 3, burnin = 0, thin = 1, nmessage = 1)
+  suppressWarnings(
+    sfclust(x, graphdata = gd, formula = y ~ 1, family = "gaussian",
+            niter = 3, burnin = 0, thin = 1, nmessage = 1)
+  )
 }
 
 make_sfclust_vec_binom <- function() {
@@ -41,8 +43,10 @@ make_sfclust_vec_binom <- function() {
   )
   set.seed(42)
   gd <- genclust(x, nclust = 2)
-  sfclust(x, graphdata = gd, formula = cases ~ 1, family = "binomial",
-          Ntrials = population, niter = 3, burnin = 0, thin = 1, nmessage = 1)
+  suppressWarnings(
+    sfclust(x, graphdata = gd, formula = cases ~ 1, family = "binomial",
+            Ntrials = population, niter = 3, burnin = 0, thin = 1, nmessage = 1)
+  )
 }
 
 make_sfclust_raster_na <- function() {
@@ -58,9 +62,11 @@ make_sfclust_raster_na <- function() {
   )
   set.seed(42)
   gd <- genclust(x, spnames = c("x", "y"), response = "z", nclust = 2)
-  sfclust(x, graphdata = gd, spnames = c("x", "y"),
-          formula = z ~ 1, family = "gaussian",
-          niter = 3, burnin = 0, thin = 1, nmessage = 1)
+  suppressWarnings(
+    sfclust(x, graphdata = gd, spnames = c("x", "y"),
+            formula = z ~ 1, family = "gaussian",
+            niter = 3, burnin = 0, thin = 1, nmessage = 1)
+  )
 }
 
 # --- print / summary ---------------------------------------------------
@@ -129,9 +135,19 @@ test_that("sfclust with Ntrials column reference fits without error", {
 test_that("update.sfclust with Ntrials column reference continues chain", {
   skip_if_not_installed("INLA")
   result <- make_sfclust_vec_binom()
-  result2 <- update(result, niter = 2, nmessage = 1)
+  result2 <- suppressWarnings(update(result, niter = 2, nmessage = 1))
   expect_s3_class(result2, "sfclust_stars")
   expect_equal(nrow(result2$samples$membership), 2L)
+})
+
+# --- inla_args stored --------------------------------------------------
+
+test_that("inla_args stores formula and family from sfclust call", {
+  skip_if_not_installed("INLA")
+  result <- make_sfclust_vec_binom()
+  ia <- attr(result, "inla_args")
+  expect_equal(eval(ia$formula), cases ~ 1)
+  expect_equal(eval(ia$family), "binomial")
 })
 
 # --- update ------------------------------------------------------------
@@ -139,7 +155,7 @@ test_that("update.sfclust with Ntrials column reference continues chain", {
 test_that("update.sfclust continues chain from last state", {
   skip_if_not_installed("INLA")
   result <- make_sfclust_vec()
-  result2 <- update(result, niter = 2, nmessage = 1)
+  result2 <- suppressWarnings(update(result, niter = 2, nmessage = 1))
   expect_s3_class(result2, "sfclust_stars")
   expect_equal(nrow(result2$samples$membership), 2L)
 })

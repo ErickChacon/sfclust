@@ -39,6 +39,19 @@ test_that("correction_required: identifies rw1/rw2/crw1 terms", {
   expect_equal(correction_required(formula), c("z", "w"))
 })
 
+# --- log_mlik_each INLA failure ----------------------------------------
+
+test_that("log_mlik_each returns -Inf and warns when INLA fails", {
+  skip_if_not_installed("INLA")
+  data <- data.frame(y = rnorm(5), id_time = 1:5, ids = 1:5, id = 1:5, sid = 1:5)
+  inla_args <- list(formula = y ~ f(nonexistent, model = "rw1"), family = "gaussian")
+  expect_warning(
+    result <- sfclust:::log_mlik_each(1, rep(1L, 5), data, FALSE, FALSE, inla_args),
+    "INLA failed"
+  )
+  expect_equal(result, -Inf)
+})
+
 # --- log_mlik_correction and get_structure_matrix ----------------------
 
 test_that("log_mlik_correction: rw1, rw2, and combined", {
