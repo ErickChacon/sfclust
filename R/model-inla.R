@@ -18,42 +18,13 @@
 #' @return A numeric vector containing the log marginal likelihood for each cluster or the
 #'         the fitted INLA model for each cluster when `detailed = TRUE`.
 #'
-#' @examples
-#'
-#'
-#' \donttest{
-#' library(sfclust)
-#' library(stars)
-#'
-#' dims <- st_dimensions(
-#'   geometry = st_sfc(lapply(1:5, function(i) st_point(c(i, i)))),
-#'   time = seq(as.Date("2024-01-01"), by = "1 day", length.out = 3)
-#' )
-#' stdata <- st_as_stars(
-#'   cases = array(rpois(15, 100 * exp(1)), dim = c(5, 3)),
-#'   temperature = array(runif(15, 15, 20), dim = c(5, 3)),
-#'   expected = array(100, dim = c(5, 3)),
-#'   dimensions = dims
-#' )
-#'
-#' df <- data_all(stdata)
-#' df$sid <- df$ids
-#' log_mlik_all(c(1, 1, 1, 2, 2), df,
-#'   formula = cases ~ temperature, family = "poisson", E = expected)
-#'
-#' models <- log_mlik_all(c(1, 1, 1, 2, 2), df, detailed = TRUE,
-#'   formula = cases ~ temperature, family = "poisson", E = expected)
-#' lapply(models, summary)
-#' }
-#'
-#' @export
-log_mlik_all <- function(membership, data, correction = TRUE, detailed = FALSE, ...) {
+log_mlik_all <- function(membership, data, correction = TRUE, detailed = FALSE, inla_args = NULL) {
   clusters <- unique_clusters(membership)
 
   if (detailed) {
-    lapply(clusters, log_mlik_each, membership, data, correction, detailed, ...)
+    lapply(clusters, log_mlik_each, membership, data, correction, detailed, inla_args)
   } else {
-    sapply(clusters, log_mlik_each, membership, data, correction, detailed, ...)
+    sapply(clusters, log_mlik_each, membership, data, correction, detailed, inla_args)
   }
 }
 
@@ -73,15 +44,23 @@ unique_clusters <- function (membership) {
   }
 }
 
-log_mlik_each <- function(k, membership, data, correction = TRUE, detailed = FALSE, ...) {
+log_mlik_each <- function(k, membership, data, correction = TRUE, detailed = FALSE, inla_args = NULL) {
   cluster_units <- which(membership == k)
   inla_data <- data[data$sid %in% cluster_units, , drop = FALSE]
-  model <- INLA::inla(
-    data = inla_data,
-    control.predictor = list(compute = TRUE),
-    control.compute = list(config = correction),
-    ...
+  model <- tryCatch(
+    do.call(INLA::inla, c(
+      list(data = inla_data,
+           control.predictor = list(compute = TRUE),
+           control.compute = list(config = correction)),
+      as.list(inla_args)
+    )),
+    error = function(e) {
+      warning("INLA failed for cluster ", k, ": ", conditionMessage(e), immediate. = TRUE)
+      NULL
+    }
   )
+
+  if (is.null(model)) return(if (detailed) NULL else -Inf)
 
   if (detailed) {
     model

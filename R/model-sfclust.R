@@ -149,15 +149,13 @@ sfclust.data.frame <- function(x, adjacency, graphdata = NULL, fnames = NULL,
 
   if (is.null(graphdata)) graphdata <- genclust_adj(adjacency * runif(length(adjacency)), nclust = nclust)
 
-  result <- sfclust_fit(x, graphdata,
-                        move_prob = move_prob, logpen = logpen,
-                        correction = correction, niter = niter, burnin = burnin,
-                        thin = thin, nmessage = nmessage,
-                        path_save = path_save, nsave = nsave, ...)
-
-  attr(result, "inla_args")  <- inla_args
-  attr(result, "input_args") <- list(fnames = fnames)
-  result
+  sfclust_fit(x, graphdata,
+              move_prob = move_prob, logpen = logpen,
+              correction = correction, niter = niter, burnin = burnin,
+              thin = thin, nmessage = nmessage,
+              path_save = path_save, nsave = nsave,
+              inla_args = inla_args,
+              input_args = list(fnames = fnames))
 }
 
 #' @rdname sfclust
@@ -178,19 +176,16 @@ sfclust.stars <- function(x, nclust = 10, graphdata = NULL, spnames = NULL,
     graphdata <- genclust(x, spnames = spnames, response = response, nclust = nclust)
   }
 
-  # filter and execute model
   data <- filter_df(data_all(x, spnames), graphdata$valid_ids)
-  result <- sfclust_fit(data, graphdata,
-                        move_prob = move_prob, logpen = logpen,
-                        correction = correction, niter = niter,
-                        burnin = burnin, thin = thin, nmessage = nmessage,
-                        path_save = path_save, nsave = nsave, ...)
-
-  attr(result, "inla_args")  <- inla_args
-  attr(result, "input_args") <- list(stars = x[0], spnames = spnames, fnames = fnames)
-  class(result) <- c("sfclust_stars", "sfclust")
-
-  result
+  input_args <- list(stars = x[0], spnames = spnames, fnames = fnames)
+  sfclust_fit(data, graphdata,
+              move_prob = move_prob, logpen = logpen,
+              correction = correction, niter = niter,
+              burnin = burnin, thin = thin, nmessage = nmessage,
+              path_save = path_save, nsave = nsave,
+              inla_args = inla_args,
+              save_class = c("sfclust_stars", "sfclust"),
+              input_args = input_args)
 }
 
 detect_response <- function(formula, var_names) {
@@ -202,11 +197,11 @@ detect_response <- function(formula, var_names) {
 sfclust_fit <- function(data, graphdata,
                         move_prob = c(0.425, 0.425, 0.1, 0.05), logpen = log(1 - 0.5),
                         correction = TRUE, niter = 100, burnin = 0, thin = 1,
-                        nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
+                        nmessage = 10, path_save = NULL, nsave = nmessage,
+                        inla_args = NULL, save_class = "sfclust", input_args = NULL) {
 
-  inla_args <- match.call(expand.dots = FALSE)$...
   fit_args <- list(data = data, graphdata = graphdata, move_prob = move_prob, logpen = logpen,
-                   correction = correction)
+                   correction = correction, niter = niter, burnin = burnin, thin = thin)
 
   # check if correction is required
   if (correction) {
@@ -226,7 +221,7 @@ sfclust_fit <- function(data, graphdata,
   ns         <- length(membership)
   nclust     <- max(membership)
   edge_status <- getEdgeStatus(membership, mstgraph)
-  log_mlike_vec <- log_mlik_all(membership, data, correction, detailed = FALSE, ...)
+  log_mlike_vec <- log_mlik_all(membership, data, correction, FALSE, inla_args)
   log_mlike  <- sum(log_mlike_vec)
 
   # output objects
@@ -268,7 +263,7 @@ sfclust_fit <- function(data, graphdata,
       }
       log_P   <- log(rd_new) - log(rb)
       log_A   <- logpen
-      log_L_new <- log_mlik_ratio("split", split_res, log_mlike_vec, data, correction, ...)
+      log_L_new <- log_mlik_ratio("split", split_res, log_mlike_vec, data, correction, inla_args)
       acc_prob  <- exp(min(0, log_A + log_P + log_L_new$ratio))
 
       if (runif(1) < acc_prob) {
@@ -291,7 +286,7 @@ sfclust_fit <- function(data, graphdata,
       }
       log_P   <- log(rb_new) - log(rd)
       log_A   <- -logpen
-      log_L_new <- log_mlik_ratio("merge", merge_res, log_mlike_vec, data, correction, ...)
+      log_L_new <- log_mlik_ratio("merge", merge_res, log_mlike_vec, data, correction, inla_args)
       acc_prob  <- exp(min(0, log_A + log_P + log_L_new$ratio))
 
       if (runif(1) < acc_prob) {
@@ -308,8 +303,8 @@ sfclust_fit <- function(data, graphdata,
       merge_res <- mergeCluster(mstgraph, edge_status, membership)
       split_res <- splitCluster(mstgraph, nclust - 1, merge_res$membership)
 
-      log_L_new_merge <- log_mlik_ratio("merge", merge_res, log_mlike_vec, data, correction, ...)
-      log_L_new       <- log_mlik_ratio("split", split_res, log_L_new_merge$log_mlike_vec, data, correction, ...)
+      log_L_new_merge <- log_mlik_ratio("merge", merge_res, log_mlike_vec, data, correction, inla_args)
+      log_L_new       <- log_mlik_ratio("split", split_res, log_L_new_merge$log_mlike_vec, data, correction, inla_args)
       acc_prob        <- exp(min(0, log_L_new_merge$ratio + log_L_new$ratio))
 
       if (runif(1) < acc_prob) {
@@ -362,7 +357,8 @@ sfclust_fit <- function(data, graphdata,
         attr(output, "mst")       <- mst_out
         attr(output, "fit_args")  <- fit_args
         attr(output, "inla_args") <- inla_args
-        class(output) <- "sfclust"
+        attr(output, "input_args") <- input_args
+        class(output) <- save_class
         saveRDS(output, file = path_save)
       }
     }
@@ -379,35 +375,38 @@ sfclust_fit <- function(data, graphdata,
     clust = list(
       id       = nrow(membership_out),
       membership = membership,
-      models   = log_mlik_all(membership, data, correction = FALSE, detailed = TRUE, ...)
+      models   = log_mlik_all(membership, data, FALSE, TRUE, inla_args)
     )
   )
   attr(output, "mst")       <- mst_out
   attr(output, "fit_args")  <- fit_args
   attr(output, "inla_args") <- inla_args
-  class(output) <- "sfclust"
+  attr(output, "input_args") <- input_args
+  class(output) <- save_class
 
   if (!is.null(path_save)) saveRDS(output, file = path_save)
   return(output)
 }
 
-log_mlik_ratio <- function(move_type, move, log_mlike_vec, data, correction = TRUE, ...) {
+log_mlik_ratio <- function(move_type, move, log_mlike_vec, data, correction = TRUE, inla_args = NULL) {
   # update local marginal likelihoods for split move
   if (move_type == "split") {
     log_like_vec_new <- log_mlike_vec
-    M1 <- log_mlik_each(move$cluster_old, move$membership, data, correction, detailed = FALSE, ...)
-    M2 <- log_mlik_each(move$cluster_new, move$membership, data, correction, detailed = FALSE, ...)
+    M1 <- log_mlik_each(move$cluster_old, move$membership, data, correction, FALSE, inla_args)
+    M2 <- log_mlik_each(move$cluster_new, move$membership, data, correction, FALSE, inla_args)
     log_like_vec_new[move$cluster_old] <- M1
     log_like_vec_new[move$cluster_new] <- M2
     llratio <- M1 + M2 - log_mlike_vec[move$cluster_old]
+    if (is.nan(llratio)) llratio <- -Inf
   }
 
   # update local marginal likelihoods for merge move
   if (move_type == "merge") {
     log_like_vec_new <- log_mlike_vec[- move$cluster_rm]
-    M <- log_mlik_each(move$cluster_new, move$membership, data, correction, detailed = FALSE, ...)
+    M <- log_mlik_each(move$cluster_new, move$membership, data, correction, FALSE, inla_args)
     log_like_vec_new[move$cluster_new] <- M
     llratio <- M - sum(log_mlike_vec[c(move$cluster_rm, move$cluster_new)])
+    if (is.nan(llratio)) llratio <- -Inf
   }
 
   return(list(ratio = llratio, log_mlike_vec = log_like_vec_new))

@@ -29,6 +29,22 @@ make_sfclust_vec <- function() {
           niter = 3, burnin = 0, thin = 1, nmessage = 1)
 }
 
+make_sfclust_vec_binom <- function() {
+  geom <- st_make_grid(cellsize = c(1, 1), offset = c(0, 0), n = c(3, 2))
+  time <- seq(as.Date("2024-01-01"), by = "1 day", length.out = 4)
+  ns <- length(geom); nt <- length(time)
+  population <- array(rep(100L, ns * nt), dim = c(ns, nt))
+  x <- st_as_stars(
+    cases      = array(rbinom(ns * nt, 100L, 0.3), dim = c(ns, nt)),
+    population = population,
+    dimensions = st_dimensions(geometry = geom, time = time)
+  )
+  set.seed(42)
+  gd <- genclust(x, nclust = 2)
+  sfclust(x, graphdata = gd, formula = cases ~ 1, family = "binomial",
+          Ntrials = population, niter = 3, burnin = 0, thin = 1, nmessage = 1)
+}
+
 make_sfclust_raster_na <- function() {
   nx <- 3; ny <- 2; nt <- 4
   vals <- array(rnorm(nx * ny * nt), dim = c(nx, ny, nt))
@@ -99,6 +115,23 @@ test_that("fitted.sfclust_stars: raster with NA cells has NA for invalid cell", 
   expect_equal(prod(dim(s)), 3L * 2L * 4L)
   df <- as.data.frame(s)
   expect_true(any(is.na(df$mean)))   # flat position 2 (NA cell) is NA in output
+})
+
+# --- column-reference INLA args (Ntrials, E) ---------------------------
+
+test_that("sfclust with Ntrials column reference fits without error", {
+  skip_if_not_installed("INLA")
+  result <- make_sfclust_vec_binom()
+  expect_s3_class(result, "sfclust_stars")
+  expect_equal(nrow(result$samples$membership), 3L)
+})
+
+test_that("update.sfclust with Ntrials column reference continues chain", {
+  skip_if_not_installed("INLA")
+  result <- make_sfclust_vec_binom()
+  result2 <- update(result, niter = 2, nmessage = 1)
+  expect_s3_class(result2, "sfclust_stars")
+  expect_equal(nrow(result2$samples$membership), 2L)
 })
 
 # --- update ------------------------------------------------------------

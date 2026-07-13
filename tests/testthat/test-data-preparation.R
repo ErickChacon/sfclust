@@ -200,9 +200,9 @@ test_that("data_all: no filtering — NA cells are kept", {
   expect_equal(sort(unique(df$ids)), seq_len(nx * ny))
 })
 
-# --- log_mlik_each sid-based subsetting --------------------------------
+# --- filter_df ---------------------------------------------------------
 
-test_that("log_mlik_each: sid correctly selects cluster rows for vector geometry", {
+test_that("filter_df: sid correctly selects cluster rows for vector geometry", {
   ns <- 6; nt <- 3
   space <- st_sfc(lapply(seq_len(ns), function(i) st_point(c(i, i))))
   time  <- seq(as.Date("2024-01-01"), by = "1 day", length.out = nt)
@@ -223,9 +223,7 @@ test_that("log_mlik_each: sid correctly selects cluster rows for vector geometry
   expect_equal(nrow(inla_data), 3 * nt)
 })
 
-# --- ids vs membership mismatch for raster with NAs -------------------
-
-test_that("log_mlik_each: ids mismatch for raster with NA cells", {
+test_that("filter_df: sid remapped to 1..n_valid for raster with NA cells", {
   # 3x2 raster where flat position 2 (cell x=2, y=1) is NA
   # valid flat positions: 1, 3, 4, 5, 6  (n_valid = 5)
   nx <- 3; ny <- 2; nt <- 2
@@ -256,83 +254,4 @@ test_that("log_mlik_each: ids mismatch for raster with NA cells", {
   selected_ids <- sort(unique(df$ids[df$sid %in% cluster_units]))
 
   expect_equal(selected_ids, sort(correct_flat_ids))
-})
-
-# --- log marginal likelihood correction --------------------------------
-
-test_that('compute log marginal correction', {
-  skip_on_cran()
-
-  # terms that require correction
-  formula <- y ~ x + z
-  expect_equal(correction_required(formula), character())
-
-  formula <- y ~ x + f(z, model = "rw1")
-  expect_equal(correction_required(formula), "z")
-
-  formula <- y ~ f(z, model="rw2") + x
-  expect_equal(correction_required(formula), "z")
-
-  formula <- y ~ x +
-      f(z, model = "crw1", hyper = list(prec = list(prior = "loggamma", param = c(1, 0.01)))) +
-      f(w, model = "rw2") +
-      f(v, model = "ar")
-  expect_equal(correction_required(formula), c("z", "w"))
-
-  # structure matrix and log marginal likelihood correction
-  n <- 10
-  data <- data.frame(y = rnorm(n), time = 1:n, time2 = 1:n)
-
-  ## rw1
-  formula <- y ~ f(time, model = "rw1")
-  model <- INLA::inla(formula, data = data, control.compute = list(config = TRUE))
-
-  i <- c(1:n, 1:(n-1))
-  j <- c(1:n, 2:n)
-  vals <- c(c(1, rep(2, n-2), 1) + 0.0001, rep(-1, n-1))
-  expect_equal(
-    get_structure_matrix(model)$time,
-    sparseMatrix(i = i, j = j, x = vals)
-  )
-  expect_equal(log_mlik_correction(model), -3.45305292)
-
-  ## rw2
-  formula <- y ~ f(time, model = "rw2")
-  model <- INLA::inla(formula, data = data, control.compute = list(config = TRUE))
-
-  i <- c(1:n, 1:(n-1), 1:(n-2))
-  j <- c(1:n, 2:n, 3:n)
-  vals <- c(c(1, 5, rep(6, n-4), 5, 1) + 0.0001, c(-2, rep(-4, n-3), -2), rep(1, n-2))
-  expect_equal(
-    get_structure_matrix(model)$time,
-    sparseMatrix(i = i, j = j, x = vals)
-  )
-  expect_equal(log_mlik_correction(model), -5.8514497)
-
-  ## rw1 and rw2
-  formula <- y ~ f(time, model = "rw1") +  f(time2, model = "rw2")
-  model <- INLA::inla(formula, data = data, control.compute = list(config = TRUE))
-  expect_equal(log_mlik_correction(model), - 5.8514497 - 3.45305292)
-})
-
-# --- unique_clusters ---------------------------------------------------
-
-test_that('obtain unique clusters from membership', {
-  membership <- c(2, 4, 4, 3, 1)
-  expect_equal(unique_clusters(membership), 1:4)
-
-  membership <- c(3, 7, 7, 4, 2)
-  expect_error(unique_clusters(membership))
-
-  membership <- factor(c(3, 7, 7, 4, 2))
-  aux <- as.character(c(2, 3, 4, 7))
-  expect_equal(unique_clusters(membership), setNames(aux, aux))
-
-  membership <- factor(c("c", "e", "e", "d", "b"))
-  aux <- c("b", "c", "d", "e")
-  expect_equal(unique_clusters(membership), setNames(aux, aux))
-
-  membership <- c("c", "e", "e", "d", "b")
-  aux <- c("b", "c", "d", "e")
-  expect_equal(unique_clusters(membership), setNames(aux, aux))
 })

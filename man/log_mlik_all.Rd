@@ -4,7 +4,13 @@
 \alias{log_mlik_all}
 \title{Fit models and compute the log marginal likelihood for all clusters}
 \usage{
-log_mlik_all(membership, data, correction = TRUE, detailed = FALSE, ...)
+log_mlik_all(
+  membership,
+  data,
+  correction = TRUE,
+  detailed = FALSE,
+  inla_args = NULL
+)
 }
 \arguments{
 \item{membership}{Integer, character or factor vector indicating the cluster membership
@@ -30,33 +36,4 @@ the fitted INLA model for each cluster when \code{detailed = TRUE}.
 \description{
 Fit the specified INLA model to each cluster and compute the log marginal likelihood
 for each cluster specified in the membership vector.
-}
-\examples{
-
-
-\donttest{
-library(sfclust)
-library(stars)
-
-dims <- st_dimensions(
-  geometry = st_sfc(lapply(1:5, function(i) st_point(c(i, i)))),
-  time = seq(as.Date("2024-01-01"), by = "1 day", length.out = 3)
-)
-stdata <- st_as_stars(
-  cases = array(rpois(15, 100 * exp(1)), dim = c(5, 3)),
-  temperature = array(runif(15, 15, 20), dim = c(5, 3)),
-  expected = array(100, dim = c(5, 3)),
-  dimensions = dims
-)
-
-df <- data_all(stdata)
-df$sid <- df$ids
-log_mlik_all(c(1, 1, 1, 2, 2), df,
-  formula = cases ~ temperature, family = "poisson", E = expected)
-
-models <- log_mlik_all(c(1, 1, 1, 2, 2), df, detailed = TRUE,
-  formula = cases ~ temperature, family = "poisson", E = expected)
-lapply(models, summary)
-}
-
 }

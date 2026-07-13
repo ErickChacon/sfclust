@@ -127,44 +127,30 @@ update.sfclust <- function(object, niter = 100, burnin = 0, thin = 1, nmessage =
   }
 }
 
-#' @method update sfclust_stars
-#' @export
-update.sfclust_stars <- function(object, niter = 100, burnin = 0, thin = 1, nmessage = 10,
-                                 sample = NULL, path_save = NULL, nsave = nmessage, ...) {
-  result <- NextMethod()
-  attr(result, "input_args") <- attr(object, "input_args")
-  class(result) <- c("sfclust_stars", "sfclust")
-  result
-}
-
 update_sfclust <- function(x, niter = 100, burnin = 0, thin = 1, nmessage = 10,
                            path_save = NULL, nsave = nmessage) {
-  nsamples <- nrow(x$samples$membership)
+  nsamples <- x$clust$id
+  fit_args <- attr(x, "fit_args")
 
-  fit_args <- c(attr(x, "fit_args"), attr(x, "inla_args"))
   fit_args$graphdata$mst        <- attr(x, "mst")[[nsamples]]
   fit_args$graphdata$membership <- x$samples$membership[nsamples, ]
-
   fit_args$niter     <- niter
   fit_args$burnin    <- burnin
   fit_args$thin      <- thin
   fit_args$nmessage  <- nmessage
   fit_args$path_save <- path_save
   fit_args$nsave     <- nsave
+  fit_args$inla_args  <- attr(x, "inla_args")
+  fit_args$save_class <- class(x)
+  fit_args$input_args <- attr(x, "input_args")
 
-  eval(as.call(c(list(as.name("sfclust_fit")), fit_args)), envir = parent.frame())
+  do.call(sfclust_fit, fit_args)
 }
 
 update_within <- function(x, sample = nrow(x$samples$membership)) {
-  inla_args             <- attr(x, "inla_args")
-  inla_args$data        <- attr(x, "fit_args")$data
-  inla_args$membership  <- x$samples$membership[sample, ]
-  inla_args$correction  <- FALSE
-  inla_args$detailed    <- TRUE
-
-  call <- as.call(c(list(as.name("log_mlik_all")), inla_args))
   x$clust$id     <- sample
-  x$clust$models <- eval(call, envir = parent.frame())
+  x$clust$models <- log_mlik_all(x$samples$membership[sample, ], attr(x, "fit_args")$data,
+                                 FALSE, TRUE, attr(x, "inla_args"))
   x
 }
 
