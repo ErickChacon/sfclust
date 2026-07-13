@@ -13,7 +13,8 @@
 #' @param detailed Logical value indicating whether to return the INLA model instead of
 #'        the log marginal likelihood. The argument `correction` is not applied in this
 #'        case.
-#' @param ... Arguments passed to the `inla` function (eg. `family`, `formula` and `E`).
+#' @param inla_args A named list or pairlist of arguments passed to `inla()` (e.g.
+#'        `formula`, `family`, `E`).
 #'
 #' @return A numeric vector containing the log marginal likelihood for each cluster or the
 #'         the fitted INLA model for each cluster when `detailed = TRUE`.

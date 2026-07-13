@@ -27,7 +27,8 @@ for each spatial unit.}
 the log marginal likelihood. The argument \code{correction} is not applied in this
 case.}
 
-\item{...}{Arguments passed to the \code{inla} function (eg. \code{family}, \code{formula} and \code{E}).}
+\item{inla_args}{A named list or pairlist of arguments passed to \code{inla()} (e.g.
+\code{formula}, \code{family}, \code{E}).}
 }
 \value{
 A numeric vector containing the log marginal likelihood for each cluster or the
