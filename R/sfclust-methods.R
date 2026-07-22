@@ -245,13 +245,21 @@ fitted.sfclust_stars <- function(object, sample = object$clust$id, sort = FALSE,
     if (length(spnames) > 1) {
       warning("`aggregate = TRUE` is not supported for raster data.", call. = FALSE)
     } else {
+    # Project to planar CRS if needed so st_union/st_within use GEOS (no lon/lat warning)
+      crs_orig  <- sf::st_crs(stars_obj)
+      is_lonlat <- isTRUE(sf::st_is_longlat(stars_obj))
+      stars_work <- if (is_lonlat)
+        sf::st_transform(stars_obj, sf::st_crs("+proj=laea +datum=WGS84"))
+      else
+        stars_obj
       geom_clusters <- lapply(
-        split(st_geometry(stars_obj), membership),
+        split(st_geometry(stars_work), membership),
         function(x) st_union(st_geometry(x))
       )
       geom_clusters <- do.call(c, geom_clusters)
-      stars_obj <- aggregate(stars_obj[c("mean_cluster", "mean_cluster_inv")], geom_clusters,
+      stars_obj <- aggregate(stars_work[c("mean_cluster", "mean_cluster_inv")], geom_clusters,
         join = st_within, FUN = mean)
+      if (is_lonlat) stars_obj <- sf::st_transform(stars_obj, crs_orig)
     }
   }
 
