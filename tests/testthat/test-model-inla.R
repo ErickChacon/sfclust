@@ -85,7 +85,7 @@ test_that("log_mlik_each returns -Inf and warns when INLA fails", {
   data <- data.frame(y = rnorm(5), id_time = 1:5, ids = 1:5, id = 1:5, sid = 1:5)
   inla_args <- list(formula = y ~ f(nonexistent, model = "rw1"), family = "gaussian")
   expect_warning(
-    result <- sfclust:::log_mlik_each(1, rep(1L, 5), data, FALSE, FALSE, inla_args),
+    result <- log_mlik_each(1, rep(1L, 5), data, FALSE, FALSE, inla_args),
     "INLA failed"
   )
   expect_equal(result, -Inf)
