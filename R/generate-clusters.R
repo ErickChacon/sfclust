@@ -72,7 +72,8 @@ genclust.Matrix <- function(x, nclust = 10, weights = NULL, ...) {
 #' @param nclust Integer. Number of initial clusters (default `10`).
 #' @param spnames Character vector with the names of the spatial dimensions. If
 #'   `NULL`, auto-detected as dimensions with a non-`NA` regular `delta` in
-#'   [stars::st_dimensions()].
+#'   [stars::st_dimensions()]. Currently supports 1D (vector geometry) and 2D
+#'   raster grids; 3D spatial grids (e.g. `x`, `y`, `z`) are not yet supported.
 #' @param response Character. Name of the attribute in `x` to use for determining
 #'   valid spatial cells (cells where all observations are NA are excluded).
 #'   If `NULL` (default), all spatial cells are treated as valid.
@@ -118,8 +119,10 @@ create_adj <- function(domain, weights = NULL, valid_ids = which(domain[[1]])) {
     adj <- as(st_touches(geom), "sparseMatrix")
   } else if (length(spnames) == 2) {
     adj <- raster_adjacency(dim(domain)[[1]], dim(domain)[[2]])
+  } else if (length(spnames) == 3) {
+    stop("3D raster support (e.g. x, y, z brain voxels) is not yet implemented.")
   } else {
-    stop("create_adj only supports 1 (geometry) or 2 (raster x/y) spatial dimensions.")
+    stop("create_adj only supports 1 (geometry) or 2 (raster) spatial dimensions.")
   }
   if (is.null(weights)) weights <- runif(length(adj))
   adj <- as(adj * weights, "CsparseMatrix")
@@ -138,6 +141,10 @@ genclust_adj <- function(x, nclust = 10) {
   list(graph = graph, mst = mstgraph, membership = partition$membership)
 }
 
+# Builds a 4-connected adjacency matrix for a 2D grid of size nx * ny.
+# Flat position: (ix, iy) -> (iy - 1) * nx + ix  (first dim varies fastest).
+# Extension to 3D (e.g. brain voxels) would follow the same pattern with
+# 6-connected neighbors and flat position (iz-1)*nx*ny + (iy-1)*nx + ix.
 raster_adjacency <- function(nx, ny) {
   # horizontal neighbors: (ix, iy) -- (ix+1, iy)
   ix <- rep(seq_len(nx - 1L), ny)
