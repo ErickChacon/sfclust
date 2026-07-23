@@ -32,7 +32,8 @@ random weights are assigned.}
 
 \item{spnames}{Character vector with the names of the spatial dimensions. If
 \code{NULL}, auto-detected as dimensions with a non-\code{NA} regular \code{delta} in
-\code{\link[stars:st_dimensions]{stars::st_dimensions()}}.}
+\code{\link[stars:st_dimensions]{stars::st_dimensions()}}. Currently supports 1D (vector geometry) and 2D
+raster grids; 3D spatial grids (e.g. \code{x}, \code{y}, \code{z}) are not yet supported.}
 
 \item{response}{Character. Name of the attribute in \code{x} to use for determining
 valid spatial cells (cells where all observations are NA are excluded).

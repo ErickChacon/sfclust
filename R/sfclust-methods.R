@@ -387,12 +387,19 @@ plot_clusters_map <- function(x, sample = x$clust$id, clusters = NULL, sort = FA
   sp_stars$membership <- factor(sp_stars$membership)
 
   # visualize
+  geom_vals <- st_get_dimension_values(sp_stars, spnames[[1]])
+  is_point  <- inherits(geom_vals, "sfc_POINT") || inherits(geom_vals, "sfc_MULTIPOINT")
+
   gg <- ggplot()
   if (!is.null(geom_before)) gg <- gg + geom_before
-  gg <- gg + geom_stars(data = sp_stars, aes(fill = membership), ...)
+  if (is_point) {
+    gg <- gg + geom_stars(data = sp_stars, aes(fill = membership), shape = 21, color = "black", ...)
+  } else {
+    gg <- gg + geom_stars(data = sp_stars, aes(fill = membership), ...)
+  }
   gg <- gg +
-    labs(fill = NULL, subtitle = paste("Clustering:", sample, "/", nsamples)) +
-    theme_bw()
+      labs(color = NULL, fill = NULL, subtitle = paste("Clustering:", sample, "/", nsamples)) +
+      theme_bw()
   if (!legend) gg <- gg + theme(legend.position = "none")
   gg
 }

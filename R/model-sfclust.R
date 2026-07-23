@@ -182,6 +182,7 @@ sfclust.data.frame <- function(x, adjacency, graphdata = NULL, fnames = NULL,
   inla_args <- match.call(expand.dots = FALSE)$...
 
   if (is.null(graphdata)) graphdata <- genclust_adj(adjacency * runif(length(adjacency)), nclust = nclust)
+  graphdata <- validate_graphdata(graphdata)
 
   sfclust_fit(x, graphdata,
               move_prob = move_prob, logpen = logpen,
@@ -208,6 +209,8 @@ sfclust.stars <- function(x, nclust = 10, graphdata = NULL, spnames = NULL,
   if (is.null(graphdata)) {
     response  <- detect_response(eval(inla_args$formula), names(x))
     graphdata <- genclust(x, spnames = spnames, response = response, nclust = nclust)
+  } else {
+    graphdata <- validate_graphdata(graphdata)
   }
 
   data <- filter_df(data_all(x, spnames), graphdata$valid_ids)
@@ -225,6 +228,16 @@ sfclust.stars <- function(x, nclust = 10, graphdata = NULL, spnames = NULL,
 detect_response <- function(formula, var_names) {
   lhs_vars <- all.vars(formula[[2]])
   lhs_vars[lhs_vars %in% var_names][1]
+}
+
+validate_graphdata <- function(graphdata) {
+  required <- c("graph", "mst", "membership")
+  missing  <- setdiff(required, names(graphdata))
+  if (length(missing) > 0)
+    stop("`graphdata` must contain: ", paste(missing, collapse = ", "), ".")
+  if (is.null(graphdata$valid_ids))
+    graphdata$valid_ids <- seq_len(length(graphdata$membership))
+  graphdata
 }
 
 #' @importFrom igraph V
