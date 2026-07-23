@@ -33,7 +33,15 @@ print.sfclust <- function(x, ...) {
   cat("\nLog marginal likelihood (sample ", x$clust$id, " out of ",
         length(x$samples$log_mlike), "): ", x$samples$log_mlike[x$clust$id], "\n", sep = "")
 
+  warn_null_models(x)
   invisible(x)
+}
+
+warn_null_models <- function(x) {
+  if (is.null(x$clust$models)) return()
+  null_models <- which(sapply(x$clust$models, is.null))
+  if (length(null_models) > 0)
+    warning("INLA failed for ", length(null_models), " cluster(s).", call. = FALSE)
 }
 
 #' Summary method for sfclust objects
@@ -97,6 +105,8 @@ sort_membership <- function(x) {
 #'
 #' @param object A `sfclust` object.
 #' @param niter An integer specifying the number of additional MCMC iterations to perform.
+#'        If `NULL` (default), no additional iterations are run and the within-cluster INLA
+#'        models are refitted for the current clustering sample.
 #' @param burnin An integer specifying the number of burn-in iterations to discard.
 #' @param thin An integer specifying the thinning interval for recording results.
 #' @param nmessage An integer specifying the number of messages to display during the process.
@@ -109,8 +119,11 @@ sort_membership <- function(x) {
 #'
 #' @details This function takes the last state of the Markov chain from a previous
 #'          `sfclust_fit` / `sfclust` execution and uses it as the starting point for
-#'          additional MCMC iterations. If `sample` is provided, it simply updates the
-#'          within-cluster models for the specified clustering `sample`.
+#'          additional MCMC iterations. If `niter = NULL` (the default), no additional
+#'          iterations are run; instead, the within-cluster INLA models are fitted for
+#'          the clustering given by `sample` (or the current `clust$id` if `sample` is
+#'          `NULL`). This is useful when loading a checkpoint saved during a run, where
+#'          the models were not yet stored: `result <- update(result)`.
 #'
 #' @return An updated `sfclust` object with (i) new clustering samples if `sample` is not
 #'   specified, or (ii) updated within-cluster model results if `sample` is given.
@@ -118,9 +131,9 @@ sort_membership <- function(x) {
 #' @importFrom stats update
 #' @method update sfclust
 #' @export
-update.sfclust <- function(object, niter = 100, burnin = 0, thin = 1, nmessage = 10, sample = NULL,
+update.sfclust <- function(object, niter = NULL, burnin = 0, thin = 1, nmessage = 10, sample = NULL,
                            path_save = NULL, nsave = nmessage, ...) {
-  if (!is.null(sample)) {
+  if (is.null(niter)) {
     update_within(object, sample)
   } else {
     update_sfclust(object, niter, burnin, thin, nmessage, path_save, nsave)
@@ -147,7 +160,11 @@ update_sfclust <- function(x, niter = 100, burnin = 0, thin = 1, nmessage = 10,
   do.call(sfclust_fit, fit_args)
 }
 
-update_within <- function(x, sample = nrow(x$samples$membership)) {
+update_within <- function(x, sample = NULL) {
+  if (is.null(sample)) {
+    if (!is.null(x$clust$models)) return(x)
+    sample <- x$clust$id
+  }
   x$clust$id     <- sample
   x$clust$models <- log_mlik_all(x$samples$membership[sample, ], attr(x, "fit_args")$data,
                                  FALSE, TRUE, attr(x, "inla_args"))
@@ -229,13 +246,13 @@ fitted.sfclust_stars <- function(object, sample = object$clust$id, sort = FALSE,
 
   stars_obj <- attr(object, "input_args")$stars
   spnames   <- attr(object, "input_args")$spnames
-  id       <- attr(object, "fit_args")$data$id
 
-  # fill variables into a stars object
-  n_total  <- prod(dim(stars_obj))
-  for (var_name in names(pred)) {
+  # fill variables into a stars object, excluding functional dimension columns
+  fnames  <- attr(object, "input_args")$fnames
+  n_total <- prod(dim(stars_obj))
+  for (var_name in setdiff(names(pred), fnames)) {
     full_vec <- rep(NA_real_, n_total)
-    full_vec[id] <- pred[[var_name]]
+    full_vec[pred$id] <- pred[[var_name]]
     stars_obj[[var_name]] <- full_vec
   }
 
@@ -267,12 +284,20 @@ fitted.sfclust_stars <- function(object, sample = object$clust$id, sort = FALSE,
 }
 
 linpred_each <- function(k, membership, models, data) {
+  df <- data[data$sid %in% which(membership == k), , drop = FALSE]
+
+  if (is.null(models[[k]])) {
+    df[c("mean", "sd", "0.025quant", "0.5quant", "0.975quant", "mode",
+         "mean_inv", "mean_cluster", "mean_cluster_inv")] <- NA_real_
+    df$cluster <- k
+    return(df)
+  }
+
   # get inverse of linear predictor
   link_name <- tolower(models[[k]]$misc$linkfunctions$names)
   inv_link  <- eval(parse(text = paste0("INLA::inla.link.inv", link_name)))
 
   # linear predictor per region
-  df <- data[data$sid %in% which(membership == k), , drop = FALSE]
   df <- cbind(df, models[[k]]$summary.linear.predictor)
   df$kld      <- NULL
   df$mean_inv <- inv_link(df$mean)
