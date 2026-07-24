@@ -1,0 +1,133 @@
+---
+title: "Data frame interface"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Data frame interface}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(fig.align = "center")
+knitr::opts_chunk$set(fig.height = 4.5, fig.width = 7.5, dpi = 90, out.width = '100%')
+knitr::opts_chunk$set(comment = "#>")
+```
+
+```{r, warning = FALSE, message = FALSE}
+library(sfclust)
+library(Matrix)
+library(ggplot2)
+```
+
+The `sfclust()` generic also accepts a **long-format data frame** together with an
+explicit **adjacency matrix**. This interface is useful when your data is not a `stars`
+object — for example when you already have a processed table, or spatial units that
+cannot be represented as a regular `stars` grid. It's also useful when you need a custom
+adjacency structure derived from a GIS tool or domain knowledge, rather than the
+automatically-detected one.
+
+## Data structure
+
+Two identifier columns are always required:
+
+- `id`: unique row index (1 to $n_s \times n_t$).
+- `ids`: spatial unit index (integer, 1 to $n_s$).
+
+A functional dimension column is also needed whenever your `formula` references it:
+
+- `<dimname>`: functional dimension index; any column name chosen by the user, provided it matches the `fnames` argument.
+
+We construct a synthetic dataset with 13 regions observed over 20 time steps. The
+regions are grouped into three latent clusters, each following a distinct linear trend:
+increasing, flat, and decreasing.
+
+```{r}
+set.seed(42)
+ns <- 13L; nt <- 20L
+
+# identifiers
+df <- data.frame(
+  id      = seq_len(ns * nt),
+  ids     = rep(seq_len(ns), nt),
+  time = rep(seq_len(nt), each = ns)
+)
+
+# membership and cluster slopes
+membership <- c(1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3)
+slopes  <- c(0.10, 0.00, -0.10)
+
+# response
+df <- transform(df, y = rnorm(ns * nt, mean = slopes[membership[ids]] * time, sd = 0.4))
+head(df)
+```
+
+## Adjacency matrix
+
+The adjacency matrix encodes which regions are considered neighbours. It must be a
+symmetric matrix of size $n_s \times n_s$. In practice this matrix typically comes
+from a GIS tool (e.g. via `sf::st_touches()`), a domain-specific connectivity table,
+or any other external source. Here we define an arbitrary irregular neighbourhood
+structure for the 13 regions:
+
+```{r}
+# Arbitrary adjacency (upper triangle only; symmetric = TRUE mirrors it)
+# Within-cluster links: {1-5}, {6-9}, {10-13}; cross-cluster links: 5-6, 9-10
+i_idx <- c(1, 2, 3, 4, 1, 3,  6, 7, 8, 6,  10, 11, 12, 10,  5,  9)
+j_idx <- c(2, 3, 4, 5, 5, 5,  7, 8, 9, 9,  11, 12, 13, 13,  6, 10)
+adj <- sparseMatrix(i = i_idx, j = j_idx, x = 1L,
+                    dims = c(ns, ns), symmetric = TRUE)
+```
+
+## Clustering
+
+Pass the adjacency matrix via `adjacency`, the starting number of clusters via `nclust`,
+and the name of the functional dimension via `fnames`. All other arguments are forwarded
+to `INLA::inla`. For finer control over the initial partition (e.g. fixing specific
+cluster assignments), you can pre-compute it with `genclust()` and pass the result via
+`graphdata` instead.
+
+```{r}
+set.seed(42)
+result <- sfclust(
+  df, adjacency = adj, nclust = 5, fnames = "time",
+  formula = y ~ f(time, model = "rw1"),
+  family  = "gaussian",
+  niter = 20, burnin = 0, thin = 1, nmessage = 5
+)
+result
+```
+
+The returned object has class `sfclust` (without the `sfclust_stars` subclass). The
+print output is identical to the stars interface: formula, clustering hyperparameters,
+movement counts, and log marginal likelihood.
+
+## Results
+
+The summary shows the number of regions per cluster at the final iteration.
+
+```{r}
+summary(result, sort = TRUE)
+```
+
+`fitted()` returns a **data frame** instead of a `stars` object, with one row per
+observation and columns for the cluster assignment, the linear predictor (`mean`, `sd`,
+quantiles), and the cluster-level mean (`mean_cluster`):
+
+```{r}
+df_fit <- fitted(result, sort = TRUE)
+head(df_fit[c("id", "ids", "time", "cluster", "mean", "mean_cluster")])
+```
+
+The usual plot helpers are available. Since there is no spatial geometry, `plot()` has
+no map panel — `which = 1:2` refers to the cluster functions and the log marginal
+likelihood:
+
+```{r, fig.height = 3.5}
+plot(result, sort = TRUE)
+```
+
+```{r, fig.height = 3.5}
+plot_clusters_series(result, y, sort = TRUE) +
+  facet_wrap(~ cluster, ncol = 3) +
+  labs(y = "Response")
+```

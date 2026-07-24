@@ -7,6 +7,7 @@ articles:
   contents:
   - vg01-stars-object
   - vg02-advanced-features
+  - vg03-data-frame
 
 - title: Applications
   navbar: Applications
