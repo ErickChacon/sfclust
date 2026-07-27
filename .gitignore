@@ -1,5 +1,8 @@
 tools/figures
 
+# full mcmc data
+dev/vigdata/
+
 # History files
 .Rhistory
 .Rapp.history

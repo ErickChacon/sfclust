@@ -161,32 +161,66 @@ Chacón-Montalván, Paula Moraga:
 \donttest{
 library(sfclust)
 
-# Core interface: long-format data frame + adjacency matrix
-library(sf)
-data(stbinom)
-df  <- data_all(stbinom)
-adj <- as(sf::st_touches(stars::st_get_dimension_values(stbinom, "geometry")), "matrix") * 1L
-adj <- adj * runif(length(adj))
-result <- sfclust(df, adj, fnames = "id_time",
-  formula = cases ~ poly(id_time, 2) + f(id),
-  family = "binomial", Ntrials = population, niter = 10, nmessage = 1)
-print(result)
-
-# Stars interface: Gaussian data
+# Stars interface: Gaussian model
 data(stgaus)
 result <- sfclust(stgaus, formula = y ~ f(id_time, model = "rw1"),
   niter = 10, nmessage = 1)
-print(result)
-summary(result)
-plot(result)
 
-# Stars interface: binomial data
+print(result)
+summary(result, sort = TRUE)
+fitted(result, sort = TRUE)
+
+plot(result)
+plot_clusters_series(result, var = y)
+
+result2 <- update(result, niter = 2, nmessage = 1)
+plot(result2)
+
+# Stars interface: Binomial model
 data(stbinom)
 result <- sfclust(stbinom, formula = cases ~ poly(id_time, 2) + f(id),
   family = "binomial", Ntrials = population, niter = 10, nmessage = 1)
+
 print(result)
-summary(result)
+summary(result, sort = TRUE)
+fitted(result, sort = TRUE)
+
 plot(result)
+plot_clusters_series(result, var = cases/population)
+
+result2 <- update(result, niter = 2, nmessage = 1)
+plot(result2)
+
+# data.frame interface: Poisson model
+ ns <- 6L; nt <- 4L
+ set.seed(4)
+ df  <- data.frame(
+   id       = seq_len(ns * nt),
+   ids      = rep(seq_len(ns), nt),
+   id_time  = rep(seq_len(nt), each = ns),
+   expected = rep(10L, ns * nt)
+ )
+ df <- transform(df,
+   y = rpois(ns * nt, expected * exp(0.5 * id_time * rep(c(-1, 1), each = ns / 2, nt)))
+ )
+ adj <- sparseMatrix(
+   i = c(1, 2, 4, 5, 1, 2, 3), j = c(2, 3, 5, 6, 4, 5, 6),
+   x = 1L, dims = c(ns, ns), symmetric = TRUE
+ )
+
+ result <- sfclust(df, adjacency = adj, nclust = 3, fnames = "id_time",
+   formula = y ~ 1 + id_time, family = "poisson", E = expected,
+   niter = 3, burnin = 0, thin = 1, nmessage = 1)
+
+ print(result)
+ summary(result, sort = TRUE)
+ fitted(result, sort = TRUE)
+
+ plot(result)
+ plot_clusters_series(result, var = y)
+
+ result2 <- update(result, niter = 2, nmessage = 1)
+ plot(result2)
 }
 
 }

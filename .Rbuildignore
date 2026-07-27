@@ -5,5 +5,9 @@
 ^Meta$
 ^\.github$
 ^_pkgdown\.yml$
-^data/usacovid.rda$
 ^vignettes/articles$
+^dev$
+^tools$
+^Rplots\.pdf$
+^CLAUDE\.md$
+^\.claude$
