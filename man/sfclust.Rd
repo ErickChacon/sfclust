@@ -203,7 +203,7 @@ plot(result2)
  df <- transform(df,
    y = rpois(ns * nt, expected * exp(0.5 * id_time * rep(c(-1, 1), each = ns / 2, nt)))
  )
- adj <- sparseMatrix(
+ adj <- Matrix::sparseMatrix(
    i = c(1, 2, 4, 5, 1, 2, 3), j = c(2, 3, 5, 6, 4, 5, 6),
    x = 1L, dims = c(ns, ns), symmetric = TRUE
  )
