@@ -11,3 +11,4 @@
 ^Rplots\.pdf$
 ^CLAUDE\.md$
 ^\.claude$
+^cran-comments\.md$
