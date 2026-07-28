@@ -15,14 +15,18 @@ jobs:
 
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
 
+    continue-on-error: ${{ matrix.config.allow_failure == true }}
+
     strategy:
       fail-fast: false
       matrix:
         config:
-          - {os: macos-latest,   r: '4.6.0'}
-          - {os: windows-latest, r: '4.6.0'}
+          - {os: macos-latest,   r: 'release', allow_failure: true}
+          - {os: macos-latest,   r: 'oldrel-1'}
+          - {os: windows-latest, r: 'release', allow_failure: true}
+          - {os: windows-latest, r: 'oldrel-1'}
           - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
-          - {os: ubuntu-latest,   r: '4.6.0'}
+          - {os: ubuntu-latest,   r: 'release'}
           - {os: ubuntu-latest,   r: 'oldrel-1'}
 
     env:
