@@ -12,7 +12,11 @@ samples, and several bug fixes. See NEWS.md for full details.
 
 ## R CMD check results
 
-0 errors | 0 warnings | 0 notes
+0 errors | 0 warnings | 1 note
+
+* The maintainer's email address has changed since the previous CRAN release
+  (from erick.chaconmontalvan@kaust.edu.sa to erick.chaconmontalvan@wur.nl).
+  This is an intentional, legitimate update.
 
 * Suggested package 'INLA' is not available on CRAN. It is required for the
   package's core Bayesian clustering procedure (`sfclust()`), which calls
