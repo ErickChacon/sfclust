@@ -66,15 +66,15 @@ df_est <- fitted(result, aggregate = TRUE)
 # Estimated values using a particular clustering sample
 df_est <- fitted(result, sample = 3)
 }
-#> Iteration 1: clusters = 10, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -674.186840478705
-#> Iteration 2: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -512.00740082578
-#> Iteration 3: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -512.00740082578
-#> Iteration 4: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -512.00740082578
-#> Iteration 5: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -512.00740082578
-#> Iteration 6: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -444.599321546183
-#> Iteration 7: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -444.599321546183
-#> Iteration 8: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -444.599321546183
-#> Iteration 9: clusters = 12, births = 2, deaths = 0, changes = 1, hypers = 0, log_mlike = -281.109175839767
-#> Iteration 10: clusters = 12, births = 2, deaths = 0, changes = 1, hypers = 0, log_mlike = -281.109175839767
+#> Iteration 1: clusters = 10, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -674.18684443314
+#> Iteration 2: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -512.00740554351
+#> Iteration 3: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -512.00740554351
+#> Iteration 4: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -512.00740554351
+#> Iteration 5: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -512.00740554351
+#> Iteration 6: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -444.599326098041
+#> Iteration 7: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -444.599326098041
+#> Iteration 8: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -444.599326098041
+#> Iteration 9: clusters = 12, births = 2, deaths = 0, changes = 1, hypers = 0, log_mlike = -281.109182356173
+#> Iteration 10: clusters = 12, births = 2, deaths = 0, changes = 1, hypers = 0, log_mlike = -281.109182356173
 # }
 ```

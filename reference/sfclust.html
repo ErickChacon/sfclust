@@ -229,7 +229,7 @@ allowing for inference within a broader family of distribution functions and mod
 terms, thereby extending the scope and flexibility of the original approach.
 Further details of our approach can be found in our paper <em>"Bayesian spatial functional
 data clustering: applications in disease surveillance"</em> by Ruiman Zhong, Erick A.
-Chacón-Montalván, Paula Moraga:</p><ul><li><p>The paper: <a href="https://doi.org/10.1002/sim.70597" class="external-link">https://doi.org/10.1002/sim.70597</a></p></li>
+Chacón-Montalván, Paula Moraga:</p><ul><li><p>The paper: <a href="https://doi.org/10.1002/sim.70597" class="external-link">doi:10.1002/sim.70597</a></p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>
@@ -243,7 +243,7 @@ Paula Moraga <a href="mailto:paula.moraga@kaust.edu.sa">paula.moraga@kaust.edu.s
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># \donttest{</span></span></span>
 <span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"INLA"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://erickchacon.github.io/sfclust" class="external-link">sfclust</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://erickchacon.github.io/sfclust/" class="external-link">sfclust</a></span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Stars interface: Gaussian model</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">stgaus</span><span class="op">)</span></span></span>
@@ -306,16 +306,16 @@ Paula Moraga <a href="mailto:paula.moraga@kaust.edu.sa">paula.moraga@kaust.edu.s
 <span class="r-in"><span> <span class="va">result2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/update.html" class="external-link">update</a></span><span class="op">(</span><span class="va">result</span>, niter <span class="op">=</span> <span class="fl">2</span>, nmessage <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">result2</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 1: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1966.74072725894</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 2: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1966.74072725894</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 3: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1871.05700912839</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 4: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1871.05700912839</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 5: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1871.05700912839</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 6: clusters = 13, births = 3, deaths = 0, changes = 0, hypers = 0, log_mlike = -1815.85187956966</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 7: clusters = 13, births = 3, deaths = 0, changes = 0, hypers = 0, log_mlike = -1815.85187956966</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 8: clusters = 13, births = 3, deaths = 0, changes = 0, hypers = 0, log_mlike = -1815.85187956966</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 9: clusters = 13, births = 3, deaths = 0, changes = 0, hypers = 0, log_mlike = -1815.85187956966</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 10: clusters = 14, births = 4, deaths = 0, changes = 0, hypers = 0, log_mlike = -1747.15108415472</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 1: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1966.74074536656</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 2: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1966.74074536656</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 3: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1871.05702756986</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 4: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1871.05702756986</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 5: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1871.05702756986</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 6: clusters = 13, births = 3, deaths = 0, changes = 0, hypers = 0, log_mlike = -1815.85189803055</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 7: clusters = 13, births = 3, deaths = 0, changes = 0, hypers = 0, log_mlike = -1815.85189803055</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 8: clusters = 13, births = 3, deaths = 0, changes = 0, hypers = 0, log_mlike = -1815.85189803055</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 9: clusters = 13, births = 3, deaths = 0, changes = 0, hypers = 0, log_mlike = -1815.85189803055</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 10: clusters = 14, births = 4, deaths = 0, changes = 0, hypers = 0, log_mlike = -1747.15110267134</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Within-cluster formula:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> y ~ f(id_time, model = "rw1")</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -338,19 +338,23 @@ Paula Moraga <a href="mailto:paula.moraga@kaust.edu.sa">paula.moraga@kaust.edu.s
 <span class="r-out co"><span class="r-pr">#&gt;</span> 71  9  5  4  2  1  1  1  1  1  1  1  1  1 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Log marginal likelihood:  -1747.151 </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 1: clusters = 14, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -1747.15110141911</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 2: clusters = 15, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1661.30403080075</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  *** inla.core.safe:  The inla program failed, but will rerun in case better initial values may help. try=1/1 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  *** inla.core.safe:  rerun with improved initial values </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 1: clusters = 14, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -1747.15110331773</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 2: clusters = 15, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1570.37098609482</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Log marginal-likelihood correction not required.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 1: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -76867.9525835854</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 2: clusters = 10, births = 1, deaths = 1, changes = 0, hypers = 0, log_mlike = -76848.8913282938</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 3: clusters = 10, births = 1, deaths = 1, changes = 0, hypers = 0, log_mlike = -76848.8913282938</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 4: clusters = 11, births = 2, deaths = 1, changes = 0, hypers = 0, log_mlike = -76666.895231024</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 5: clusters = 11, births = 2, deaths = 1, changes = 0, hypers = 0, log_mlike = -76666.895231024</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 6: clusters = 11, births = 2, deaths = 1, changes = 0, hypers = 0, log_mlike = -76666.895231024</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 7: clusters = 11, births = 2, deaths = 1, changes = 1, hypers = 0, log_mlike = -76541.0416826268</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 8: clusters = 11, births = 2, deaths = 1, changes = 1, hypers = 0, log_mlike = -76541.0416826268</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 9: clusters = 11, births = 2, deaths = 1, changes = 2, hypers = 0, log_mlike = -76452.1431599736</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 10: clusters = 11, births = 2, deaths = 1, changes = 2, hypers = 0, log_mlike = -76452.1431599736</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 1: clusters = 10, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -77156.7894588113</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 2: clusters = 10, births = 0, deaths = 0, changes = 0, hypers = 1, log_mlike = -77156.7894588113</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 3: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 1, log_mlike = -77066.9277737946</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 4: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 1, log_mlike = -76914.148336736</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 5: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 1, log_mlike = -76914.148336736</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 6: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 1, log_mlike = -76914.148336736</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 7: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 1, log_mlike = -76914.148336736</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 8: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 1, log_mlike = -76914.148336736</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 9: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 1, log_mlike = -76914.148336736</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 10: clusters = 12, births = 2, deaths = 0, changes = 1, hypers = 1, log_mlike = -76568.1518839174</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Within-cluster formula:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> cases ~ poly(id_time, 2) + f(id)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
@@ -360,21 +364,21 @@ Paula Moraga <a href="mailto:paula.moraga@kaust.edu.sa">paula.moraga@kaust.edu.s
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Clustering movement counts:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  births  deaths changes  hypers </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       2       1       2       0 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       2       0       1       1 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Log marginal likelihood (sample 10 out of 10): -76452.14</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Log marginal likelihood (sample 10 out of 10): -76568.15</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Summary for clustering sample 10 out of 10 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Within-cluster formula:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> cases ~ poly(id_time, 2) + f(id)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Counts per cluster:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1  2  3  4  5  6  7  8  9 10 11 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 52 32  4  4  2  1  1  1  1  1  1 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  1  2  3  4  5  6  7  8  9 10 11 12 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 71 17  2  2  1  1  1  1  1  1  1  1 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Log marginal likelihood:  -76452.14 </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 1: clusters = 11, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -76452.1428209302</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 2: clusters = 11, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -76452.1428209302</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Log marginal likelihood:  -76568.15 </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 1: clusters = 12, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -76568.1519813734</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 2: clusters = 12, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -76568.1519813734</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Log marginal-likelihood correction not required.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 1: clusters = 3, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -247.318700532878</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Iteration 2: clusters = 3, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -247.318700532878</span>

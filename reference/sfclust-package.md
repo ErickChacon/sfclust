@@ -2,16 +2,17 @@
 
 The `sfclust` package implements the clustering algorithm proposed in
 *"Bayesian Spatial Functional Data Clustering: Applications in Disease
-Surveillance"*, available at <https://doi.org/10.1002/sim.70597>. The
-package provides tools for performing Bayesian spatial functional
-clustering, as well as methods for diagnostic analysis, visualization,
-and summarization of results.
+Surveillance"*, available at
+[doi:10.1002/sim.70597](https://doi.org/10.1002/sim.70597) . The package
+provides tools for performing Bayesian spatial functional clustering, as
+well as methods for diagnostic analysis, visualization, and
+summarization of results.
 
 ## See also
 
 Useful links:
 
-- <https://erickchacon.github.io/sfclust>
+- <https://erickchacon.github.io/sfclust/>
 
 - <https://github.com/ErickChacon/sfclust>
 

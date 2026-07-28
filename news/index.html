@@ -67,6 +67,8 @@
 <ul><li>Fixed corner cases with <code>NULL</code> fitted models and raster inputs.</li>
 <li>Fixed adjacency handling for custom/user-supplied adjacency matrices and point-geometry plotting.</li>
 <li>Fixed cluster-level aggregation in fitted values and plots.</li>
+<li>
+<code><a href="https://rdrr.io/r/stats/fitted.values.html" class="external-link">fitted()</a></code>/<code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> no longer require INLA to be installed when applied to an already-fitted <code>sfclust</code> object (e.g. one loaded from a saved <code>.rds</code>); the inverse-link transform for standard families (gaussian, binomial, poisson) is now computed natively instead of via <code>INLA::inla.link.inv*()</code>.</li>
 </ul></div>
 </div>
     <div class="section level2">
