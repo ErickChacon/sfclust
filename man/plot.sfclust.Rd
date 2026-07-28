@@ -7,41 +7,39 @@
 \method{plot}{sfclust}(
   x,
   sample = x$clust$id,
-  which = 1:3,
+  which = 1:2,
   clusters = NULL,
   sort = FALSE,
   legend = FALSE,
-  geom_before = NULL,
+  fnames = NULL,
   ...
 )
 }
 \arguments{
-\item{x}{An \code{sfclust} object containing the clustering results, including the cluster assignments and model parameters.}
+\item{x}{An \code{sfclust} object.}
 
-\item{sample}{Integer specifying the clustering sample number to summarize. Defaults to the last sample.}
+\item{sample}{Integer specifying the clustering sample to display. Defaults to the last sample.}
 
-\item{which}{Integer vector indicating which plot to display. Options are:
-- 1: Map of regions colored by cluster assignment.
-- 2: Functional shapes of the linear predictors for each cluster.
-- 3: Traceplot of the log marginal likelihood.}
+\item{which}{Integer vector indicating which plots to show. For \code{sfclust}: 1 = cluster
+functions, 2 = log marginal likelihood. For \code{sfclust_stars}: 1 = map, 2 = cluster
+functions, 3 = log marginal likelihood.}
 
-\item{clusters}{Optional vector specifying which clusters to plot. If \code{NULL}, all clusters are included.}
+\item{clusters}{Optional vector of cluster IDs to include. If \code{NULL}, all clusters are shown.}
 
-\item{sort}{Logical value indicating whether clusters should be relabeled based on the number of elements. Default is \code{FALSE}.}
+\item{sort}{Logical; if \code{TRUE}, clusters are relabeled by decreasing size. Default is \code{FALSE}.}
 
-\item{legend}{Logical value indicating whether a legend should be included in the plot. Default is \code{FALSE}.}
+\item{legend}{Logical; if \code{TRUE}, a legend is included. Default is \code{FALSE}.}
 
-\item{geom_before}{An optional \code{ggplot2} geom layer to add before the cluster map layer (e.g., a background tile). Default is \code{NULL}.}
+\item{fnames}{Character. Column name for the x-axis of cluster function plots.
+If \code{NULL}, taken from the result's stored args.}
 
-\item{...}{Additional arguments passed to the underlying plotting functions.}
+\item{...}{Additional arguments passed to underlying plot functions.}
 }
 \value{
-A composed \code{patchwork} object displaying the selected subgraphs as specified by \code{which}.
+A composed \code{patchwork} object.
 }
 \description{
-This function visualizes the estimated clusters from an \code{sfclust} object. It can display:
-(1) a map of regions colored by their assigned cluster,
-(2) the functional shapes of the linear predictors for each cluster,
-and (3) a traceplot of the log marginal likelihood.
-A conditional legend is added if the number of clusters is less than 10.
+Visualizes fitted cluster functions (plot 1) and a log marginal likelihood traceplot
+(plot 2). For \code{sfclust_stars} objects, also includes a spatial map of cluster
+assignments (plot 1 in that method, shifting the others to 2 and 3).
 }

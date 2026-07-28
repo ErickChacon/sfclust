@@ -36,8 +36,8 @@ library(ggraph)
 
 The simulated dataset used in this vignette, `stgaus`, is included in our package. It is
 a `stars` object with one variable, `y`, and two dimensions: `geometry` and `time`. The
-dataset represents the number of cases in 100 regions, observed daily over 91 days,
-starting in January 2024.
+dataset represents continuous Gaussian measurements from 100 regions, observed daily over
+91 days, starting in January 2024.
 
 ```{r}
 data("stgaus")
@@ -68,7 +68,7 @@ stgaus |>
 ```
 
 Some regions exhibit similar trends over time, but the overall patterns are more complex
-than polinomial functions. Our goal is to cluster these regions while accounting for
+than polynomial functions. Our goal is to cluster these regions while accounting for
 spatial contiguity.
 
 ## Clustering
@@ -109,12 +109,13 @@ with 20 clusters:
 
 ```{r}
 set.seed(123)
-regions <- st_geometry(stgaus)
-initial_cluster <- genclust(regions, nclust = 20)
+initial_cluster <- genclust(stgaus, nclust = 20)
 names(initial_cluster)
 ```
 
-Now, let's visualize how the regions were randomly clustered:
+Now, let's visualize how the regions were randomly clustered. Panel (A) shows the full
+adjacency graph (all neighbor connections), panel (B) shows the MST derived from it (the
+backbone used for cluster proposals), and panel (C) shows the resulting initial partition:
 
 ```{r, fig.height = 2.7}
 gg1 <- ggraph(initial_cluster$graph, layout = st_coordinates(st_centroid(st_geometry(stgaus)))) +
@@ -152,46 +153,17 @@ We will initiate the Bayesian clustering algorithm using our generated partition
 model that includes a random walk process in the linear predictor, and custom priors for
 the scale hyperparameter. To begin, we will run the algorithm for only 50 iterations.
 
-```{r, eval = FALSE, echo = FALSE}
-# set.seed(123)
-# initial_cluster <- genclust(st_geometry(stgaus), nclust = 20)
-# system.time(
-# result <- sfclust(stgaus, graphdata = initial_cluster, niter = 50, logpen = -50,
-#   formula = y ~ f(idt, model = "rw1", hyper = list(prec = list(prior = "normal", param = c(-2, 1)))),
-#   burnin = 10, thin = 2, nmessage = 10, path_save = file.path("inst", "vigdata", "full-gaussian-mcmc1.rds"))
-# )
-# #    user  system elapsed
-# # 331.552  60.037  58.307
-# system.time(
-# result2 <- update(result, niter = 1000, path_save = file.path("inst", "vigdata", "full-gaussian-mcmc2.rds"))
-# )
-# #     user   system  elapsed
-# # 4685.726  859.919  830.404
-```
-
-```{r, eval = FALSE, echo = FALSE}
-# # Reduce size of object
-# result1 <- readRDS(file.path("inst", "vigdata", "full-gaussian-mcmc1.rds"))
-# result2 <- readRDS(file.path("inst", "vigdata", "full-gaussian-mcmc2.rds"))
-# pseudo_inla <- function(x) {
-#   list(
-#     summary.linear.predictor = x$summary.linear.predictor["mean"],
-#     misc = list(linkfunctions = list(names = "identity"))
-#   )
-# }
-# result1$clust$models <- NULL
-# result2$clust$models <- lapply(result2$clust$models, pseudo_inla)
-# saveRDS(result1, file.path("inst", "vigdata", "gaussian-mcmc1.rds"))
-# saveRDS(result2, file.path("inst", "vigdata", "gaussian-mcmc2.rds"))
-```
+The `logpen` argument sets the log-penalty on the number of clusters, specifically
+`log(1-q)` where `q` is the prior probability of keeping a cluster. A large negative
+value such as `-50` favors fewer clusters, acting as a strong parsimony prior. The
+`burnin` argument discards the first iterations before saving samples, and `thin` retains
+only every `thin`-th iteration, reducing autocorrelation in the chain.
 
 ```{r, eval = FALSE}
-form <- y ~ f(idt, model = "rw1",
-  hyper = list(prec = list(prior = "normal", param = c(-2, 1)))
-)
-result0 <- sfclust(stgaus, graphdata = initial_cluster, formula = form,
-  logpen = -50, niter = 50, burnin = 10, thin = 2, nmessage = 10,
-  path_save = file.path("inst", "vigdata", "full-gaussian-mcmc1.rds")
+result0 <- sfclust(stgaus, graphdata = initial_cluster, logpen = -50,
+  formula = y ~ f(id_time, model = "rw1",
+                  hyper = list(prec = list(prior = "normal", param = c(-2, 1)))),
+  niter = 50, burnin = 10, thin = 2, nmessage = 10
 )
 result0
 ```
@@ -202,8 +174,8 @@ result0
 ```
 
 The output indicates that after starting with 20 clusters, the algorithm created 11 new
-clusters (births), removed 6 clusters (deaths), changed the membership of 3 clusters, and
-modified the minimum spanning tree (MST) 3 times.
+clusters (births), removed 8 clusters (deaths), changed the membership of 1 cluster, and
+modified the minimum spanning tree (MST) 2 times.
 
 The `plot` method allows us to select which graph to produce. For example, we can
 visualize only the log marginal likelihood to diagnose convergence. With just 50
@@ -228,13 +200,17 @@ result <- readRDS(system.file("vigdata", "gaussian-mcmc2.rds", package = "sfclus
 result
 ```
 
-With 2000 additional iterations, there have been many clustering movements. Furthermore,
+With 1000 additional iterations, there have been many clustering movements. Furthermore,
 when visualizing the results, we can observe that the log marginal likelihood has achieved
 convergence.
 
 ```{r, fig.dpi = 72, fig.height = 6}
 plot(result, which = 3)
 ```
+
+The side-by-side comparison below highlights the contrast: panel (A) shows the unstable
+log marginal likelihood from the short initial run, while panel (B) shows the stabilized
+trajectory after the full run, indicating convergence.
 
 ```{r}
 gg1 <- plot(result0, which = 3) + labs(subtitle = "(A)")
@@ -246,15 +222,19 @@ if (save_figures) {
 }
 ```
 
+The `update` function can also be used to select a different past iteration as the active
+clustering, without running additional MCMC. This is useful when you want to inspect or
+use a specific sample rather than the last one:
+
 ```{r}
-result_other <- sfclust:::update_within(result, sample = 750)
+result_other <- update(result, sample = 750)
 result_other
 ```
 
 ## Results
 
-The final iteration indicates that the algorithm identified 10 clusters, with a log
-marginal likelihood of 12,708.35. The largest cluster consists of 27 regions, while the
+The final iteration indicates that the algorithm identified 12 clusters, with a log
+marginal likelihood of 12,602.37. The largest cluster consists of 27 regions, while the
 smallest contains only one region.
 
 ```{r}
@@ -263,13 +243,13 @@ summary(result, sort = TRUE)
 
 Let's visualize the regions grouped by cluster.
 
-```{r, fig.height = 5.5}
+```{r, fig.height = 4}
 plot(result, which = 1:2, sort = TRUE, legend = TRUE)
 ```
 
 Let's visualize the original data grouped by cluster.
 
-```{r, fig.height = 4}
+```{r, fig.height = 5}
 plot_clusters_series(result, y, sort = TRUE) +
   facet_wrap(~ cluster, ncol = 5) +
   labs(title = "Risk per cluster", y = "Response")

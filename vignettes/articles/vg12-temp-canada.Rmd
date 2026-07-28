@@ -28,16 +28,15 @@ library(sfclust)
 library(stars)
 library(ggplot2)
 library(dplyr)
-library(rnaturalearth)
 ```
 
-We use the polygonal shapes of Canadian provinces from the `rnaturalearth` package
-and the `CanadianWeather` dataset from the `fda` package, which is commonly used in
+We use the `CanadianWeather` dataset from the `fda` package, which is commonly used in
 functional data analysis. This dataset is a list containing daily temperature data
-per station, along with metadata such as station coordinates.
+per station, along with metadata such as station coordinates. For the background map
+we use the `maps` package, which bundles country and province boundaries directly.
 
 ```{r}
-canada <- ne_states("Canada")
+canada <- sf::st_as_sf(maps::map("world", regions = "Canada", plot = FALSE, fill = TRUE))
 data(CanadianWeather, package = "fda")
 names(CanadianWeather)
 ```
@@ -154,44 +153,31 @@ Based on the previously observed trends, we model the standardized temperature a
 function of:
 
 1. A polynomial trend over `time`.
-2. A random walk to capture autocorrelated temporal variation over `idt`.
+2. A random walk to capture autocorrelated temporal variation over `id_time`.
 
 We initialize with 35 clusters—one per polygon—and set a strong penalty (`logpen = -300`)
-to discourage overfitting and large number of clusters unless the log marginal likelihood
+to discourage overfitting and a large number of clusters unless the log marginal likelihood
 improves by at least 300.
 
-```{r, eval = FALSE, echo = FALSE}
-# formula <- ztemp ~ poly(time, 2) + f(idt, model = "rw1")
-# geodata <- genclust(domain, nclust = 35)
-#
-# set.seed(123)
-# result <- sfclust(canweather, graphdata = geodata, formula = formula,
-#     logpen = -300, niter = 4000, burnin = 0, thin = 10, nmessage = 10, nsave = 100,
-#     control.inla = list(control.vb = list(enable = FALSE)),
-#     path_save = file.path("tools", "data", "canweather-mcmc-test.rds"))
-```
-
 ```{r, eval = FALSE}
-formula <- ztemp ~ poly(time, 2) + f(idt, model = "rw1")
-geodata <- genclust(domain, nclust = 35)
-
+geodata <- genclust(as(st_touches(domain), "sparseMatrix"), nclust = 35)
 set.seed(123)
-result <- sfclust(canweather, graphdata = geodata, formula = formula,
-    logpen = -300, niter = 4000, burnin = 0, thin = 10, nmessage = 10, nsave = 100,
+result <- sfclust(canweather, graphdata = geodata, logpen = -300,
+    formula = ztemp ~ poly(time, 2) + f(id_time, model = "rw1"),
+    niter = 4000, burnin = 0, thin = 10, nmessage = 10, nsave = 1000,
     control.inla = list(control.vb = list(enable = FALSE)),
     path_save = file.path("canweather-mcmc.rds"))
 result
 ```
 
 ```{r, echo = FALSE}
-formula <- ztemp ~ poly(time, 2) + f(idt, model = "rw1")
-geodata <- genclust(domain, nclust = 35)
+geodata <- genclust(as(st_touches(domain), "sparseMatrix"), nclust = 35)
 result <- readRDS(here::here(file.path("tools", "data", "canweather-mcmc.rds")))
 result
 ```
 
-Over the course of sampling, 8 cluster additions, 29 merges, and 19 reassignments
-occurred. The marginal likelihood reached a value of 17,541.96. After thinning, 400
+Over the course of sampling, 8 cluster additions, 29 merges, and 22 reassignments
+occurred. The log marginal likelihood reached a value of 17,450.5. After thinning, 400
 samples were retained.
 
 ### Results
@@ -200,21 +186,21 @@ samples were retained.
 summary(result, sort = TRUE)
 ```
 
-According to the `summary()` output, 8 out of 14 clusters have more than one member. The
-largest clusters contain 7, 7, and 4 stations, respectively. To assess convergence, we
-plot the marginal likelihood trace:
+According to the `summary()` output, 9 out of 14 clusters have more than one member. The
+largest clusters contain 7, 5, and 4 stations, respectively. To assess convergence, we
+plot the log marginal likelihood trace:
 
 ```{r, fig.height = 4.5}
 plot(result, which = 3)
 ```
 
-The plot shows that the marginal likelihood stabilizes after the first 100 (thinned)
+The plot shows that the log marginal likelihood stabilizes after the first 100 (thinned)
 iterations. Below, we visualize the cluster assignments and averaged fitted means:
 
 ```{r, fig.height = 3.2}
-gg1 <- plot_clusters_map(result, sort = TRUE, legend = TRUE, clusters = 1:8,
+gg1 <- plot_clusters_map(result, sort = TRUE, legend = TRUE, clusters = 1:9,
     geom_before = geom_sf(data = canada), size = 3, alpha = 0.8)
-gg2 <- plot_clusters_fitted(result, sort = TRUE, clusters = 1:8, linewidth = 0.4)
+gg2 <- plot_clusters_fitted(result, sort = TRUE, clusters = 1:9, linewidth = 0.4)
 gg1 + gg2
 ```
 
@@ -228,7 +214,7 @@ if (save_figures) {
 The largest cluster is in southeastern Canada and includes 7 closely located stations. The
 second-largest is more dispersed, while the third is in the southwest with 4 stations.
 
-### Empirical standardised temperature per cluster
+### Empirical standardized temperature per cluster
 
 We use `plot_clusters_series()` to visualize the raw standardized temperature per cluster.
 The output can be customized using `ggplot2` elements.
@@ -248,13 +234,13 @@ if (save_figures) {
 }
 ```
 
-Panels 1–8 show the empirical risk per cluster for those clusters that contain more than
-one station. The main differences among these clusters lie in the initial shape of the
-curve, the speed of increase, the shape and timing of the peak, and the behavior during
-the decay phase. For example, clusters 1 and 2 exhibit a bell-shaped pattern, while
-others, such as clusters 3 to 6, display a nearly linear increase until reaching a maximum
-level. Panels 9–14 present the empirical risk per cluster for those that contain only one
-station. These single-station clusters tend to exhibit more unique shapes, which not only
+Panels 1–9 show the empirical standardized temperature per cluster for those clusters
+that contain more than one station. The main differences among these clusters lie in the
+initial shape of the curve, the speed of increase, the shape and timing of the peak, and
+the behavior during the decay phase. For example, clusters 1 and 2 exhibit a bell-shaped
+pattern, while others, such as clusters 3 to 6, display a nearly linear increase until
+reaching a maximum level. Panels 10–14 present the empirical standardized temperature per
+cluster for those that contain only one station. These single-station clusters tend to exhibit more unique shapes, which not only
 distinguish them from the previous multi-station clusters but also from each other.
 
 ```{r, echo = FALSE}
@@ -267,23 +253,3 @@ distinguish them from the previous multi-station clusters but also from each oth
 #     theme_bw(base_size = 7) +
 #     theme(legend.position = "bottom")
 ```
-
-```{r, echo = FALSE}
-# # saveRDS(list(x = 1, b = 2), "find-problem.rds")
-#
-#  # -19550.807576937
-# plot(result)
-#  # -19449.8533593845
-#  # -19306.77
-#  # -19284.15
-#
-# # result2 =  update(result, niter = 2000, path_save = file.path("inst", "vigdata", "usacovid2.rds"))
-#
-# result = readRDS("clust_usacovid1.rds")
-# # result2 =  readRDS(file.path("inst", "vigdata", "usacovid2.rds"))
-# summary(result)
-# # summary(result2)
-# # library(sfclust)
-# plot(result, which = 1)
-```
-

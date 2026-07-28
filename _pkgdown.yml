@@ -7,9 +7,11 @@ articles:
   contents:
   - vg01-stars-object
   - vg02-advanced-features
+  - vg03-data-frame
 
 - title: Applications
   navbar: Applications
   contents:
   - articles/vg11-covid-usa
   - articles/vg12-temp-canada
+  - articles/vg13-ndwi-chaparrillo

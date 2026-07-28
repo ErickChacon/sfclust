@@ -9,7 +9,7 @@
 #'
 #' @author
 #' Ruiman Zhong \email{ruiman.zhong@kaust.edu.sa},
-#' Erick A. Chacón-Montalván \email{erick.chaconmontalvan@kaust.edu.sa},
+#' Erick A. Chacón-Montalván \email{erick.chaconmontalvan@wur.nl},
 #' Paula Moraga \email{paula.moraga@kaust.edu.sa}
 #'
 #' @importFrom stats runif setNames
@@ -69,6 +69,32 @@
 #'
 #' @name stgaus
 "stgaus"
+
+#' Spatio-temporal NDWI2 raster data from El Chaparrillo
+#'
+#' A `stars` raster object containing the Normalized Difference Water Index 2 (NDWI2)
+#' derived from Sentinel-2 satellite imagery over El Chaparrillo, an agricultural
+#' research center in Spain, across 86 time points.
+#'
+#' @format A `stars` object with:
+#' \describe{
+#'   \item{ndwi2}{NDWI2 values (numeric) derived from Sentinel-2 bands. Non-NA values define the study area mask.}
+#'   \item{dimensions}{Three dimensions: \code{x} (26 columns), \code{y} (27 rows),
+#'     \code{time} (86 dates from 2025-05-15 to 2025-12-01). CRS: WGS 84 / UTM zone 30N.}
+#' }
+#'
+#' @usage data(chapa)
+#'
+#' @examples
+#'
+#' library(sfclust)
+#'
+#' data(chapa)
+#' chapa
+#' plot(chapa["ndwi2"])
+#'
+#' @name chapa
+"chapa"
 
 ## ggplot variables used in NSE contexts
 globalVariables(c("log_mlike", "time", "mean_cluster", "cluster"))

@@ -1,74 +1,166 @@
-#' Generate clusters for spatial clustering
+#' Generate initial cluster assignments
 #'
-#' Creates an undirected graph from spatial polygonal data, computes its minimum spanning
-#' tree (MST), and generates `nclust` clusters. This function is used to initialize
-#' cluster membership in a clustering algorithm, such as `sfclust`.
+#' Creates an undirected graph from spatial data or a weighted adjacency matrix,
+#' computes its minimum spanning tree (MST), and partitions it into `nclust` clusters.
+#' Accepts weighted `matrix` or `Matrix` objects, and `stars` objects with either
+#' vector geometry (contiguity via [sf::st_touches()]) or raster dimensions
+#' (4-connected grid adjacency for non-NA pixels).
 #'
-#' @param x An `sf` or `sfc` object representing spatial polygonal data. It can also be
-#'   a `matrix` or `Matrix` object with non-zero values representing weighted
-#'   connectivity between units.
-#' @param nclust Integer, specifying the initial number of clusters.
-#' @param weights Optional `numeric` vector or `matrix` of weights between units in `x`.
-#'   It should have dimensions `n^2`, where `n` is the number of units in `x`. If NULL,
-#'   random weights are assigned.
+#' @param x Spatial data or adjacency matrix. Accepted classes: `matrix`, `Matrix`,
+#'   or `stars`.
+#' @param nclust Integer. Number of initial clusters (default `10`).
+#' @param weights Optional numeric vector or matrix of edge weights with `n^2` elements,
+#'   where `n` is the number of spatial units. Smaller values indicate stronger similarity
+#'   between units. If `NULL`, random weights are assigned.
+#' @param ... Not used; required for S3 method consistency.
 #'
-#' @return A list with three elements:
-#'   - `graph`: The undirected graph object representing spatial contiguity.
-#'   - `mst`: The minimum spanning tree.
-#'   - `membership`: The cluster membership for elements in `x`.
+#' @return A list with:
+#'   - `graph`: undirected igraph object representing spatial contiguity.
+#'   - `mst`: minimum spanning tree of `graph`.
+#'   - `membership`: integer vector of cluster assignments (length = number of valid spatial units).
+#'   - `valid_ids`: integer vector of flat spatial positions included in the graph
+#'     (only present for `stars` input; `NULL` for matrix/Matrix input).
 #'
 #' @examples
 #'
 #' library(sfclust)
 #' library(sf)
+#' library(stars)
 #'
-#' x <- st_make_grid(cellsize = c(1, 1), offset = c(0, 0), n = c(3, 2))
+#' # stars object with vector geometry
+#' geom <- st_make_grid(cellsize = c(1, 1), offset = c(0, 0), n = c(3, 2))
+#' x <- st_as_stars(st_sf(z = 1:6, geometry = geom))
+#' clust <- genclust(x, nclust = 3)
+#' plot(st_sf(geom, cluster = factor(clust$membership)))
 #'
-#' # using distance between geometries
-#' clust <- genclust(x, nclust = 3, weights = st_distance(st_centroid(x)))
-#' print(clust)
-#' plot(st_sf(x, cluster = factor(clust$membership)))
+#' # stars raster input
+#' x <- st_as_stars(cluster = matrix(1:35, 5))
+#' clust <- genclust(x, nclust = 4)
+#' x$cluster <- clust$membership
+#' plot(x, col = rainbow(4))
 #'
-#' # using increasing weights
-#' cluster_ini <- genclust(x, nclust = 3, weights = 1:36)
-#' print(cluster_ini)
-#' plot(st_sf(x, cluster = factor(cluster_ini$membership)))
+#' # matrix input
+#' x <- matrix(c(0,1,0,1, 1,0,1,0, 0,1,0,1, 1,0,1,0), nrow = 4)
+#' clust <- genclust(x, nclust = 2)
+#' clust$membership
 #'
-#' # using on random weights
-#' cluster_ini <- genclust(x, nclust = 3, weights = runif(36))
-#' print(cluster_ini)
-#' plot(st_sf(x, cluster = factor(cluster_ini$membership)))
-#'
-#' @import igraph
+#' @export
+genclust <- function(x, ...) UseMethod("genclust")
+
+#' @rdname genclust
+#' @export
+genclust.default <- function(x, ...) {
+  stop("No genclust method for class '", paste(class(x), collapse = "/"), "'. ",
+       "Provide a matrix, Matrix, or stars object.")
+}
+
+#' @rdname genclust
+#' @export
+genclust.matrix <- function(x, nclust = 10, weights = NULL, ...) {
+  validate_nclust(nclust, nrow(x))
+  if (is.null(weights)) weights <- runif(length(x))
+  genclust_adj(x * weights, nclust = nclust)
+}
+
+#' @rdname genclust
+#' @export
+genclust.Matrix <- function(x, nclust = 10, weights = NULL, ...) {
+  genclust.matrix(x, nclust = nclust, weights = weights)
+}
+
+#' @rdname genclust
+#' @param nclust Integer. Number of initial clusters (default `10`).
+#' @param spnames Character vector with the names of the spatial dimensions. If
+#'   `NULL`, auto-detected as dimensions with a non-`NA` regular `delta` in
+#'   [stars::st_dimensions()]. Currently supports 1D (vector geometry) and 2D
+#'   raster grids; 3D spatial grids (e.g. `x`, `y`, `z`) are not yet supported.
+#' @param response Character. Name of the attribute in `x` to use for determining
+#'   valid spatial cells (cells where all observations are NA are excluded).
+#'   If `NULL` (default), all spatial cells are treated as valid.
+#' @param weights Optional numeric vector of edge weights with `n^2` elements,
+#'   where `n` is the total number of spatial units (before filtering). If `NULL`,
+#'   random weights are assigned.
+#' @importFrom stars st_dimensions
+#' @export
+genclust.stars <- function(x, nclust = 10, spnames = NULL, response = NULL, weights = NULL, ...) {
+  spnames   <- detect_spnames(x, spnames)
+  domain    <- create_domain(x, spnames, response)
+  valid_ids <- which(domain[[1]])
+  adj       <- create_adj(domain, weights, valid_ids)
+  validate_nclust(nclust, nrow(adj))
+  result <- genclust_adj(adj, nclust = min(nclust, nrow(adj)))
+  result$valid_ids <- valid_ids
+  result
+}
+
+validate_nclust <- function(nclust, n) {
+  if (!is.numeric(nclust) || length(nclust) != 1 || nclust < 1)
+    stop("`nclust` must be a positive integer.")
+  if (nclust > n)
+    stop("`nclust` must be smaller than number of valid spatial units.")
+}
+
+#' @importFrom stars st_apply
+create_domain <- function(x, spnames, response = NULL) {
+  if (is.null(response)) {
+    st_apply(x[1], spnames, function(v) TRUE)
+  } else {
+    st_apply(x[response], spnames, function(v) any(!is.na(v)))
+  }
+}
+
+#' @importFrom stars st_dimensions st_get_dimension_values
 #' @importFrom methods as
 #' @importFrom sf st_touches
-#' @export
-genclust <- function(x, nclust = 10, weights = NULL){
-
-  # create adjacency, initial checks and weights if required
-  if (inherits(x, c("sf", "sfc"))) {
-    x <- as(st_touches(st_geometry(x)), "matrix")
-  } else if (!inherits(x, c("matrix", "Matrix"))) {
-    stop("`x` must be of class `sf`, `sfc`, `matrix` or `Matrix`.")
+create_adj <- function(domain, weights = NULL, valid_ids = which(domain[[1]])) {
+  spnames <- dimnames(domain)
+  if (length(spnames) == 1) {
+    geom <- st_get_dimension_values(domain, spnames)
+    adj <- as(st_touches(geom), "sparseMatrix")
+  } else if (length(spnames) == 2) {
+    adj <- raster_adjacency(dim(domain)[[1]], dim(domain)[[2]])
+  } else if (length(spnames) == 3) {
+    stop("3D raster support (e.g. x, y, z brain voxels) is not yet implemented.")
+  } else {
+    stop("create_adj only supports 1 (geometry) or 2 (raster) spatial dimensions.")
   }
+  if (is.null(weights)) weights <- runif(length(adj))
+  adj <- as(adj * weights, "CsparseMatrix")
+  adj[valid_ids, valid_ids, drop = FALSE]
+}
 
-  if (!is.numeric(nclust) || length(nclust) != 1 || nclust < 1) {
-    stop("`nclust` must be a positive integer.")
-  }
-  if (nclust > dim(x)[1]) {
-    stop("`nclust` must be smaller than number of regions.")
-  }
-
-  if (is.null(weights)) weights <- runif(length(x))
-
-  # create weighted graph and minimum spanning tree
-  graph <- graph_from_adjacency_matrix(x * weights, mode = "upper", weighted = TRUE)
+#' @importFrom igraph graph_from_adjacency_matrix mst V "V<-" vcount ecount delete_edges components
+#' @importFrom Matrix sparseMatrix
+NULL
+genclust_adj <- function(x, nclust = 10) {
+  graph <- graph_from_adjacency_matrix(x, mode = "upper", weighted = TRUE)
   mstgraph <- mst(graph)
   V(mstgraph)$vid <- 1:vcount(mstgraph)
-
-  # partition mst into nclust groups
-  rmid <- order(E(mstgraph)$weight, decreasing = TRUE)[1:(nclust - 1)]
+  rmid <- sample.int(ecount(mstgraph), nclust - 1)
   partition <- components(delete_edges(mstgraph, rmid))
+  list(graph = graph, mst = mstgraph, membership = partition$membership)
+}
 
-  return(list(graph = graph, mst = mstgraph, membership = partition$membership))
+# Builds a 4-connected adjacency matrix for a 2D grid of size nx * ny.
+# Flat position: (ix, iy) -> (iy - 1) * nx + ix  (first dim varies fastest).
+# Extension to 3D (e.g. brain voxels) would follow the same pattern with
+# 6-connected neighbors and flat position (iz-1)*nx*ny + (iy-1)*nx + ix.
+raster_adjacency <- function(nx, ny) {
+  # horizontal neighbors: (ix, iy) -- (ix+1, iy)
+  ix <- rep(seq_len(nx - 1L), ny)
+  iy <- rep(seq_len(ny), each = nx - 1L)
+  from_h <- (iy - 1L) * nx + ix
+  to_h   <- from_h + 1L
+
+  # vertical neighbors: (ix, iy) -- (ix, iy+1)
+  ix <- rep(seq_len(nx), ny - 1L)
+  iy <- rep(seq_len(ny - 1L), each = nx)
+  from_v <- (iy - 1L) * nx + ix
+  to_v   <- from_v + nx
+
+  from <- c(from_h, from_v)
+  to   <- c(to_h,   to_v)
+  n    <- nx * ny
+
+  Matrix::sparseMatrix(i = c(from, to), j = c(to, from), x = 1L, dims = c(n, n))
 }

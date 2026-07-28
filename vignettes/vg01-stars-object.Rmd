@@ -47,8 +47,9 @@ precipitation <- matrix(rnorm(30), nrow = 6, ncol = 5)
 ## Creating a `stars` object
 
 We now use the simulated data to construct a `stars` object. This object will contain
-spatial, temporal, and variable dimensions. While there are several ways to build such
-objects, the following method is commonly used:
+spatial and temporal dimensions, along with the three simulated variables stored as
+attributes. While there are several ways to build such objects, the following method is
+commonly used:
 
 ```{r}
 stdata <- st_as_stars(
@@ -71,10 +72,10 @@ ggplot() +
     scale_fill_distiller(palette = "RdBu")
 ```
 
-You can also add additional variables to the `stars` object. For instance, let’s add a
+You can also add additional variables to the `stars` object. For instance, let's add a
 `population` variable:
 
 ```{r}
-stdata["population"] <- rep(rpois(6, 1000), each = 6)
+stdata["population"] <- rep(rpois(6, 1000), times = 5)
 stdata
 ```

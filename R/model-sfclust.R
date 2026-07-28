@@ -1,0 +1,462 @@
+#' Bayesian spatial functional clustering
+#'
+#' `sfclust()` is the main user-facing function for Bayesian spatial functional
+#' clustering via reversible-jump MCMC. It dispatches on the class of the first
+#' argument:
+#'
+#' - `sfclust.data.frame()`: core interface — takes a pre-built long-format data frame
+#'   and a weighted adjacency matrix. Use this when working with any data format
+#'   after converting it yourself.
+#' - `sfclust.stars()`: stars wrapper — takes a `stars` spatio-temporal object,
+#'   converts it to long format, builds the spatial graph, and calls the core algorithm.
+#'
+#' @param x A `data.frame` (core interface) or a `stars` object (stars interface).
+#'        Dispatch is based on this argument's class.
+#'        For `sfclust.data.frame`: a long-format data frame with at least columns `id`
+#'        (unique row index) and `ids` (integer spatial unit index, 1 to `ns`), plus
+#'        any response and covariate columns referenced in `formula`.
+#'        For `sfclust.stars`: a `stars` object containing response variables, covariates,
+#'        and other necessary data.
+#' @param adjacency A square weighted adjacency matrix (ns × ns) encoding spatial
+#'        contiguity and edge weights. Can be a dense `matrix` or a sparse `Matrix`.
+#'        Typically obtained via [igraph::as_adjacency_matrix()] on the graph returned
+#'        by [genclust()].
+#' @param fnames Character. Name of the column in `x` that holds the functional
+#'        index (e.g. `"id_time"`). Used by plot methods; not required by the
+#'        algorithm itself. Default is `NULL`.
+#' @param graphdata A list with components `graph`, `mst`, and `membership` as returned
+#'        by [genclust()]. If `NULL`, it is built automatically.
+#' @param spnames Character vector with the names of the spatial dimensions of `stdata`.
+#'        Use a single name (e.g. `"geometry"`) for vector geometry data, or two names
+#'        (e.g. `c("x", "y")`) for raster data. If `NULL` (default), auto-detected
+#'        from the `stars` object dimensions.
+#' @param spnames Character vector with the names of the spatial dimensions of `x`.
+#'        If `NULL` (default), auto-detected from the `stars` object dimensions.
+#' @param move_prob A numeric vector of probabilities for the MCMC move types: birth,
+#'        death, change, and hyperparameter (default is `c(0.425, 0.425, 0.1, 0.05)`).
+#' @param logpen A negative numeric value representing the log-scale penalty for
+#'        increasing the number of clusters by one. The number of clusters is assumed to
+#'        follow a geometric prior with probability `q`, making this penalty equal to
+#'        `log(1 - q)`. For example, if `logpen = -50`, then a proposal that increases
+#'        the number of clusters will only be favored if it improves the log marginal
+#'        likelihood by more than 50.
+#' @param nclust Integer. Initial number of clusters when `graphdata = NULL`. Ignored
+#'        if `graphdata` is provided (default is `10`).
+#' @param correction A logical indicating whether correction to compute the marginal
+#'        likelihoods should be applied (default is `TRUE`). This depends on the type
+#'        of effects included in the `INLA` model.
+#' @param niter An integer specifying the number of MCMC iterations after burn-in
+#'        (default is `100`).
+#' @param burnin An integer specifying the number of burn-in iterations to discard
+#'        (default is `0`).
+#' @param thin An integer specifying the thinning interval for recording the results
+#'        (default is `1`).
+#' @param nmessage An integer specifying how often progress messages should be printed
+#'        (default is `10`).
+#' @param path_save A character string specifying the file path to save the results
+#'        (default is `NULL`).
+#' @param nsave An integer specifying the number of iterations between saved results
+#'        (default is `nmessage`).
+#' @param ... Additional arguments such as `formula`, `family`, and others passed to
+#'        `inla()`.
+#'
+#' @details
+#' This implementation draws inspiration from the methods described in the paper:
+#' *"Bayesian Clustering of Spatial Functional Data with Application to a Human Mobility
+#' Study During COVID-19"* by Bohai Zhang, Huiyan Sang, Zhao Tang Luo, and Hui Huang,
+#' published in *The Annals of Applied Statistics*, 2023. For further details on the
+#' methodology, please refer to:
+#' - The paper: \doi{doi:10.1214/22-AOAS1643}
+#' - Supplementary material: \doi{doi:10.1214/22-AOAS1643SUPPB}
+#'
+#' The MCMC algorithm in this implementation is largely based on the supplementary
+#' material provided in the paper. However, we have generalized the computation of the
+#' marginal likelihood ratio by leveraging INLA (Integrated Nested Laplace Approximation).
+#' This generalization enables integration over all parameters and hyperparameters,
+#' allowing for inference within a broader family of distribution functions and model
+#' terms, thereby extending the scope and flexibility of the original approach.
+#' Further details of our approach can be found in our paper *"Bayesian spatial functional
+#' data clustering: applications in disease surveillance"* by Ruiman Zhong, Erick A.
+#' Chacón-Montalván, Paula Moraga:
+#' - The paper: <https://doi.org/10.1002/sim.70597>
+#'
+#' @return
+#' An `sfclust` object (from `sfclust.data.frame`) or an `sfclust_stars` object
+#' inheriting from `sfclust` (from `sfclust.stars`). Both contain:
+#' - `samples`: MCMC trace with `membership`, `log_mlike`, and `move_counts`.
+#' - `clust`: selected clustering with `id`, `membership`, and fitted `models`.
+#'
+#' `sfclust_stars` additionally carries `input_args` with `stars` (structural shell
+#' of the input), `spnames`, and `fnames`, used by spatial plot methods.
+#'
+#' @author
+#' Ruiman Zhong \email{ruiman.zhong@kaust.edu.sa},
+#' Erick A. Chacón-Montalván \email{erick.chaconmontalvan@wur.nl},
+#' Paula Moraga \email{paula.moraga@kaust.edu.sa}
+#'
+#' @examples
+#'
+#' \donttest{
+#' if (requireNamespace("INLA", quietly = TRUE)) {
+#' library(sfclust)
+#'
+#' # Stars interface: Gaussian model
+#' data(stgaus)
+#' result <- sfclust(stgaus, formula = y ~ f(id_time, model = "rw1"),
+#'   niter = 10, nmessage = 1)
+#'
+#' print(result)
+#' summary(result, sort = TRUE)
+#' fitted(result, sort = TRUE)
+#'
+#' plot(result)
+#' plot_clusters_series(result, var = y)
+#'
+#' result2 <- update(result, niter = 2, nmessage = 1)
+#' plot(result2)
+#'
+#' # Stars interface: Binomial model
+#' data(stbinom)
+#' result <- sfclust(stbinom, formula = cases ~ poly(id_time, 2) + f(id),
+#'   family = "binomial", Ntrials = population, niter = 10, nmessage = 1)
+#'
+#' print(result)
+#' summary(result, sort = TRUE)
+#' fitted(result, sort = TRUE)
+#'
+#' plot(result)
+#' plot_clusters_series(result, var = cases/population)
+#'
+#' result2 <- update(result, niter = 2, nmessage = 1)
+#' plot(result2)
+#'
+#' # data.frame interface: Poisson model
+#'  ns <- 6L; nt <- 4L
+#'  set.seed(4)
+#'  df  <- data.frame(
+#'    id       = seq_len(ns * nt),
+#'    ids      = rep(seq_len(ns), nt),
+#'    id_time  = rep(seq_len(nt), each = ns),
+#'    expected = rep(10L, ns * nt)
+#'  )
+#'  df <- transform(df,
+#'    y = rpois(ns * nt, expected * exp(0.5 * id_time * rep(c(-1, 1), each = ns / 2, nt)))
+#'  )
+#'  adj <- Matrix::sparseMatrix(
+#'    i = c(1, 2, 4, 5, 1, 2, 3), j = c(2, 3, 5, 6, 4, 5, 6),
+#'    x = 1L, dims = c(ns, ns), symmetric = TRUE
+#'  )
+#'
+#'  result <- sfclust(df, adjacency = adj, nclust = 3, fnames = "id_time",
+#'    formula = y ~ 1 + id_time, family = "poisson", E = expected,
+#'    niter = 3, burnin = 0, thin = 1, nmessage = 1)
+#'
+#'  print(result)
+#'  summary(result, sort = TRUE)
+#'  fitted(result, sort = TRUE)
+#'
+#'  plot(result)
+#'  plot_clusters_series(result, var = y)
+#'
+#'  result2 <- update(result, niter = 2, nmessage = 1)
+#'  plot(result2)
+#' }
+#' }
+#'
+#' @export
+sfclust <- function(x, ...) UseMethod("sfclust")
+
+#' @rdname sfclust
+#' @export
+sfclust.default <- function(x, ...) {
+  stop("No sfclust method for class '", paste(class(x), collapse = "/"), "'. ",
+       "Provide a data.frame (core interface) or a stars object.")
+}
+
+#' @rdname sfclust
+#' @export
+sfclust.data.frame <- function(x, adjacency, graphdata = NULL, fnames = NULL,
+                               nclust = 10,
+                               move_prob = c(0.425, 0.425, 0.1, 0.05),
+                               logpen = log(1 - 0.5),
+                               correction = TRUE, niter = 100, burnin = 0, thin = 1,
+                               nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
+  inla_args <- match.call(expand.dots = FALSE)$...
+
+  if (is.null(graphdata)) graphdata <- genclust_adj(adjacency * runif(length(adjacency)), nclust = nclust)
+  graphdata <- validate_graphdata(graphdata)
+
+  sfclust_fit(x, graphdata,
+              move_prob = move_prob, logpen = logpen,
+              correction = correction, niter = niter, burnin = burnin,
+              thin = thin, nmessage = nmessage,
+              path_save = path_save, nsave = nsave,
+              inla_args = inla_args,
+              input_args = list(fnames = fnames))
+}
+
+#' @rdname sfclust
+#' @importFrom stars st_get_dimension_values
+#' @export
+sfclust.stars <- function(x, nclust = 10, graphdata = NULL, spnames = NULL,
+                          move_prob = c(0.425, 0.425, 0.1, 0.05),
+                          logpen = log(1 - 0.5),
+                          correction = TRUE, niter = 100, burnin = 0, thin = 1,
+                          nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
+  inla_args <- match.call(expand.dots = FALSE)$...
+  spnames <- detect_spnames(x, spnames)
+  fnames  <- setdiff(dimnames(x), spnames)
+
+  # initial clustering
+  if (is.null(graphdata)) {
+    response  <- detect_response(eval(inla_args$formula), names(x))
+    graphdata <- genclust(x, spnames = spnames, response = response, nclust = nclust)
+  } else {
+    graphdata <- validate_graphdata(graphdata)
+  }
+
+  data <- filter_df(data_all(x, spnames), graphdata$valid_ids)
+  input_args <- list(stars = x[0], spnames = spnames, fnames = fnames)
+  sfclust_fit(data, graphdata,
+              move_prob = move_prob, logpen = logpen,
+              correction = correction, niter = niter,
+              burnin = burnin, thin = thin, nmessage = nmessage,
+              path_save = path_save, nsave = nsave,
+              inla_args = inla_args,
+              save_class = c("sfclust_stars", "sfclust"),
+              input_args = input_args)
+}
+
+detect_response <- function(formula, var_names) {
+  lhs_vars <- all.vars(formula[[2]])
+  lhs_vars[lhs_vars %in% var_names][1]
+}
+
+validate_graphdata <- function(graphdata) {
+  required <- c("graph", "mst", "membership")
+  missing  <- setdiff(required, names(graphdata))
+  if (length(missing) > 0)
+    stop("`graphdata` must contain: ", paste(missing, collapse = ", "), ".")
+  if (is.null(graphdata$valid_ids))
+    graphdata$valid_ids <- seq_len(length(graphdata$membership))
+  graphdata
+}
+
+#' @importFrom igraph V
+sfclust_fit <- function(data, graphdata,
+                        move_prob = c(0.425, 0.425, 0.1, 0.05), logpen = log(1 - 0.5),
+                        correction = TRUE, niter = 100, burnin = 0, thin = 1,
+                        nmessage = 10, path_save = NULL, nsave = nmessage,
+                        inla_args = NULL, save_class = "sfclust", input_args = NULL) {
+
+  # check if correction is required
+  if (correction) {
+    if (length(correction_required(eval(inla_args$formula))) == 0) {
+      correction <- FALSE
+      warning("Log marginal-likelihood correction not required.", immediate. = TRUE)
+    }
+  }
+
+  if (is.null(data$sid)) data$sid <- match(data$ids, sort(unique(data$ids)))
+
+  fit_args <- list(data = data, graphdata = graphdata, move_prob = move_prob, logpen = logpen,
+                   correction = correction, niter = niter, burnin = burnin, thin = thin)
+
+  # initial clustering
+  graph      <- graphdata[["graph"]]
+  mstgraph   <- graphdata[["mst"]]
+  membership <- graphdata[["membership"]]
+
+  ns         <- length(membership)
+  nclust     <- max(membership)
+  edge_status <- getEdgeStatus(membership, mstgraph)
+  log_mlike_vec <- log_mlik_all(membership, data, correction, FALSE, inla_args)
+  log_mlike  <- sum(log_mlike_vec)
+
+  # output objects
+  niter_total <- niter + burnin
+  nsamples    <- floor((niter - 1) / thin) + 1
+
+  membership_out <- array(0, dim = c(nsamples, ns))
+  log_mlike_out  <- numeric(nsamples)
+  mst_out        <- list()
+
+  birth_cnt <- death_cnt <- change_cnt <- hyper_cnt <- 0
+
+  # MCMC sampling
+  for (iter in 1:niter_total) {
+    rhy <- move_prob[4]
+    if (nclust == 1) {
+      rb <- 1 - rhy
+      rd <- 0
+      rc <- 0
+    } else if (nclust == ns) {
+      rb <- 0
+      rd <- 0.9 - rhy
+      rc <- 0.1
+    } else {
+      rb <- move_prob[1]
+      rd <- move_prob[2]
+      rc <- move_prob[3]
+    }
+
+    move_choice <- sample(4, 1, prob = c(rb, rd, rc, rhy))
+
+    if (move_choice == 1) { # birth move
+      split_res <- splitCluster(mstgraph, nclust, membership)
+
+      if (nclust == ns - 1) {
+        rd_new <- 0.9 - rhy
+      } else {
+        rd_new <- move_prob[2]
+      }
+      log_P   <- log(rd_new) - log(rb)
+      log_A   <- logpen
+      log_L_new <- log_mlik_ratio("split", split_res, log_mlike_vec, data, correction, inla_args)
+      acc_prob  <- exp(min(0, log_A + log_P + log_L_new$ratio))
+
+      if (runif(1) < acc_prob) {
+        membership  <- split_res$membership
+        edge_status <- getEdgeStatus(membership, mstgraph)
+        nclust      <- nclust + 1
+        log_mlike_vec <- log_L_new$log_mlike_vec
+        log_mlike   <- sum(log_mlike_vec)
+        birth_cnt   <- birth_cnt + 1
+      }
+    }
+
+    if (move_choice == 2) { # death move
+      merge_res <- mergeCluster(mstgraph, edge_status, membership)
+
+      if (nclust == 2) {
+        rb_new <- 1 - rhy
+      } else {
+        rb_new <- move_prob[1]
+      }
+      log_P   <- log(rb_new) - log(rd)
+      log_A   <- -logpen
+      log_L_new <- log_mlik_ratio("merge", merge_res, log_mlike_vec, data, correction, inla_args)
+      acc_prob  <- exp(min(0, log_A + log_P + log_L_new$ratio))
+
+      if (runif(1) < acc_prob) {
+        membership  <- merge_res$membership
+        edge_status <- getEdgeStatus(membership, mstgraph)
+        nclust      <- nclust - 1
+        log_mlike_vec <- log_L_new$log_mlike_vec
+        log_mlike   <- sum(log_mlike_vec)
+        death_cnt   <- death_cnt + 1
+      }
+    }
+
+    if (move_choice == 3) { # change move
+      merge_res <- mergeCluster(mstgraph, edge_status, membership)
+      split_res <- splitCluster(mstgraph, nclust - 1, merge_res$membership)
+
+      log_L_new_merge <- log_mlik_ratio("merge", merge_res, log_mlike_vec, data, correction, inla_args)
+      log_L_new       <- log_mlik_ratio("split", split_res, log_L_new_merge$log_mlike_vec, data, correction, inla_args)
+      acc_prob        <- exp(min(0, log_L_new_merge$ratio + log_L_new$ratio))
+
+      if (runif(1) < acc_prob) {
+        membership  <- split_res$membership
+        edge_status <- getEdgeStatus(membership, mstgraph)
+        log_mlike_vec <- log_L_new$log_mlike_vec
+        log_mlike   <- sum(log_mlike_vec)
+        change_cnt  <- change_cnt + 1
+      }
+    }
+
+    if (move_choice == 4) { # hyper move
+      mstgraph    <- proposeMST(graph, getEdgeStatus(membership, graph))
+      V(mstgraph)$vid <- 1:ns
+      edge_status <- getEdgeStatus(membership, mstgraph)
+      hyper_cnt   <- hyper_cnt + 1
+    }
+
+    # report status
+    if (iter %% nmessage == 0) {
+      message("Iteration ", iter, ": clusters = ", nclust, ", births = ", birth_cnt, ", deaths = ",
+        death_cnt, ", changes = ", change_cnt, ", hypers = ", hyper_cnt, ", log_mlike = ", log_mlike, "\n",
+        sep = ""
+      )
+    }
+
+    # store estimates
+    if (iter > burnin & (iter - burnin - 1) %% thin == 0) {
+      isample <- (iter - burnin - 1) / thin + 1
+      membership_out[isample, ] <- membership
+      log_mlike_out[isample]    <- log_mlike
+      mst_out[[isample]]        <- mstgraph
+    }
+
+    # save to file
+    if (iter > burnin & (iter - burnin - 1) %% nsave == 0) {
+      if (!is.null(path_save)) {
+        output <- list(
+          samples = list(
+            membership  = membership_out,
+            log_mlike   = log_mlike_out,
+            move_counts = c(births = birth_cnt, deaths = death_cnt, changes = change_cnt, hypers = hyper_cnt)
+          ),
+          clust = list(
+            id       = isample,
+            membership = membership,
+            models   = NULL
+          )
+        )
+        attr(output, "mst")       <- mst_out
+        attr(output, "fit_args")  <- fit_args
+        attr(output, "inla_args") <- inla_args
+        attr(output, "input_args") <- input_args
+        class(output) <- save_class
+        saveRDS(output, file = path_save)
+      }
+    }
+  }
+
+  # final outcome
+  membership <- membership_out[nrow(membership_out), ]
+  output <- list(
+    samples = list(
+      membership  = membership_out,
+      log_mlike   = log_mlike_out,
+      move_counts = c(births = birth_cnt, deaths = death_cnt, changes = change_cnt, hypers = hyper_cnt)
+    ),
+    clust = list(
+      id       = nrow(membership_out),
+      membership = membership,
+      models   = log_mlik_all(membership, data, FALSE, TRUE, inla_args)
+    )
+  )
+  attr(output, "mst")       <- mst_out
+  attr(output, "fit_args")  <- fit_args
+  attr(output, "inla_args") <- inla_args
+  attr(output, "input_args") <- input_args
+  class(output) <- save_class
+
+  if (!is.null(path_save)) saveRDS(output, file = path_save)
+  return(output)
+}
+
+log_mlik_ratio <- function(move_type, move, log_mlike_vec, data, correction = TRUE, inla_args = NULL) {
+  # update local marginal likelihoods for split move
+  if (move_type == "split") {
+    log_like_vec_new <- log_mlike_vec
+    M1 <- log_mlik_each(move$cluster_old, move$membership, data, correction, FALSE, inla_args)
+    M2 <- log_mlik_each(move$cluster_new, move$membership, data, correction, FALSE, inla_args)
+    log_like_vec_new[move$cluster_old] <- M1
+    log_like_vec_new[move$cluster_new] <- M2
+    llratio <- M1 + M2 - log_mlike_vec[move$cluster_old]
+    if (is.nan(llratio)) llratio <- -Inf
+  }
+
+  # update local marginal likelihoods for merge move
+  if (move_type == "merge") {
+    log_like_vec_new <- log_mlike_vec[- move$cluster_rm]
+    M <- log_mlik_each(move$cluster_new, move$membership, data, correction, FALSE, inla_args)
+    log_like_vec_new[move$cluster_new] <- M
+    llratio <- M - sum(log_mlike_vec[c(move$cluster_rm, move$cluster_new)])
+    if (is.nan(llratio)) llratio <- -Inf
+  }
+
+  return(list(ratio = llratio, log_mlike_vec = log_like_vec_new))
+}

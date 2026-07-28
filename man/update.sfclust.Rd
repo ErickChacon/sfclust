@@ -6,7 +6,7 @@
 \usage{
 \method{update}{sfclust}(
   object,
-  niter = 100,
+  niter = NULL,
   burnin = 0,
   thin = 1,
   nmessage = 10,
@@ -19,7 +19,9 @@
 \arguments{
 \item{object}{A \code{sfclust} object.}
 
-\item{niter}{An integer specifying the number of additional MCMC iterations to perform.}
+\item{niter}{An integer specifying the number of additional MCMC iterations to perform.
+If \code{NULL} (default), no additional iterations are run and the within-cluster INLA
+models are refitted for the current clustering sample.}
 
 \item{burnin}{An integer specifying the number of burn-in iterations to discard.}
 
@@ -48,7 +50,10 @@ provided.
 }
 \details{
 This function takes the last state of the Markov chain from a previous
-\code{sfclust} execution and uses it as the starting point for additional MCMC
-iterations. If \code{sample} is provided, it simply updates the within-cluster
-models for the specified clustering \code{sample}.
+\code{sfclust_fit} / \code{sfclust} execution and uses it as the starting point for
+additional MCMC iterations. If \code{niter = NULL} (the default), no additional
+iterations are run; instead, the within-cluster INLA models are fitted for
+the clustering given by \code{sample} (or the current \code{clust$id} if \code{sample} is
+\code{NULL}). This is useful when loading a checkpoint saved during a run, where
+the models were not yet stored: \code{result <- update(result)}.
 }

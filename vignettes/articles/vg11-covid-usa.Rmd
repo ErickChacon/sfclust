@@ -9,7 +9,7 @@ vignette: >
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(fig.align = "center", eval = TRUE)
-knitr::opts_chunk$set(fig.height = 6.5, fig.width = 7.5, dpi = 90, out.width = '100%')
+knitr::opts_chunk$set(fig.height = 6.5, fig.width = 7.5, dpi = 100, out.width = '100%')
 knitr::opts_chunk$set(comment = "#>")
 ```
 
@@ -19,7 +19,7 @@ save_figures <- dir.exists(path_figures)
 ```
 
 In this vignette, we use `sfclust` to identify US states with similar weekly relative risk
-of Covid-19 during 2020.
+of COVID-19 during 2020.
 
 ## Load packages and data
 
@@ -41,22 +41,21 @@ usacovid <- readRDS(gzcon(url(paste0(link, "usacovid.rds?raw=true"))))
 usacovid
 ```
 
-Note that the dimension names are `space` and `time`. Since `sfclust` expects them to be
-`c("geometry", "time")`, you must specify the `stnames` argument when using the function
-`sfclust()` of the package.
+Note that the dimension names are `space` and `time`. Since the spatial dimension is not
+the default `"geometry"`, you must specify `spnames = "space"` when using `sfclust()`.
 
 ## Exploratory analysis
 
-We begin by visualizing the weekly relative risk of Covid-19 across the 49 states. Higher
+We begin by visualizing the weekly relative risk of COVID-19 across the 49 states. Higher
 risk levels are observed toward the end of the year.
 
-```{r, fig.height = 6}
+```{r, fig.height = 6.5}
 ggplot() +
     geom_stars(aes(fill = cases/expected), data = usacovid) +
-    facet_wrap(~ time) +
+    facet_wrap(~ time, ncol = 7) +
     scale_fill_distiller(palette = "RdBu") +
     labs(fill = "Relative risk") +
-    theme_bw() +
+    theme_bw(base_size = 7) +
     theme(legend.position = "bottom")
 ```
 
@@ -82,50 +81,40 @@ usacovid |>
 We assume that the logarithm of the relative risk can be explained by:
 
 1. A polynomial trend over `time`
-2. An autoregressive effect over `idt`
+2. An autoregressive effect over `id_time`
 3. An unstructured random effect across states and times (`id`)
 
-We begin with one cluster per state (49 clusters total). Be sure to set the dimension
-names: `stnames = c("space", "time")`.
-
-```{r, eval = FALSE, echo = FALSE}
-# formula <- cases ~ 1 + poly(time, 3) + f(idt, model = "ar1") + f(id)
-# geodata <- genclust(st_geometry(usacovid), nclust = 49)
-#
-# set.seed(123)
-# result <- sfclust(usacovid, graphdata = geodata, stnames = c("space", "time"),
-#     formula = formula, family = "poisson", E = expected,
-#     niter = 4000, burnin = 0, thin = 10, nmessage = 10, nsave = 100,
-#     path_save = file.path("tools", "data", "usacovid-mcmc.rds"))
-```
+We begin with one cluster per state (49 clusters total). Be sure to set the spatial
+dimension name: `spnames = "space"`. Two additional arguments deserve mention: `nsave`
+periodically saves intermediate results to disk every 1000 iterations (useful for long
+runs); `control.inla` disables the variational Bayes approximation (`control.vb`) and
+uses empirical Bayes integration (`int.strategy = "eb"`) for numerical stability with
+this model.
 
 ```{r, eval = FALSE}
-formula <- cases ~ 1 + poly(time, 3) + f(idt, model = "ar1") + f(id)
-geodata <- genclust(st_geometry(usacovid), nclust = 49)
-
 set.seed(123)
-result <- sfclust(usacovid, graphdata = geodata, stnames = c("space", "time"),
+formula <- cases ~ 1 + poly(time, 3) + f(id_time, model = "ar1") + f(id)
+result <- sfclust(usacovid, nclust = 49, spnames = "space",
     formula = formula, family = "poisson", E = expected,
-    niter = 4000, burnin = 0, thin = 10, nmessage = 10, nsave = 100,
-    path_save = "usacovid-mcmc.rds")
+    niter = 4000, burnin = 0, thin = 10, nmessage = 10, nsave = 1000,
+    control.inla = list(control.vb = list(enable = FALSE), int.strategy = "eb"))
 result
 ```
 
 ```{r, echo = FALSE}
-formula <- cases ~ 1 + poly(time, 3) + f(idt, model = "ar1") + f(id)
-geodata <- genclust(st_geometry(usacovid), nclust = 49)
+formula <- cases ~ 1 + poly(time, 3) + f(id_time, model = "ar1") + f(id)
 result <- readRDS(here::here(file.path("tools", "data", "usacovid-mcmc.rds")))
 result
 ```
 
 Summary of clustering steps:
 
-* 36 cluster splits
-* 74 cluster merges
-* 12 cluster composition changes
-* 187 updates to the minimum spanning tree
+* 20 cluster splits
+* 57 cluster merges
+* 13 cluster composition changes
+* 223 updates to the minimum spanning tree
 
-400 samples were retained (after thinning) from 4000 iterations. The final marginal likelihood was -19196.77.
+400 samples were retained (after thinning) from 4000 iterations. The final marginal likelihood was -19199.61.
 
 ### Results
 
@@ -133,17 +122,17 @@ Summary of clustering steps:
 summary(result, sort = TRUE)
 ```
 
-The `summary()` output shows that 7 out of 11 clusters contain more than one state. The
-largest cluster includes 10 states, while the second includes 9, and so on. In order to
-verify the adequacy of this clustering, we check the convergence using the `plot()`
-function with option `which = 3`.
+The `summary()` output shows that 7 out of 12 clusters contain more than one state. The
+two largest clusters each include 9 states, while the remaining clusters are smaller. In
+order to verify the adequacy of this clustering, we check the convergence using the
+`plot()` function with option `which = 3`.
 
 ```{r, fig.height = 4.5}
 plot(result, which = 3)
 ```
 
-The figure indicates that the marginal likelihood improves significantly within the first
-100 iterations (after thinning) and stabilizes afterward from sample 200. Now, we can
+The figure indicates that the log marginal likelihood improves significantly within the
+first 100 samples (after thinning) and stabilizes afterward from sample 200. Now, we can
 visualize the spatial cluster assignment and the predicted mean for each cluster:
 
 ```{r, fig.height = 3}
@@ -162,9 +151,9 @@ The `plot()` output indicates that:
 * The largest cluster is in the southwestern US, followed by clusters in central and northwestern regions.
 * Mean relative risk increases gradually across the year, with different peaks per cluster.
 
-The `fitted` function return an `stars` object with prediction summaries after fitting,
-the `cluster` assignment, the `mean_cluster` linear predictor, the inverse of the linear
-predictor (`mean_cluster_inv`).
+The `fitted` function returns a `stars` object containing prediction summaries: the
+`cluster` assignment, the `mean_cluster` linear predictor, and its inverse
+(`mean_cluster_inv`).
 
 ```{r}
 us_fit <- fitted(result, sort = TRUE)
@@ -174,10 +163,10 @@ us_fit
 ### Empirical risk per cluster
 
 We use the cluster assignments to analyze and visualize the empirical relative risk per
-cluster. This can easily be done with the `plot_cluster_series()` function:
+cluster. This can easily be done with the `plot_clusters_series()` function:
 
 ```{r, fig.height = 3.5}
-plot_clusters_series(result, cases/expected, sort = TRUE, clusters = 1:10) +
+plot_clusters_series(result, cases/expected, sort = TRUE, clusters = 1:12) +
   facet_wrap(~ cluster, ncol = 5) +
   scale_x_date(date_breaks = "2 months", date_labels =  "%b") +
   labs(y = "Relative risk")
@@ -196,36 +185,22 @@ This figure shows distinct epidemic dynamics by cluster:
 * Cluster 2 peaks around November–December, with a decline by year-end.
 * Cluster 3 shows early activity around March and high risk near January.
 * Clusters 4–7 follow various intermediate trends.
-* Clusters 8–11 exhibit less typical behavior.
+* Clusters 8–12 exhibit less typical behavior.
 
-```{r, echo = FALSE}
-# pred <- fitted(result, sort = TRUE, aggregate = TRUE)
-# ggplot() +
-#     geom_stars(aes(fill = mean_cluster), data = pred) +
-#     facet_wrap(~ time) +
-#     scale_fill_distiller(palette = "RdBu") +
-#     labs(title = "Daily risk", fill = "Risk") +
-#     theme_bw(base_size = 7) +
-#     theme(legend.position = "bottom")
-```
+To complement the empirical view, we can also visualize the cluster-level mean log
+relative risk over time using the `fitted` function with `aggregate = TRUE`. This returns
+a `stars` object with one geometry per cluster, making it straightforward to produce a
+faceted map of the smoothed cluster predictions:
 
-```{r, echo = FALSE}
-# # saveRDS(list(x = 1, b = 2), "find-problem.rds")
-#
-#  # -19550.807576937
-# plot(result)
-#  # -19449.8533593845
-#  # -19306.77
-#  # -19284.15
-#
-# # result2 =  update(result, niter = 2000, path_save = file.path("inst", "vigdata", "usacovid2.rds"))
-#
-# result = readRDS("clust_usacovid1.rds")
-# # result2 =  readRDS(file.path("inst", "vigdata", "usacovid2.rds"))
-# summary(result)
-# # summary(result2)
-# # library(sfclust)
-# plot(result, which = 1)
+```{r, fig.height = 6.5}
+pred <- fitted(result, sort = TRUE, aggregate = TRUE)
+ggplot() +
+    geom_stars(aes(fill = mean_cluster), data = pred) +
+    facet_wrap(~ time, ncol = 7) +
+    scale_fill_distiller(palette = "RdBu") +
+    labs(title = "Weekly risk", fill = "Risk") +
+    theme_bw(base_size = 7) +
+    theme(legend.position = "bottom")
 ```
 
 <!-- vim: set softtabstop=2 sw=2 tabstop=2 expandtab: -->
