@@ -172,14 +172,14 @@ pre-compute it with <code><a href="../reference/genclust.html">genclust()</a></c
 <span>  family  <span class="op">=</span> <span class="st">"gaussian"</span>,</span>
 <span>  niter <span class="op">=</span> <span class="fl">20</span>, burnin <span class="op">=</span> <span class="fl">0</span>, thin <span class="op">=</span> <span class="fl">1</span>, nmessage <span class="op">=</span> <span class="fl">5</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; Iteration 5: clusters = 6, births = 1, deaths = 0, changes = 0, hypers = 1, log_mlike = -249.806942262186</span></span></code></pre>
-<pre><code><span><span class="co">#&gt; Iteration 10: clusters = 5, births = 1, deaths = 1, changes = 0, hypers = 1, log_mlike = -228.082701335373</span></span></code></pre>
+<pre><code><span><span class="co">#&gt; Iteration 5: clusters = 6, births = 1, deaths = 0, changes = 0, hypers = 1, log_mlike = -249.806944867444</span></span></code></pre>
+<pre><code><span><span class="co">#&gt; Iteration 10: clusters = 5, births = 1, deaths = 1, changes = 0, hypers = 1, log_mlike = -228.082701041887</span></span></code></pre>
 <pre><code><span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;  *** inla.core.safe:  rerun to try to solve negative eigenvalue(s) in the Hessian </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;  *** inla.core.safe:  rerun to try to solve negative eigenvalue(s) in the Hessian</span></span></code></pre>
-<pre><code><span><span class="co">#&gt; Iteration 15: clusters = 4, births = 1, deaths = 2, changes = 0, hypers = 1, log_mlike = -205.932598641884</span></span></code></pre>
-<pre><code><span><span class="co">#&gt; Iteration 20: clusters = 3, births = 1, deaths = 3, changes = 0, hypers = 1, log_mlike = -191.412243242203</span></span></code></pre>
+<pre><code><span><span class="co">#&gt; Iteration 15: clusters = 4, births = 1, deaths = 2, changes = 0, hypers = 1, log_mlike = -205.932597510278</span></span></code></pre>
+<pre><code><span><span class="co">#&gt; Iteration 20: clusters = 3, births = 1, deaths = 3, changes = 0, hypers = 1, log_mlike = -191.41224210314</span></span></code></pre>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">result</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; Within-cluster formula:</span></span>
@@ -225,11 +225,11 @@ for the cluster assignment, the linear predictor (<code>mean</code>,
 <code class="sourceCode R"><span><span class="va">df_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/fitted.values.html" class="external-link">fitted</a></span><span class="op">(</span><span class="va">result</span>, sort <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">df_fit</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"id"</span>, <span class="st">"ids"</span>, <span class="st">"time"</span>, <span class="st">"cluster"</span>, <span class="st">"mean"</span>, <span class="st">"mean_cluster"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt;   id ids time cluster        mean mean_cluster</span></span>
-<span><span class="co">#&gt; 1  1   1    1       1  0.21601255   0.21601255</span></span>
-<span><span class="co">#&gt; 2  2   2    1       1  0.21601255   0.21601255</span></span>
-<span><span class="co">#&gt; 3  3   3    1       1  0.21601255   0.21601255</span></span>
-<span><span class="co">#&gt; 4  4   4    1       1  0.21601255   0.21601255</span></span>
-<span><span class="co">#&gt; 5  5   5    1       1  0.21601255   0.21601255</span></span>
+<span><span class="co">#&gt; 1  1   1    1       1  0.21601251   0.21601251</span></span>
+<span><span class="co">#&gt; 2  2   2    1       1  0.21601251   0.21601251</span></span>
+<span><span class="co">#&gt; 3  3   3    1       1  0.21601251   0.21601251</span></span>
+<span><span class="co">#&gt; 4  4   4    1       1  0.21601251   0.21601251</span></span>
+<span><span class="co">#&gt; 5  5   5    1       1  0.21601251   0.21601251</span></span>
 <span><span class="co">#&gt; 6  6   6    1       2 -0.04776628  -0.04776628</span></span></code></pre>
 <p>The usual plot helpers are available. Since there is no spatial
 geometry, <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> has no map panel —
