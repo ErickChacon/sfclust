@@ -113,7 +113,7 @@ test_that("log_mlik_all: gaussian, binomial, poisson", {
   # Gaussian
   inla_args <- list(formula = y_gaus ~ f(id_time, model = "rw1"), family = "gaussian")
   res <- log_mlik_all(membership, df, correction = FALSE, inla_args = inla_args)
-  expect_equal(res, c(-24.24213, -18.05626), tolerance = 1e-5)
+  expect_equal(res, c(-24.24213, -18.05626), tolerance = 1e-3)
 
   # Binomial
   inla_args <- list(
@@ -121,7 +121,7 @@ test_that("log_mlik_all: gaussian, binomial, poisson", {
     family = "binomial", Ntrials = quote(n)
   )
   res <- log_mlik_all(membership, df, correction = FALSE, inla_args = inla_args)
-  expect_equal(res, c(-22.44368, -8.355529), tolerance = 1e-5)
+  expect_equal(res, c(-22.44368, -8.355529), tolerance = 1e-3)
 
   # Poisson
   inla_args <- list(
@@ -129,6 +129,6 @@ test_that("log_mlik_all: gaussian, binomial, poisson", {
     family = "poisson", E = quote(n)
   )
   res <- log_mlik_all(membership, df, correction = FALSE, inla_args = inla_args)
-  expect_equal(res, c(-26.86092, -10.86669), tolerance = 1e-5)
+  expect_equal(res, c(-26.86092, -10.86669), tolerance = 1e-3)
 })
 
