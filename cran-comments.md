@@ -14,11 +14,15 @@ samples, and several bug fixes. See NEWS.md for full details.
 
 0 errors | 0 warnings | 0 notes
 
-* Suggested package 'INLA' is not available on CRAN; it is used only in
-  examples and vignettes guarded by `requireNamespace("INLA", quietly = TRUE)`,
-  and the package is fully functional without it for non-INLA workflows.
-  'INLA' is installed from <https://inla.r-inla-download.org/R/stable>, as
-  noted in the `Additional_repositories` field of DESCRIPTION.
+* Suggested package 'INLA' is not available on CRAN. It is required for the
+  package's core Bayesian clustering procedure (`sfclust()`), which calls
+  INLA at every MCMC iteration; without it, only the standalone
+  preprocessing utilities (`genclust()`, `data_all()`) are usable. All
+  INLA-dependent code in examples, tests, and vignettes is guarded by
+  `requireNamespace("INLA", quietly = TRUE)`, so R CMD check passes cleanly
+  without it. 'INLA' is installed from
+  <https://inla.r-inla-download.org/R/stable>, as noted in the
+  `Additional_repositories` field of DESCRIPTION.
 
 ## Downstream dependencies
 
