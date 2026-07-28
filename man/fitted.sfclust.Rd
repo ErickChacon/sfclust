@@ -35,6 +35,7 @@ associated with the selected clustering sample.
 \examples{
 
 \donttest{
+if (requireNamespace("INLA", quietly = TRUE)) {
 library(sfclust)
 
 data(stgaus)
@@ -49,6 +50,7 @@ df_est <- fitted(result, aggregate = TRUE)
 
 # Estimated values using a particular clustering sample
 df_est <- fitted(result, sample = 3)
+}
 }
 
 }

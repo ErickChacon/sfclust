@@ -97,6 +97,7 @@
 #' @examples
 #'
 #' \donttest{
+#' if (requireNamespace("INLA", quietly = TRUE)) {
 #' library(sfclust)
 #'
 #' # Stars interface: Gaussian model
@@ -159,6 +160,7 @@
 #'
 #'  result2 <- update(result, niter = 2, nmessage = 1)
 #'  plot(result2)
+#' }
 #' }
 #'
 #' @export

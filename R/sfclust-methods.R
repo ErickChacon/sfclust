@@ -194,6 +194,7 @@ update_within <- function(x, sample = NULL) {
 #' @examples
 #'
 #' \donttest{
+#' if (requireNamespace("INLA", quietly = TRUE)) {
 #' library(sfclust)
 #'
 #' data(stgaus)
@@ -208,6 +209,7 @@ update_within <- function(x, sample = NULL) {
 #'
 #' # Estimated values using a particular clustering sample
 #' df_est <- fitted(result, sample = 3)
+#' }
 #' }
 #'
 #' @importFrom stats fitted

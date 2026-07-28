@@ -159,6 +159,7 @@ Chacón-Montalván, Paula Moraga:
 \examples{
 
 \donttest{
+if (requireNamespace("INLA", quietly = TRUE)) {
 library(sfclust)
 
 # Stars interface: Gaussian model
@@ -221,6 +222,7 @@ plot(result2)
 
  result2 <- update(result, niter = 2, nmessage = 1)
  plot(result2)
+}
 }
 
 }
