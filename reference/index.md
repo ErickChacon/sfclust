@@ -2,15 +2,19 @@
 
 ## All functions
 
+- [`chapa`](chapa.md) : Spatio-temporal NDWI2 raster data from El
+  Chaparrillo
+
 - [`data_all()`](data_all.md) : Prepare data in long format
 
-- [`data_each()`](data_each.md) : Prepare data for a cluster
+- [`filter_df()`](filter_df.md) : Filter a long-format data frame to
+  valid spatial cells
 
 - [`fitted(`*`<sfclust>`*`)`](fitted.sfclust.md) :
 
   Fitted Values for `sfclust` Objects
 
-- [`genclust()`](genclust.md) : Generate clusters for spatial clustering
+- [`genclust()`](genclust.md) : Generate initial cluster assignments
 
 - [`log_mlik_all()`](log_mlik_all.md) : Fit models and compute the log
   marginal likelihood for all clusters

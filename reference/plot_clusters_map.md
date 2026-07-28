@@ -1,7 +1,7 @@
 # Plot a spatial map of cluster assignments
 
 Produces a `ggplot2` map of spatial regions colored by their cluster
-assignment for a given MCMC sample of an `sfclust` object.
+assignment for a given MCMC sample of an `sfclust_stars` object.
 
 ## Usage
 
@@ -21,7 +21,7 @@ plot_clusters_map(
 
 - x:
 
-  An `sfclust` object.
+  An `sfclust_stars` object.
 
 - sample:
 

@@ -14,6 +14,7 @@ plot_clusters_fitted(
   sort = FALSE,
   legend = FALSE,
   inv_link = TRUE,
+  fnames = NULL,
   ...
 )
 ```
@@ -47,6 +48,12 @@ plot_clusters_fitted(
 
   Logical; if `TRUE` (default), values are shown on the inverse-link
   (mean) scale.
+
+- fnames:
+
+  Character. Name of the column to use as the x-axis (functional
+  dimension). If `NULL`, taken from the result's stored args (set
+  automatically by [`sfclust()`](sfclust.md)).
 
 - ...:
 

@@ -1,18 +1,42 @@
 # Bayesian spatial functional clustering
 
-Bayesian detection of neighboring spatial regions with similar
-functional shapes using spanning trees and latent Gaussian models. It
-ensures spatial contiguity in the clusters, handles a large family of
-latent Gaussian models supported by `inla`, and allows to work with
-non-Gaussian likelihoods.
+`sfclust()` is the main user-facing function for Bayesian spatial
+functional clustering via reversible-jump MCMC. It dispatches on the
+class of the first argument:
 
 ## Usage
 
 ``` r
+sfclust(x, ...)
+
+# Default S3 method
+sfclust(x, ...)
+
+# S3 method for class 'data.frame'
 sfclust(
-  stdata,
+  x,
+  adjacency,
   graphdata = NULL,
-  stnames = c("geometry", "time"),
+  fnames = NULL,
+  nclust = 10,
+  move_prob = c(0.425, 0.425, 0.1, 0.05),
+  logpen = log(1 - 0.5),
+  correction = TRUE,
+  niter = 100,
+  burnin = 0,
+  thin = 1,
+  nmessage = 10,
+  path_save = NULL,
+  nsave = nmessage,
+  ...
+)
+
+# S3 method for class 'stars'
+sfclust(
+  x,
+  nclust = 10,
+  graphdata = NULL,
+  spnames = NULL,
   move_prob = c(0.425, 0.425, 0.1, 0.05),
   logpen = log(1 - 0.5),
   correction = TRUE,
@@ -28,47 +52,69 @@ sfclust(
 
 ## Arguments
 
-- stdata:
+- x:
 
-  A stars object containing response variables, covariates, and other
+  A `data.frame` (core interface) or a `stars` object (stars interface).
+  Dispatch is based on this argument's class. For `sfclust.data.frame`:
+  a long-format data frame with at least columns `id` (unique row index)
+  and `ids` (integer spatial unit index, 1 to `ns`), plus any response
+  and covariate columns referenced in `formula`. For `sfclust.stars`: a
+  `stars` object containing response variables, covariates, and other
   necessary data.
+
+- ...:
+
+  Additional arguments such as `formula`, `family`, and others passed to
+  `inla()`.
+
+- adjacency:
+
+  A square weighted adjacency matrix (ns × ns) encoding spatial
+  contiguity and edge weights. Can be a dense `matrix` or a sparse
+  `Matrix`. Typically obtained via
+  [`igraph::as_adjacency_matrix()`](https://r.igraph.org/reference/as_adjacency_matrix.html)
+  on the graph returned by [`genclust()`](genclust.md).
 
 - graphdata:
 
-  A list containing the initial graph used for the Bayesian model. It
-  should include components like `graph`, `mst`, and `membership`
-  (default is `NULL`).
+  A list with components `graph`, `mst`, and `membership` as returned by
+  [`genclust()`](genclust.md). If `NULL`, it is built automatically.
 
-- stnames:
+- fnames:
 
-  A character vector specifying the spatio-temporal dimension names of
-  `stdata` that represent spatial geometry and time, respectively
-  (default is `c("geometry", "time")`).
+  Character. Name of the column in `x` that holds the functional index
+  (e.g. `"id_time"`). Used by plot methods; not required by the
+  algorithm itself. Default is `NULL`.
+
+- nclust:
+
+  Integer. Initial number of clusters when `graphdata = NULL`. Ignored
+  if `graphdata` is provided (default is `10`).
 
 - move_prob:
 
-  A numeric vector of probabilities for different types of moves in the
-  MCMC process: birth, death, change, and hyperparameter moves (default
-  is `c(0.425, 0.425, 0.1, 0.05)`).
+  A numeric vector of probabilities for the MCMC move types: birth,
+  death, change, and hyperparameter (default is
+  `c(0.425, 0.425, 0.1, 0.05)`).
 
 - logpen:
 
   A negative numeric value representing the log-scale penalty for
   increasing the number of clusters by one. The number of clusters is
   assumed to follow a geometric prior with probability `q`, making this
-  penalty equal to `log(1 - q)`. For example, if `logp = -50`, then a
+  penalty equal to `log(1 - q)`. For example, if `logpen = -50`, then a
   proposal that increases the number of clusters will only be favored if
   it improves the log marginal likelihood by more than 50.
 
 - correction:
 
   A logical indicating whether correction to compute the marginal
-  likelihoods should be applied (default is `TRUE`). This depend of the
-  type of effect inclused in the `INLA` model.
+  likelihoods should be applied (default is `TRUE`). This depends on the
+  type of effects included in the `INLA` model.
 
 - niter:
 
-  An integer specifying the number of MCMC iterations to perform
+  An integer specifying the number of MCMC iterations after burn-in
   (default is `100`).
 
 - burnin:
@@ -94,39 +140,37 @@ sfclust(
 - nsave:
 
   An integer specifying the number of iterations between saved results
-  in the chain (default is `nmessage`).
+  (default is `nmessage`).
 
-- ...:
+- spnames:
 
-  Additional arguments such as `formula`, `family`, and others that are
-  passed to the `inla` function.
+  Character vector with the names of the spatial dimensions of `x`. If
+  `NULL` (default), auto-detected from the `stars` object dimensions.
 
 ## Value
 
-An `sfclust` object containing two main lists: `samples` and `clust`.
+An `sfclust` object (from `sfclust.data.frame`) or an `sfclust_stars`
+object inheriting from `sfclust` (from `sfclust.stars`). Both contain:
 
-- The `samples` list includes details from the sampling process, such
-  as:
+- `samples`: MCMC trace with `membership`, `log_mlike`, and
+  `move_counts`.
 
-  - `membership`: The cluster membership assignments for each sample.
+- `clust`: selected clustering with `id`, `membership`, and fitted
+  `models`.
 
-  - `log_marginal_likelihood`: The log marginal likelihood for each
-    sample.
-
-  - `move_counts`: The counts of each type of move during the MCMC
-    process.
-
-- The `clust` list contains information about the selected clustering,
-  including:
-
-  - `id`: The identifier of the selected sample (default is the last
-    sample).
-
-  - `membership`: The cluster assignments for the selected sample.
-
-  - `models`: The fitted models for each cluster in the selected sample.
+`sfclust_stars` additionally carries `input_args` with `stars`
+(structural shell of the input), `spnames`, and `fnames`, used by
+spatial plot methods.
 
 ## Details
+
+- `sfclust.data.frame()`: core interface — takes a pre-built long-format
+  data frame and a weighted adjacency matrix. Use this when working with
+  any data format after converting it yourself.
+
+- `sfclust.stars()`: stars wrapper — takes a `stars` spatio-temporal
+  object, converts it to long format, builds the spatial graph, and
+  calls the core algorithm.
 
 This implementation draws inspiration from the methods described in the
 paper: *"Bayesian Clustering of Spatial Functional Data with Application
@@ -158,33 +202,89 @@ Chacón-Montalván, Paula Moraga:
 ## Author
 
 Ruiman Zhong <ruiman.zhong@kaust.edu.sa>, Erick A. Chacón-Montalván
-<erick.chaconmontalvan@kaust.edu.sa>, Paula Moraga
-<paula.moraga@kaust.edu.sa>
+<erick.chaconmontalvan@wur.nl>, Paula Moraga <paula.moraga@kaust.edu.sa>
 
 ## Examples
 
 ``` r
 
 # \donttest{
+if (requireNamespace("INLA", quietly = TRUE)) {
 library(sfclust)
 
-# Clustering with Gaussian data
+# Stars interface: Gaussian model
 data(stgaus)
-result <- sfclust(stgaus, formula = y ~ f(idt, model = "rw1"),
+result <- sfclust(stgaus, formula = y ~ f(id_time, model = "rw1"),
   niter = 10, nmessage = 1)
-#> Iteration 1: clusters = 10, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -2093.91043948207
-#> Iteration 2: clusters = 10, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -2093.91043948207
-#> Iteration 3: clusters = 10, births = 0, deaths = 0, changes = 1, hypers = 0, log_mlike = -1795.08685554065
-#> Iteration 4: clusters = 10, births = 0, deaths = 0, changes = 1, hypers = 0, log_mlike = -1795.08685554065
-#> Iteration 5: clusters = 11, births = 1, deaths = 0, changes = 1, hypers = 0, log_mlike = -1750.49207867989
-#> Iteration 6: clusters = 11, births = 1, deaths = 0, changes = 2, hypers = 0, log_mlike = -1641.91771136138
-#> Iteration 7: clusters = 11, births = 1, deaths = 0, changes = 2, hypers = 0, log_mlike = -1641.91771136138
-#> Iteration 8: clusters = 11, births = 1, deaths = 0, changes = 2, hypers = 0, log_mlike = -1641.91771136138
-#> Iteration 9: clusters = 11, births = 1, deaths = 0, changes = 2, hypers = 0, log_mlike = -1641.91771136138
-#> Iteration 10: clusters = 11, births = 1, deaths = 0, changes = 2, hypers = 0, log_mlike = -1641.91771136138
+
 print(result)
+summary(result, sort = TRUE)
+fitted(result, sort = TRUE)
+
+plot(result)
+plot_clusters_series(result, var = y)
+
+result2 <- update(result, niter = 2, nmessage = 1)
+plot(result2)
+
+# Stars interface: Binomial model
+data(stbinom)
+result <- sfclust(stbinom, formula = cases ~ poly(id_time, 2) + f(id),
+  family = "binomial", Ntrials = population, niter = 10, nmessage = 1)
+
+print(result)
+summary(result, sort = TRUE)
+fitted(result, sort = TRUE)
+
+plot(result)
+plot_clusters_series(result, var = cases/population)
+
+result2 <- update(result, niter = 2, nmessage = 1)
+plot(result2)
+
+# data.frame interface: Poisson model
+ ns <- 6L; nt <- 4L
+ set.seed(4)
+ df  <- data.frame(
+   id       = seq_len(ns * nt),
+   ids      = rep(seq_len(ns), nt),
+   id_time  = rep(seq_len(nt), each = ns),
+   expected = rep(10L, ns * nt)
+ )
+ df <- transform(df,
+   y = rpois(ns * nt, expected * exp(0.5 * id_time * rep(c(-1, 1), each = ns / 2, nt)))
+ )
+ adj <- Matrix::sparseMatrix(
+   i = c(1, 2, 4, 5, 1, 2, 3), j = c(2, 3, 5, 6, 4, 5, 6),
+   x = 1L, dims = c(ns, ns), symmetric = TRUE
+ )
+
+ result <- sfclust(df, adjacency = adj, nclust = 3, fnames = "id_time",
+   formula = y ~ 1 + id_time, family = "poisson", E = expected,
+   niter = 3, burnin = 0, thin = 1, nmessage = 1)
+
+ print(result)
+ summary(result, sort = TRUE)
+ fitted(result, sort = TRUE)
+
+ plot(result)
+ plot_clusters_series(result, var = y)
+
+ result2 <- update(result, niter = 2, nmessage = 1)
+ plot(result2)
+}
+#> Iteration 1: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1966.74072725894
+#> Iteration 2: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1966.74072725894
+#> Iteration 3: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1871.05700912839
+#> Iteration 4: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1871.05700912839
+#> Iteration 5: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1871.05700912839
+#> Iteration 6: clusters = 13, births = 3, deaths = 0, changes = 0, hypers = 0, log_mlike = -1815.85187956966
+#> Iteration 7: clusters = 13, births = 3, deaths = 0, changes = 0, hypers = 0, log_mlike = -1815.85187956966
+#> Iteration 8: clusters = 13, births = 3, deaths = 0, changes = 0, hypers = 0, log_mlike = -1815.85187956966
+#> Iteration 9: clusters = 13, births = 3, deaths = 0, changes = 0, hypers = 0, log_mlike = -1815.85187956966
+#> Iteration 10: clusters = 14, births = 4, deaths = 0, changes = 0, hypers = 0, log_mlike = -1747.15108415472
 #> Within-cluster formula:
-#> y ~ f(idt, model = "rw1")
+#> y ~ f(id_time, model = "rw1")
 #> 
 #> Clustering hyperparameters:
 #>   log(1-q)      birth      death     change      hyper 
@@ -192,41 +292,62 @@ print(result)
 #> 
 #> Clustering movement counts:
 #>  births  deaths changes  hypers 
-#>       1       0       2       0 
+#>       4       0       0       0 
 #> 
-#> Log marginal likelihood (sample 10 out of 10): -1641.918
-summary(result)
+#> Log marginal likelihood (sample 10 out of 10): -1747.151
 #> Summary for clustering sample 10 out of 10 
 #> 
 #> Within-cluster formula:
-#> y ~ f(idt, model = "rw1")
+#> y ~ f(id_time, model = "rw1")
+#> 
+#> Counts per cluster:
+#>  1  2  3  4  5  6  7  8  9 10 11 12 13 14 
+#> 71  9  5  4  2  1  1  1  1  1  1  1  1  1 
+#> 
+#> Log marginal likelihood:  -1747.151 
+#> Iteration 1: clusters = 14, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -1747.15110141911
+#> Iteration 2: clusters = 15, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1661.30403080075
+#> Warning: Log marginal-likelihood correction not required.
+#> Iteration 1: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -76867.9525835854
+#> Iteration 2: clusters = 10, births = 1, deaths = 1, changes = 0, hypers = 0, log_mlike = -76848.8913282938
+#> Iteration 3: clusters = 10, births = 1, deaths = 1, changes = 0, hypers = 0, log_mlike = -76848.8913282938
+#> Iteration 4: clusters = 11, births = 2, deaths = 1, changes = 0, hypers = 0, log_mlike = -76666.895231024
+#> Iteration 5: clusters = 11, births = 2, deaths = 1, changes = 0, hypers = 0, log_mlike = -76666.895231024
+#> Iteration 6: clusters = 11, births = 2, deaths = 1, changes = 0, hypers = 0, log_mlike = -76666.895231024
+#> Iteration 7: clusters = 11, births = 2, deaths = 1, changes = 1, hypers = 0, log_mlike = -76541.0416826268
+#> Iteration 8: clusters = 11, births = 2, deaths = 1, changes = 1, hypers = 0, log_mlike = -76541.0416826268
+#> Iteration 9: clusters = 11, births = 2, deaths = 1, changes = 2, hypers = 0, log_mlike = -76452.1431599736
+#> Iteration 10: clusters = 11, births = 2, deaths = 1, changes = 2, hypers = 0, log_mlike = -76452.1431599736
+#> Within-cluster formula:
+#> cases ~ poly(id_time, 2) + f(id)
+#> 
+#> Clustering hyperparameters:
+#>   log(1-q)      birth      death     change      hyper 
+#> -0.6931472  0.4250000  0.4250000  0.1000000  0.0500000 
+#> 
+#> Clustering movement counts:
+#>  births  deaths changes  hypers 
+#>       2       1       2       0 
+#> 
+#> Log marginal likelihood (sample 10 out of 10): -76452.14
+#> Summary for clustering sample 10 out of 10 
+#> 
+#> Within-cluster formula:
+#> cases ~ poly(id_time, 2) + f(id)
 #> 
 #> Counts per cluster:
 #>  1  2  3  4  5  6  7  8  9 10 11 
-#> 85  1  1  1  1  2  1  3  2  1  2 
+#> 52 32  4  4  2  1  1  1  1  1  1 
 #> 
-#> Log marginal likelihood:  -1641.918 
-plot(result)
-
-
-# Clustering with binomial data
-data(stbinom)
-result <- sfclust(stbinom, formula = cases ~ poly(time, 2) + f(id),
-  family = "binomial", Ntrials = population, niter = 10, nmessage = 1)
+#> Log marginal likelihood:  -76452.14 
+#> Iteration 1: clusters = 11, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -76452.1428209302
+#> Iteration 2: clusters = 11, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -76452.1428209302
 #> Warning: Log marginal-likelihood correction not required.
-#> Iteration 1: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -76423.0462677091
-#> Iteration 2: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -76423.0462677091
-#> Iteration 3: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -76423.0462677091
-#> Iteration 4: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -76270.7425100097
-#> Iteration 5: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -76270.7425100097
-#> Iteration 6: clusters = 12, births = 2, deaths = 0, changes = 1, hypers = 0, log_mlike = -76249.6131408497
-#> Iteration 7: clusters = 12, births = 2, deaths = 0, changes = 2, hypers = 0, log_mlike = -76091.6395980869
-#> Iteration 8: clusters = 12, births = 2, deaths = 0, changes = 2, hypers = 0, log_mlike = -76091.6395980869
-#> Iteration 9: clusters = 12, births = 2, deaths = 0, changes = 2, hypers = 0, log_mlike = -76091.6395980869
-#> Iteration 10: clusters = 12, births = 2, deaths = 0, changes = 2, hypers = 0, log_mlike = -76091.6395980869
-print(result)
+#> Iteration 1: clusters = 3, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -247.318700532878
+#> Iteration 2: clusters = 3, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -247.318700532878
+#> Iteration 3: clusters = 4, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -84.3225017550345
 #> Within-cluster formula:
-#> cases ~ poly(time, 2) + f(id)
+#> y ~ 1 + id_time
 #> 
 #> Clustering hyperparameters:
 #>   log(1-q)      birth      death     change      hyper 
@@ -234,21 +355,21 @@ print(result)
 #> 
 #> Clustering movement counts:
 #>  births  deaths changes  hypers 
-#>       2       0       2       0 
+#>       1       0       0       0 
 #> 
-#> Log marginal likelihood (sample 10 out of 10): -76091.64
-summary(result)
-#> Summary for clustering sample 10 out of 10 
+#> Log marginal likelihood (sample 3 out of 3): -84.3225
+#> Summary for clustering sample 3 out of 3 
 #> 
 #> Within-cluster formula:
-#> cases ~ poly(time, 2) + f(id)
+#> y ~ 1 + id_time
 #> 
 #> Counts per cluster:
-#>  1  2  3  4  5  6  7  8  9 10 11 12 
-#>  4 58  1  1  1  5  5  1 11 11  1  1 
+#> 1 2 3 4 
+#> 2 2 1 1 
 #> 
-#> Log marginal likelihood:  -76091.64 
-plot(result)
+#> Log marginal likelihood:  -84.3225 
+#> Iteration 1: clusters = 4, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -84.3225017550345
+#> Iteration 2: clusters = 3, births = 0, deaths = 1, changes = 0, hypers = 0, log_mlike = -77.1494805389547
 
 # }
 ```

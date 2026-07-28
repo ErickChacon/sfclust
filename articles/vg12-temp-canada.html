@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">sfclust</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,12 +38,15 @@
     <li><h6 class="dropdown-header" data-toc-skip>Vignettes</h6></li>
     <li><a class="dropdown-item" href="../articles/vg01-stars-object.html">Create a stars dataset</a></li>
     <li><a class="dropdown-item" href="../articles/vg02-advanced-features.html">Advanced features</a></li>
+    <li><a class="dropdown-item" href="../articles/vg03-data-frame.html">Data frame interface</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Applications</h6></li>
     <li><a class="dropdown-item" href="../articles/vg11-covid-usa.html">Weekly relative risk of COVID-19 in US states</a></li>
     <li><a class="dropdown-item" href="../articles/vg12-temp-canada.html">Standardized daily temperature at Canadian stations</a></li>
+    <li><a class="dropdown-item" href="../articles/vg13-ndwi-chaparrillo.html">Clustering raster spatio-temporal data (NDWI2)</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -66,7 +69,7 @@
       <h1>Standardized daily temperature at Canadian stations</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/ErickChacon/sfclust/blob/v1.0.2/vignettes/articles/vg12-temp-canada.Rmd" class="external-link"><code>vignettes/articles/vg12-temp-canada.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/ErickChacon/sfclust/blob/main/vignettes/articles/vg12-temp-canada.Rmd" class="external-link"><code>vignettes/articles/vg12-temp-canada.Rmd</code></a></small>
       <div class="d-none name"><code>vg12-temp-canada.Rmd</code></div>
     </div>
 
@@ -82,16 +85,15 @@ averaged over the period 1960–1994.</p>
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://erickchacon.github.io/sfclust" class="external-link">sfclust</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-spatial.github.io/stars/" class="external-link">stars</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://docs.ropensci.org/rnaturalearth/" class="external-link">rnaturalearth</a></span><span class="op">)</span></span></code></pre></div>
-<p>We use the polygonal shapes of Canadian provinces from the
-<code>rnaturalearth</code> package and the <code>CanadianWeather</code>
-dataset from the <code>fda</code> package, which is commonly used in
-functional data analysis. This dataset is a list containing daily
-temperature data per station, along with metadata such as station
-coordinates.</p>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span></code></pre></div>
+<p>We use the <code>CanadianWeather</code> dataset from the
+<code>fda</code> package, which is commonly used in functional data
+analysis. This dataset is a list containing daily temperature data per
+station, along with metadata such as station coordinates. For the
+background map we use the <code>maps</code> package, which bundles
+country and province boundaries directly.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">canada</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://docs.ropensci.org/rnaturalearth/reference/ne_states.html" class="external-link">ne_states</a></span><span class="op">(</span><span class="st">"Canada"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">canada</span> <span class="op">&lt;-</span> <span class="fu">sf</span><span class="fu">::</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_as_sf.html" class="external-link">st_as_sf</a></span><span class="op">(</span><span class="fu">maps</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/maps/man/map.html" class="external-link">map</a></span><span class="op">(</span><span class="st">"world"</span>, regions <span class="op">=</span> <span class="st">"Canada"</span>, plot <span class="op">=</span> <span class="cn">FALSE</span>, fill <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">CanadianWeather</span>, package <span class="op">=</span> <span class="st">"fda"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">CanadianWeather</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [1] "dailyAv"       "place"         "province"      "coordinates"  </span></span>
@@ -215,24 +217,23 @@ temperature as a function of:</p>
 <ol style="list-style-type: decimal">
 <li>A polynomial trend over <code>time</code>.</li>
 <li>A random walk to capture autocorrelated temporal variation over
-<code>idt</code>.</li>
+<code>id_time</code>.</li>
 </ol>
 <p>We initialize with 35 clusters—one per polygon—and set a strong
-penalty (<code>logpen = -300</code>) to discourage overfitting and large
-number of clusters unless the log marginal likelihood improves by at
-least 300.</p>
+penalty (<code>logpen = -300</code>) to discourage overfitting and a
+large number of clusters unless the log marginal likelihood improves by
+at least 300.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">formula</span> <span class="op">&lt;-</span> <span class="va">ztemp</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/poly.html" class="external-link">poly</a></span><span class="op">(</span><span class="va">time</span>, <span class="fl">2</span><span class="op">)</span> <span class="op">+</span> <span class="fu">f</span><span class="op">(</span><span class="va">idt</span>, model <span class="op">=</span> <span class="st">"rw1"</span><span class="op">)</span></span>
-<span><span class="va">geodata</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/genclust.html">genclust</a></span><span class="op">(</span><span class="va">domain</span>, nclust <span class="op">=</span> <span class="fl">35</span><span class="op">)</span></span>
-<span></span>
+<code class="sourceCode R"><span><span class="va">geodata</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/genclust.html">genclust</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/methods/as.html" class="external-link">as</a></span><span class="op">(</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_binary_pred.html" class="external-link">st_touches</a></span><span class="op">(</span><span class="va">domain</span><span class="op">)</span>, <span class="st">"sparseMatrix"</span><span class="op">)</span>, nclust <span class="op">=</span> <span class="fl">35</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
-<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sfclust.html">sfclust</a></span><span class="op">(</span><span class="va">canweather</span>, graphdata <span class="op">=</span> <span class="va">geodata</span>, formula <span class="op">=</span> <span class="va">formula</span>,</span>
-<span>    logpen <span class="op">=</span> <span class="op">-</span><span class="fl">300</span>, niter <span class="op">=</span> <span class="fl">4000</span>, burnin <span class="op">=</span> <span class="fl">0</span>, thin <span class="op">=</span> <span class="fl">10</span>, nmessage <span class="op">=</span> <span class="fl">10</span>, nsave <span class="op">=</span> <span class="fl">100</span>,</span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sfclust.html">sfclust</a></span><span class="op">(</span><span class="va">canweather</span>, graphdata <span class="op">=</span> <span class="va">geodata</span>, logpen <span class="op">=</span> <span class="op">-</span><span class="fl">300</span>,</span>
+<span>    formula <span class="op">=</span> <span class="va">ztemp</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/poly.html" class="external-link">poly</a></span><span class="op">(</span><span class="va">time</span>, <span class="fl">2</span><span class="op">)</span> <span class="op">+</span> <span class="fu">f</span><span class="op">(</span><span class="va">id_time</span>, model <span class="op">=</span> <span class="st">"rw1"</span><span class="op">)</span>,</span>
+<span>    niter <span class="op">=</span> <span class="fl">4000</span>, burnin <span class="op">=</span> <span class="fl">0</span>, thin <span class="op">=</span> <span class="fl">10</span>, nmessage <span class="op">=</span> <span class="fl">10</span>, nsave <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>    control.inla <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>control.vb <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>enable <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>    path_save <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">"canweather-mcmc.rds"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">result</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; Within-cluster formula:</span></span>
-<span><span class="co">#&gt; ztemp ~ poly(time, 2) + f(idt, model = "rw1")</span></span>
+<span><span class="co">#&gt; ztemp ~ poly(time, 2) + f(id_time, model = "rw1")</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Clustering hyperparameters:</span></span>
 <span><span class="co">#&gt; log(1-q)    birth    death   change    hyper </span></span>
@@ -240,12 +241,12 @@ least 300.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Clustering movement counts:</span></span>
 <span><span class="co">#&gt;  births  deaths changes  hypers </span></span>
-<span><span class="co">#&gt;       8      29      19     171 </span></span>
+<span><span class="co">#&gt;       8      29      22     202 </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Log marginal likelihood (sample 400 out of 400): 17541.96</span></span></code></pre>
-<p>Over the course of sampling, 8 cluster additions, 29 merges, and 19
-reassignments occurred. The marginal likelihood reached a value of
-17,541.96. After thinning, 400 samples were retained.</p>
+<span><span class="co">#&gt; Log marginal likelihood (sample 400 out of 400): 17450.5</span></span></code></pre>
+<p>Over the course of sampling, 8 cluster additions, 29 merges, and 22
+reassignments occurred. The log marginal likelihood reached a value of
+17,450.5. After thinning, 400 samples were retained.</p>
 </div>
 <div class="section level3">
 <h3 id="results">Results<a class="anchor" aria-label="anchor" href="#results"></a>
@@ -255,35 +256,35 @@ reassignments occurred. The marginal likelihood reached a value of
 <pre><code><span><span class="co">#&gt; Summary for clustering sample 400 out of 400 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Within-cluster formula:</span></span>
-<span><span class="co">#&gt; ztemp ~ poly(time, 2) + f(idt, model = "rw1")</span></span>
+<span><span class="co">#&gt; ztemp ~ poly(time, 2) + f(id_time, model = "rw1")</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Counts per cluster:</span></span>
 <span><span class="co">#&gt;  1  2  3  4  5  6  7  8  9 10 11 12 13 14 </span></span>
-<span><span class="co">#&gt;  7  7  4  3  2  2  2  2  1  1  1  1  1  1 </span></span>
+<span><span class="co">#&gt;  7  5  4  3  3  2  2  2  2  1  1  1  1  1 </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Log marginal likelihood:  17541.96</span></span></code></pre>
-<p>According to the <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> output, 8 out of 14 clusters
-have more than one member. The largest clusters contain 7, 7, and 4
-stations, respectively. To assess convergence, we plot the marginal
+<span><span class="co">#&gt; Log marginal likelihood:  17450.5</span></span></code></pre>
+<p>According to the <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code> output, 9 out of 14 clusters
+have more than one member. The largest clusters contain 7, 5, and 4
+stations, respectively. To assess convergence, we plot the log marginal
 likelihood trace:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">result</span>, which <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
-<p><img src="vg12-temp-canada_files/figure-html/unnamed-chunk-15-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
-<p>The plot shows that the marginal likelihood stabilizes after the
+<p><img src="vg12-temp-canada_files/figure-html/unnamed-chunk-14-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
+<p>The plot shows that the log marginal likelihood stabilizes after the
 first 100 (thinned) iterations. Below, we visualize the cluster
 assignments and averaged fitted means:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">gg1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_clusters_map.html">plot_clusters_map</a></span><span class="op">(</span><span class="va">result</span>, sort <span class="op">=</span> <span class="cn">TRUE</span>, legend <span class="op">=</span> <span class="cn">TRUE</span>, clusters <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">8</span>,</span>
+<code class="sourceCode R"><span><span class="va">gg1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_clusters_map.html">plot_clusters_map</a></span><span class="op">(</span><span class="va">result</span>, sort <span class="op">=</span> <span class="cn">TRUE</span>, legend <span class="op">=</span> <span class="cn">TRUE</span>, clusters <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">9</span>,</span>
 <span>    geom_before <span class="op">=</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsf.html" class="external-link">geom_sf</a></span><span class="op">(</span>data <span class="op">=</span> <span class="va">canada</span><span class="op">)</span>, size <span class="op">=</span> <span class="fl">3</span>, alpha <span class="op">=</span> <span class="fl">0.8</span><span class="op">)</span></span>
-<span><span class="va">gg2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_clusters_fitted.html">plot_clusters_fitted</a></span><span class="op">(</span><span class="va">result</span>, sort <span class="op">=</span> <span class="cn">TRUE</span>, clusters <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">8</span>, linewidth <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span></span>
+<span><span class="va">gg2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_clusters_fitted.html">plot_clusters_fitted</a></span><span class="op">(</span><span class="va">result</span>, sort <span class="op">=</span> <span class="cn">TRUE</span>, clusters <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">9</span>, linewidth <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span></span>
 <span><span class="va">gg1</span> <span class="op">+</span> <span class="va">gg2</span></span></code></pre></div>
-<p><img src="vg12-temp-canada_files/figure-html/unnamed-chunk-16-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
+<p><img src="vg12-temp-canada_files/figure-html/unnamed-chunk-15-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
 <p>The largest cluster is in southeastern Canada and includes 7 closely
 located stations. The second-largest is more dispersed, while the third
 is in the southwest with 4 stations.</p>
 </div>
 <div class="section level3">
-<h3 id="empirical-standardised-temperature-per-cluster">Empirical standardised temperature per cluster<a class="anchor" aria-label="anchor" href="#empirical-standardised-temperature-per-cluster"></a>
+<h3 id="empirical-standardized-temperature-per-cluster">Empirical standardized temperature per cluster<a class="anchor" aria-label="anchor" href="#empirical-standardized-temperature-per-cluster"></a>
 </h3>
 <p>We use <code><a href="../reference/plot_clusters_series.html">plot_clusters_series()</a></code> to visualize the raw
 standardized temperature per cluster. The output can be customized using
@@ -294,18 +295,18 @@ standardized temperature per cluster. The output can be customized using
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">cluster</span>, ncol <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_date.html" class="external-link">scale_x_date</a></span><span class="op">(</span>date_breaks <span class="op">=</span> <span class="st">"2 months"</span>, date_labels <span class="op">=</span>  <span class="st">"%b"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>y <span class="op">=</span> <span class="st">"Standardized temperature"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="vg12-temp-canada_files/figure-html/unnamed-chunk-18-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
-<p>Panels 1–8 show the empirical risk per cluster for those clusters
-that contain more than one station. The main differences among these
-clusters lie in the initial shape of the curve, the speed of increase,
-the shape and timing of the peak, and the behavior during the decay
-phase. For example, clusters 1 and 2 exhibit a bell-shaped pattern,
-while others, such as clusters 3 to 6, display a nearly linear increase
-until reaching a maximum level. Panels 9–14 present the empirical risk
-per cluster for those that contain only one station. These
-single-station clusters tend to exhibit more unique shapes, which not
-only distinguish them from the previous multi-station clusters but also
-from each other.</p>
+<p><img src="vg12-temp-canada_files/figure-html/unnamed-chunk-17-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
+<p>Panels 1–9 show the empirical standardized temperature per cluster
+for those clusters that contain more than one station. The main
+differences among these clusters lie in the initial shape of the curve,
+the speed of increase, the shape and timing of the peak, and the
+behavior during the decay phase. For example, clusters 1 and 2 exhibit a
+bell-shaped pattern, while others, such as clusters 3 to 6, display a
+nearly linear increase until reaching a maximum level. Panels 10–14
+present the empirical standardized temperature per cluster for those
+that contain only one station. These single-station clusters tend to
+exhibit more unique shapes, which not only distinguish them from the
+previous multi-station clusters but also from each other.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -319,7 +320,7 @@ from each other.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

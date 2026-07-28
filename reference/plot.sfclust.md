@@ -1,10 +1,9 @@
 # Plot function for `sfclust` objects
 
-This function visualizes the estimated clusters from an `sfclust`
-object. It can display: (1) a map of regions colored by their assigned
-cluster, (2) the functional shapes of the linear predictors for each
-cluster, and (3) a traceplot of the log marginal likelihood. A
-conditional legend is added if the number of clusters is less than 10.
+Visualizes fitted cluster functions (plot 1) and a log marginal
+likelihood traceplot (plot 2). For `sfclust_stars` objects, also
+includes a spatial map of cluster assignments (plot 1 in that method,
+shifting the others to 2 and 3).
 
 ## Usage
 
@@ -13,11 +12,11 @@ conditional legend is added if the number of clusters is less than 10.
 plot(
   x,
   sample = x$clust$id,
-  which = 1:3,
+  which = 1:2,
   clusters = NULL,
   sort = FALSE,
   legend = FALSE,
-  geom_before = NULL,
+  fnames = NULL,
   ...
 )
 ```
@@ -26,46 +25,42 @@ plot(
 
 - x:
 
-  An `sfclust` object containing the clustering results, including the
-  cluster assignments and model parameters.
+  An `sfclust` object.
 
 - sample:
 
-  Integer specifying the clustering sample number to summarize. Defaults
-  to the last sample.
+  Integer specifying the clustering sample to display. Defaults to the
+  last sample.
 
 - which:
 
-  Integer vector indicating which plot to display. Options are: - 1: Map
-  of regions colored by cluster assignment. - 2: Functional shapes of
-  the linear predictors for each cluster. - 3: Traceplot of the log
-  marginal likelihood.
+  Integer vector indicating which plots to show. For `sfclust`: 1 =
+  cluster functions, 2 = log marginal likelihood. For `sfclust_stars`: 1
+  = map, 2 = cluster functions, 3 = log marginal likelihood.
 
 - clusters:
 
-  Optional vector specifying which clusters to plot. If `NULL`, all
-  clusters are included.
+  Optional vector of cluster IDs to include. If `NULL`, all clusters are
+  shown.
 
 - sort:
 
-  Logical value indicating whether clusters should be relabeled based on
-  the number of elements. Default is `FALSE`.
+  Logical; if `TRUE`, clusters are relabeled by decreasing size. Default
+  is `FALSE`.
 
 - legend:
 
-  Logical value indicating whether a legend should be included in the
-  plot. Default is `FALSE`.
+  Logical; if `TRUE`, a legend is included. Default is `FALSE`.
 
-- geom_before:
+- fnames:
 
-  An optional `ggplot2` geom layer to add before the cluster map layer
-  (e.g., a background tile). Default is `NULL`.
+  Character. Column name for the x-axis of cluster function plots. If
+  `NULL`, taken from the result's stored args.
 
 - ...:
 
-  Additional arguments passed to the underlying plotting functions.
+  Additional arguments passed to underlying plot functions.
 
 ## Value
 
-A composed `patchwork` object displaying the selected subgraphs as
-specified by `which`.
+A composed `patchwork` object.

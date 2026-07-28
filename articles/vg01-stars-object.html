@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">sfclust</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,12 +38,15 @@
     <li><h6 class="dropdown-header" data-toc-skip>Vignettes</h6></li>
     <li><a class="dropdown-item" href="../articles/vg01-stars-object.html">Create a stars dataset</a></li>
     <li><a class="dropdown-item" href="../articles/vg02-advanced-features.html">Advanced features</a></li>
+    <li><a class="dropdown-item" href="../articles/vg03-data-frame.html">Data frame interface</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Applications</h6></li>
     <li><a class="dropdown-item" href="../articles/vg11-covid-usa.html">Weekly relative risk of COVID-19 in US states</a></li>
     <li><a class="dropdown-item" href="../articles/vg12-temp-canada.html">Standardized daily temperature at Canadian stations</a></li>
+    <li><a class="dropdown-item" href="../articles/vg13-ndwi-chaparrillo.html">Clustering raster spatio-temporal data (NDWI2)</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -66,7 +69,7 @@
       <h1>Create a stars dataset</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/ErickChacon/sfclust/blob/v1.0.2/vignettes/vg01-stars-object.Rmd" class="external-link"><code>vignettes/vg01-stars-object.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/ErickChacon/sfclust/blob/main/vignettes/vg01-stars-object.Rmd" class="external-link"><code>vignettes/vg01-stars-object.Rmd</code></a></small>
       <div class="d-none name"><code>vg01-stars-object.Rmd</code></div>
     </div>
 
@@ -104,9 +107,10 @@ time points.</p>
 <h2 id="creating-a-stars-object">Creating a <code>stars</code> object<a class="anchor" aria-label="anchor" href="#creating-a-stars-object"></a>
 </h2>
 <p>We now use the simulated data to construct a <code>stars</code>
-object. This object will contain spatial, temporal, and variable
-dimensions. While there are several ways to build such objects, the
-following method is commonly used:</p>
+object. This object will contain spatial and temporal dimensions, along
+with the three simulated variables stored as attributes. While there are
+several ways to build such objects, the following method is commonly
+used:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">stdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/stars/reference/st_as_stars.html" class="external-link">st_as_stars</a></span><span class="op">(</span></span>
 <span>  cases <span class="op">=</span> <span class="va">cases</span>, temperature <span class="op">=</span> <span class="va">temperature</span>, precipitation <span class="op">=</span> <span class="va">precipitation</span>,</span>
@@ -147,15 +151,15 @@ across time:</p>
 <p>You can also add additional variables to the <code>stars</code>
 object. For instance, let’s add a <code>population</code> variable:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">stdata</span><span class="op">[</span><span class="st">"population"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Poisson.html" class="external-link">rpois</a></span><span class="op">(</span><span class="fl">6</span>, <span class="fl">1000</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">6</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">stdata</span><span class="op">[</span><span class="st">"population"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Poisson.html" class="external-link">rpois</a></span><span class="op">(</span><span class="fl">6</span>, <span class="fl">1000</span><span class="op">)</span>, times <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
 <span><span class="va">stdata</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; stars object with 2 dimensions and 4 attributes</span></span>
 <span><span class="co">#&gt; attribute(s):</span></span>
-<span><span class="co">#&gt;                      Min.     1st Qu.        Median         Mean      3rd Qu.</span></span>
-<span><span class="co">#&gt; cases           86.000000  93.0000000   99.00000000  98.90000000  102.7500000</span></span>
-<span><span class="co">#&gt; temperature     -2.060541  -0.4165786    0.06808151   0.02795936    0.5496759</span></span>
-<span><span class="co">#&gt; precipitation   -1.676105  -0.7343718   -0.17034766  -0.09712102    0.4299561</span></span>
-<span><span class="co">#&gt; population     953.000000 975.0000000 1004.00000000 999.60000000 1028.0000000</span></span>
+<span><span class="co">#&gt;                      Min.     1st Qu.        Median          Mean      3rd Qu.</span></span>
+<span><span class="co">#&gt; cases           86.000000  93.0000000   99.00000000   98.90000000  102.7500000</span></span>
+<span><span class="co">#&gt; temperature     -2.060541  -0.4165786    0.06808151    0.02795936    0.5496759</span></span>
+<span><span class="co">#&gt; precipitation   -1.676105  -0.7343718   -0.17034766   -0.09712102    0.4299561</span></span>
+<span><span class="co">#&gt; population     953.000000 975.0000000 1016.00000000 1005.00000000 1032.0000000</span></span>
 <span><span class="co">#&gt;                       Max.</span></span>
 <span><span class="co">#&gt; cases           116.000000</span></span>
 <span><span class="co">#&gt; temperature       1.766004</span></span>
@@ -180,7 +184,7 @@ object. For instance, let’s add a <code>population</code> variable:</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

@@ -11,7 +11,7 @@ provided."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">sfclust</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -27,11 +27,14 @@ provided."></head><body>
     <li><h6 class="dropdown-header" data-toc-skip>Vignettes</h6></li>
     <li><a class="dropdown-item" href="../articles/vg01-stars-object.html">Create a stars dataset</a></li>
     <li><a class="dropdown-item" href="../articles/vg02-advanced-features.html">Advanced features</a></li>
+    <li><a class="dropdown-item" href="../articles/vg03-data-frame.html">Data frame interface</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Applications</h6></li>
     <li><a class="dropdown-item" href="../articles/vg11-covid-usa.html">Weekly relative risk of COVID-19 in US states</a></li>
     <li><a class="dropdown-item" href="../articles/vg12-temp-canada.html">Standardized daily temperature at Canadian stations</a></li>
+    <li><a class="dropdown-item" href="../articles/vg13-ndwi-chaparrillo.html">Clustering raster spatio-temporal data (NDWI2)</a></li>
   </ul></li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/ErickChacon/sfclust/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -44,7 +47,7 @@ provided."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Update MCMC Clustering Procedure</h1>
-      <small class="dont-index">Source: <a href="https://github.com/ErickChacon/sfclust/blob/v1.0.2/R/sfclust-methods.R" class="external-link"><code>R/sfclust-methods.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/ErickChacon/sfclust/blob/main/R/sfclust-methods.R" class="external-link"><code>R/sfclust-methods.R</code></a></small>
       <div class="d-none name"><code>update.sfclust.Rd</code></div>
     </div>
 
@@ -59,7 +62,7 @@ provided.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># S3 method for class 'sfclust'</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/update.html" class="external-link">update</a></span><span class="op">(</span></span>
 <span>  <span class="va">object</span>,</span>
-<span>  niter <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>  niter <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  burnin <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  thin <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  nmessage <span class="op">=</span> <span class="fl">10</span>,</span>
@@ -79,7 +82,9 @@ provided.</p>
 
 
 <dt id="arg-niter">niter<a class="anchor" aria-label="anchor" href="#arg-niter"></a></dt>
-<dd><p>An integer specifying the number of additional MCMC iterations to perform.</p></dd>
+<dd><p>An integer specifying the number of additional MCMC iterations to perform.
+If <code>NULL</code> (default), no additional iterations are run and the within-cluster INLA
+models are refitted for the current clustering sample.</p></dd>
 
 
 <dt id="arg-burnin">burnin<a class="anchor" aria-label="anchor" href="#arg-burnin"></a></dt>
@@ -120,9 +125,12 @@ specified, or (ii) updated within-cluster model results if <code>sample</code> i
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>This function takes the last state of the Markov chain from a previous
-<code>sfclust</code> execution and uses it as the starting point for additional MCMC
-iterations. If <code>sample</code> is provided, it simply updates the within-cluster
-models for the specified clustering <code>sample</code>.</p>
+<code>sfclust_fit</code> / <code>sfclust</code> execution and uses it as the starting point for
+additional MCMC iterations. If <code>niter = NULL</code> (the default), no additional
+iterations are run; instead, the within-cluster INLA models are fitted for
+the clustering given by <code>sample</code> (or the current <code>clust$id</code> if <code>sample</code> is
+<code>NULL</code>). This is useful when loading a checkpoint saved during a run, where
+the models were not yet stored: <code>result &lt;- update(result)</code>.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -134,7 +142,7 @@ models for the specified clustering <code>sample</code>.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

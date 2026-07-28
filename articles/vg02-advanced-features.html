@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">sfclust</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,12 +38,15 @@
     <li><h6 class="dropdown-header" data-toc-skip>Vignettes</h6></li>
     <li><a class="dropdown-item" href="../articles/vg01-stars-object.html">Create a stars dataset</a></li>
     <li><a class="dropdown-item" href="../articles/vg02-advanced-features.html">Advanced features</a></li>
+    <li><a class="dropdown-item" href="../articles/vg03-data-frame.html">Data frame interface</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Applications</h6></li>
     <li><a class="dropdown-item" href="../articles/vg11-covid-usa.html">Weekly relative risk of COVID-19 in US states</a></li>
     <li><a class="dropdown-item" href="../articles/vg12-temp-canada.html">Standardized daily temperature at Canadian stations</a></li>
+    <li><a class="dropdown-item" href="../articles/vg13-ndwi-chaparrillo.html">Clustering raster spatio-temporal data (NDWI2)</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -66,7 +69,7 @@
       <h1>Advanced features</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/ErickChacon/sfclust/blob/v1.0.2/vignettes/vg02-advanced-features.Rmd" class="external-link"><code>vignettes/vg02-advanced-features.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/ErickChacon/sfclust/blob/main/vignettes/vg02-advanced-features.Rmd" class="external-link"><code>vignettes/vg02-advanced-features.Rmd</code></a></small>
       <div class="d-none name"><code>vg02-advanced-features.Rmd</code></div>
     </div>
 
@@ -91,8 +94,9 @@
 <p>The simulated dataset used in this vignette, <code>stgaus</code>, is
 included in our package. It is a <code>stars</code> object with one
 variable, <code>y</code>, and two dimensions: <code>geometry</code> and
-<code>time</code>. The dataset represents the number of cases in 100
-regions, observed daily over 91 days, starting in January 2024.</p>
+<code>time</code>. The dataset represents continuous Gaussian
+measurements from 100 regions, observed daily over 91 days, starting in
+January 2024.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"stgaus"</span><span class="op">)</span></span>
 <span><span class="va">stgaus</span></span></code></pre></div>
@@ -127,7 +131,7 @@ regions, observed daily over 91 days, starting in January 2024.</p>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="vg02-advanced-features_files/figure-html/unnamed-chunk-5-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
 <p>Some regions exhibit similar trends over time, but the overall
-patterns are more complex than polinomial functions. Our goal is to
+patterns are more complex than polynomial functions. Our goal is to
 cluster these regions while accounting for spatial contiguity.</p>
 </div>
 <div class="section level2">
@@ -190,11 +194,13 @@ generate an initial random partitioning with a specified number of
 clusters. In this example, we create a partition with 20 clusters:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
-<span><span class="va">regions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_geometry.html" class="external-link">st_geometry</a></span><span class="op">(</span><span class="va">stgaus</span><span class="op">)</span></span>
-<span><span class="va">initial_cluster</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/genclust.html">genclust</a></span><span class="op">(</span><span class="va">regions</span>, nclust <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span>
+<span><span class="va">initial_cluster</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/genclust.html">genclust</a></span><span class="op">(</span><span class="va">stgaus</span>, nclust <span class="op">=</span> <span class="fl">20</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">initial_cluster</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; [1] "graph"      "mst"        "membership"</span></span></code></pre>
-<p>Now, let’s visualize how the regions were randomly clustered:</p>
+<pre><code><span><span class="co">#&gt; [1] "graph"      "mst"        "membership" "valid_ids"</span></span></code></pre>
+<p>Now, let’s visualize how the regions were randomly clustered. Panel
+(A) shows the full adjacency graph (all neighbor connections), panel (B)
+shows the MST derived from it (the backbone used for cluster proposals),
+and panel (C) shows the resulting initial partition:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">gg1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ggraph.data-imaginist.com/reference/ggraph.html" class="external-link">ggraph</a></span><span class="op">(</span><span class="va">initial_cluster</span><span class="op">$</span><span class="va">graph</span>, layout <span class="op">=</span> <span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_coordinates.html" class="external-link">st_coordinates</a></span><span class="op">(</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/geos_unary.html" class="external-link">st_centroid</a></span><span class="op">(</span><span class="fu"><a href="https://r-spatial.github.io/sf/reference/st_geometry.html" class="external-link">st_geometry</a></span><span class="op">(</span><span class="va">stgaus</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggraph.data-imaginist.com/reference/geom_edge_fan.html" class="external-link">geom_edge_fan</a></span><span class="op">(</span>linetype <span class="op">=</span> <span class="fl">1</span>, color <span class="op">=</span> <span class="fl">2</span><span class="op">)</span> <span class="op">+</span></span>
@@ -226,17 +232,23 @@ the capabilites of <code><a href="https://rdrr.io/pkg/INLA/man/inla.html" class=
 includes a random walk process in the linear predictor, and custom
 priors for the scale hyperparameter. To begin, we will run the algorithm
 for only 50 iterations.</p>
+<p>The <code>logpen</code> argument sets the log-penalty on the number
+of clusters, specifically <code>log(1-q)</code> where <code>q</code> is
+the prior probability of keeping a cluster. A large negative value such
+as <code>-50</code> favors fewer clusters, acting as a strong parsimony
+prior. The <code>burnin</code> argument discards the first iterations
+before saving samples, and <code>thin</code> retains only every
+<code>thin</code>-th iteration, reducing autocorrelation in the
+chain.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">form</span> <span class="op">&lt;-</span> <span class="va">y</span> <span class="op">~</span> <span class="fu">f</span><span class="op">(</span><span class="va">idt</span>, model <span class="op">=</span> <span class="st">"rw1"</span>,</span>
-<span>  hyper <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>prec <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>prior <span class="op">=</span> <span class="st">"normal"</span>, param <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">result0</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sfclust.html">sfclust</a></span><span class="op">(</span><span class="va">stgaus</span>, graphdata <span class="op">=</span> <span class="va">initial_cluster</span>, formula <span class="op">=</span> <span class="va">form</span>,</span>
-<span>  logpen <span class="op">=</span> <span class="op">-</span><span class="fl">50</span>, niter <span class="op">=</span> <span class="fl">50</span>, burnin <span class="op">=</span> <span class="fl">10</span>, thin <span class="op">=</span> <span class="fl">2</span>, nmessage <span class="op">=</span> <span class="fl">10</span>,</span>
-<span>  path_save <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="st">"inst"</span>, <span class="st">"vigdata"</span>, <span class="st">"full-gaussian-mcmc1.rds"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">result0</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sfclust.html">sfclust</a></span><span class="op">(</span><span class="va">stgaus</span>, graphdata <span class="op">=</span> <span class="va">initial_cluster</span>, logpen <span class="op">=</span> <span class="op">-</span><span class="fl">50</span>,</span>
+<span>  formula <span class="op">=</span> <span class="va">y</span> <span class="op">~</span> <span class="fu">f</span><span class="op">(</span><span class="va">id_time</span>, model <span class="op">=</span> <span class="st">"rw1"</span>,</span>
+<span>                  hyper <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>prec <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>prior <span class="op">=</span> <span class="st">"normal"</span>, param <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  niter <span class="op">=</span> <span class="fl">50</span>, burnin <span class="op">=</span> <span class="fl">10</span>, thin <span class="op">=</span> <span class="fl">2</span>, nmessage <span class="op">=</span> <span class="fl">10</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">result0</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; Within-cluster formula:</span></span>
-<span><span class="co">#&gt; y ~ f(idt, model = "rw1", hyper = list(prec = list(prior = "normal", </span></span>
+<span><span class="co">#&gt; y ~ f(id_time, model = "rw1", hyper = list(prec = list(prior = "normal", </span></span>
 <span><span class="co">#&gt;     param = c(-2, 1))))</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Clustering hyperparameters:</span></span>
@@ -245,20 +257,20 @@ for only 50 iterations.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Clustering movement counts:</span></span>
 <span><span class="co">#&gt;  births  deaths changes  hypers </span></span>
-<span><span class="co">#&gt;      10       3       1       6 </span></span>
+<span><span class="co">#&gt;      11       8       1       2 </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Log marginal likelihood (sample 20 out of 20): 2335.767</span></span></code></pre>
+<span><span class="co">#&gt; Log marginal likelihood (sample 25 out of 25): 2570.063</span></span></code></pre>
 <p>The output indicates that after starting with 20 clusters, the
-algorithm created 11 new clusters (births), removed 6 clusters (deaths),
-changed the membership of 3 clusters, and modified the minimum spanning
-tree (MST) 3 times.</p>
+algorithm created 11 new clusters (births), removed 8 clusters (deaths),
+changed the membership of 1 cluster, and modified the minimum spanning
+tree (MST) 2 times.</p>
 <p>The <code>plot</code> method allows us to select which graph to
 produce. For example, we can visualize only the log marginal likelihood
 to diagnose convergence. With just 50 iterations, we can see that the
 log marginal likelihood has not yet achieved convergence.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">result0</span>, which <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
-<p><img src="vg02-advanced-features_files/figure-html/unnamed-chunk-13-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
+<p><img src="vg02-advanced-features_files/figure-html/unnamed-chunk-11-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
 <h3 id="continue-sampling">Continue sampling<a class="anchor" aria-label="anchor" href="#continue-sampling"></a>
@@ -270,7 +282,7 @@ with the <code>niter</code> argument:</p>
 <code class="sourceCode R"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/update.html" class="external-link">update</a></span><span class="op">(</span><span class="va">result0</span>, niter <span class="op">=</span> <span class="fl">1000</span><span class="op">)</span></span>
 <span><span class="va">result</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; Within-cluster formula:</span></span>
-<span><span class="co">#&gt; y ~ f(idt, model = "rw1", hyper = list(prec = list(prior = "normal", </span></span>
+<span><span class="co">#&gt; y ~ f(id_time, model = "rw1", hyper = list(prec = list(prior = "normal", </span></span>
 <span><span class="co">#&gt;     param = c(-2, 1))))</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Clustering hyperparameters:</span></span>
@@ -279,30 +291,38 @@ with the <code>niter</code> argument:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Clustering movement counts:</span></span>
 <span><span class="co">#&gt;  births  deaths changes  hypers </span></span>
-<span><span class="co">#&gt;      34      50      15      56 </span></span>
+<span><span class="co">#&gt;      33      44       7      43 </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Log marginal likelihood (sample 1000 out of 1000): 12654.03</span></span></code></pre>
-<p>With 2000 additional iterations, there have been many clustering
+<span><span class="co">#&gt; Log marginal likelihood (sample 1000 out of 1000): 12602.37</span></span></code></pre>
+<p>With 1000 additional iterations, there have been many clustering
 movements. Furthermore, when visualizing the results, we can observe
 that the log marginal likelihood has achieved convergence.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">result</span>, which <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
-<p><img src="vg02-advanced-features_files/figure-html/unnamed-chunk-16-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
+<p><img src="vg02-advanced-features_files/figure-html/unnamed-chunk-14-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
+<p>The side-by-side comparison below highlights the contrast: panel (A)
+shows the unstable log marginal likelihood from the short initial run,
+while panel (B) shows the stabilized trajectory after the full run,
+indicating convergence.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">gg1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">result0</span>, which <span class="op">=</span> <span class="fl">3</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>subtitle <span class="op">=</span> <span class="st">"(A)"</span><span class="op">)</span></span>
 <span><span class="va">gg2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">result</span>, which <span class="op">=</span> <span class="fl">3</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>subtitle <span class="op">=</span> <span class="st">"(B)"</span><span class="op">)</span></span>
 <span><span class="va">gg1</span> <span class="op">+</span> <span class="va">gg2</span></span></code></pre></div>
-<p><img src="vg02-advanced-features_files/figure-html/unnamed-chunk-17-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
+<p><img src="vg02-advanced-features_files/figure-html/unnamed-chunk-15-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="va">save_figures</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsave.html" class="external-link">ggsave</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">path_figures</span>, <span class="st">"stgaus-marginal-likelihood.pdf"</span><span class="op">)</span>, width <span class="op">=</span> <span class="fl">10</span>, height <span class="op">=</span> <span class="fl">4.5</span>,</span>
 <span>    device <span class="op">=</span> <span class="va">cairo_pdf</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
+<p>The <code>update</code> function can also be used to select a
+different past iteration as the active clustering, without running
+additional MCMC. This is useful when you want to inspect or use a
+specific sample rather than the last one:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">result_other</span> <span class="op">&lt;-</span> <span class="fu">sfclust</span><span class="fu">:::</span><span class="fu">update_within</span><span class="op">(</span><span class="va">result</span>, sample <span class="op">=</span> <span class="fl">750</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">result_other</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/update.html" class="external-link">update</a></span><span class="op">(</span><span class="va">result</span>, sample <span class="op">=</span> <span class="fl">750</span><span class="op">)</span></span>
 <span><span class="va">result_other</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; Within-cluster formula:</span></span>
-<span><span class="co">#&gt; y ~ f(idt, model = "rw1", hyper = list(prec = list(prior = "normal", </span></span>
+<span><span class="co">#&gt; y ~ f(id_time, model = "rw1", hyper = list(prec = list(prior = "normal", </span></span>
 <span><span class="co">#&gt;     param = c(-2, 1))))</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Clustering hyperparameters:</span></span>
@@ -311,16 +331,16 @@ that the log marginal likelihood has achieved convergence.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Clustering movement counts:</span></span>
 <span><span class="co">#&gt;  births  deaths changes  hypers </span></span>
-<span><span class="co">#&gt;      34      50      15      56 </span></span>
+<span><span class="co">#&gt;      33      44       7      43 </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Log marginal likelihood (sample 750 out of 1000): 12425.03</span></span></code></pre>
+<span><span class="co">#&gt; Log marginal likelihood (sample 750 out of 1000): 12319.21</span></span></code></pre>
 </div>
 </div>
 <div class="section level2">
 <h2 id="results">Results<a class="anchor" aria-label="anchor" href="#results"></a>
 </h2>
-<p>The final iteration indicates that the algorithm identified 10
-clusters, with a log marginal likelihood of 12,708.35. The largest
+<p>The final iteration indicates that the algorithm identified 12
+clusters, with a log marginal likelihood of 12,602.37. The largest
 cluster consists of 27 regions, while the smallest contains only one
 region.</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
@@ -328,24 +348,24 @@ region.</p>
 <pre><code><span><span class="co">#&gt; Summary for clustering sample 1000 out of 1000 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Within-cluster formula:</span></span>
-<span><span class="co">#&gt; y ~ f(idt, model = "rw1", hyper = list(prec = list(prior = "normal", </span></span>
+<span><span class="co">#&gt; y ~ f(id_time, model = "rw1", hyper = list(prec = list(prior = "normal", </span></span>
 <span><span class="co">#&gt;     param = c(-2, 1))))</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Counts per cluster:</span></span>
-<span><span class="co">#&gt;  1  2  3  4  5  6  7  8  9 10 11 </span></span>
-<span><span class="co">#&gt; 27 19 12 11  9  9  6  3  2  1  1 </span></span>
+<span><span class="co">#&gt;  1  2  3  4  5  6  7  8  9 10 11 12 </span></span>
+<span><span class="co">#&gt; 27 20 12 11  9  8  6  3  1  1  1  1 </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Log marginal likelihood:  12654.03</span></span></code></pre>
+<span><span class="co">#&gt; Log marginal likelihood:  12602.37</span></span></code></pre>
 <p>Let’s visualize the regions grouped by cluster.</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">result</span>, which <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">2</span>, sort <span class="op">=</span> <span class="cn">TRUE</span>, legend <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="vg02-advanced-features_files/figure-html/unnamed-chunk-20-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
+<p><img src="vg02-advanced-features_files/figure-html/unnamed-chunk-18-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
 <p>Let’s visualize the original data grouped by cluster.</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_clusters_series.html">plot_clusters_series</a></span><span class="op">(</span><span class="va">result</span>, <span class="va">y</span>, sort <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">cluster</span>, ncol <span class="op">=</span> <span class="fl">5</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Risk per cluster"</span>, y <span class="op">=</span> <span class="st">"Response"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="vg02-advanced-features_files/figure-html/unnamed-chunk-21-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
+<p><img src="vg02-advanced-features_files/figure-html/unnamed-chunk-19-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -358,7 +378,7 @@ region.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

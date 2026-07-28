@@ -20,9 +20,9 @@ library(ggraph)
 
 The simulated dataset used in this vignette, `stgaus`, is included in
 our package. It is a `stars` object with one variable, `y`, and two
-dimensions: `geometry` and `time`. The dataset represents the number of
-cases in 100 regions, observed daily over 91 days, starting in January
-2024.
+dimensions: `geometry` and `time`. The dataset represents continuous
+Gaussian measurements from 100 regions, observed daily over 91 days,
+starting in January 2024.
 
 ``` r
 
@@ -72,7 +72,7 @@ stgaus |>
 ![](vg02-advanced-features_files/figure-html/unnamed-chunk-5-1.png)
 
 Some regions exhibit similar trends over time, but the overall patterns
-are more complex than polinomial functions. Our goal is to cluster these
+are more complex than polynomial functions. Our goal is to cluster these
 regions while accounting for spatial contiguity.
 
 ## Clustering
@@ -120,14 +120,16 @@ example, we create a partition with 20 clusters:
 ``` r
 
 set.seed(123)
-regions <- st_geometry(stgaus)
-initial_cluster <- genclust(regions, nclust = 20)
+initial_cluster <- genclust(stgaus, nclust = 20)
 names(initial_cluster)
 ```
 
-    #> [1] "graph"      "mst"        "membership"
+    #> [1] "graph"      "mst"        "membership" "valid_ids"
 
-Now, let’s visualize how the regions were randomly clustered:
+Now, let’s visualize how the regions were randomly clustered. Panel (A)
+shows the full adjacency graph (all neighbor connections), panel (B)
+shows the MST derived from it (the backbone used for cluster proposals),
+and panel (C) shows the resulting initial partition:
 
 ``` r
 
@@ -163,20 +165,25 @@ that includes a random walk process in the linear predictor, and custom
 priors for the scale hyperparameter. To begin, we will run the algorithm
 for only 50 iterations.
 
+The `logpen` argument sets the log-penalty on the number of clusters,
+specifically `log(1-q)` where `q` is the prior probability of keeping a
+cluster. A large negative value such as `-50` favors fewer clusters,
+acting as a strong parsimony prior. The `burnin` argument discards the
+first iterations before saving samples, and `thin` retains only every
+`thin`-th iteration, reducing autocorrelation in the chain.
+
 ``` r
 
-form <- y ~ f(idt, model = "rw1",
-  hyper = list(prec = list(prior = "normal", param = c(-2, 1)))
-)
-result0 <- sfclust(stgaus, graphdata = initial_cluster, formula = form,
-  logpen = -50, niter = 50, burnin = 10, thin = 2, nmessage = 10,
-  path_save = file.path("inst", "vigdata", "full-gaussian-mcmc1.rds")
+result0 <- sfclust(stgaus, graphdata = initial_cluster, logpen = -50,
+  formula = y ~ f(id_time, model = "rw1",
+                  hyper = list(prec = list(prior = "normal", param = c(-2, 1)))),
+  niter = 50, burnin = 10, thin = 2, nmessage = 10
 )
 result0
 ```
 
     #> Within-cluster formula:
-    #> y ~ f(idt, model = "rw1", hyper = list(prec = list(prior = "normal", 
+    #> y ~ f(id_time, model = "rw1", hyper = list(prec = list(prior = "normal", 
     #>     param = c(-2, 1))))
     #> 
     #> Clustering hyperparameters:
@@ -185,14 +192,14 @@ result0
     #> 
     #> Clustering movement counts:
     #>  births  deaths changes  hypers 
-    #>      10       3       1       6 
+    #>      11       8       1       2 
     #> 
-    #> Log marginal likelihood (sample 20 out of 20): 2335.767
+    #> Log marginal likelihood (sample 25 out of 25): 2570.063
 
 The output indicates that after starting with 20 clusters, the algorithm
-created 11 new clusters (births), removed 6 clusters (deaths), changed
-the membership of 3 clusters, and modified the minimum spanning tree
-(MST) 3 times.
+created 11 new clusters (births), removed 8 clusters (deaths), changed
+the membership of 1 cluster, and modified the minimum spanning tree
+(MST) 2 times.
 
 The `plot` method allows us to select which graph to produce. For
 example, we can visualize only the log marginal likelihood to diagnose
@@ -204,7 +211,7 @@ likelihood has not yet achieved convergence.
 plot(result0, which = 3)
 ```
 
-![](vg02-advanced-features_files/figure-html/unnamed-chunk-13-1.png)
+![](vg02-advanced-features_files/figure-html/unnamed-chunk-11-1.png)
 
 ### Continue sampling
 
@@ -219,7 +226,7 @@ result
 ```
 
     #> Within-cluster formula:
-    #> y ~ f(idt, model = "rw1", hyper = list(prec = list(prior = "normal", 
+    #> y ~ f(id_time, model = "rw1", hyper = list(prec = list(prior = "normal", 
     #>     param = c(-2, 1))))
     #> 
     #> Clustering hyperparameters:
@@ -228,11 +235,11 @@ result
     #> 
     #> Clustering movement counts:
     #>  births  deaths changes  hypers 
-    #>      34      50      15      56 
+    #>      33      44       7      43 
     #> 
-    #> Log marginal likelihood (sample 1000 out of 1000): 12654.03
+    #> Log marginal likelihood (sample 1000 out of 1000): 12602.37
 
-With 2000 additional iterations, there have been many clustering
+With 1000 additional iterations, there have been many clustering
 movements. Furthermore, when visualizing the results, we can observe
 that the log marginal likelihood has achieved convergence.
 
@@ -241,7 +248,12 @@ that the log marginal likelihood has achieved convergence.
 plot(result, which = 3)
 ```
 
-![](vg02-advanced-features_files/figure-html/unnamed-chunk-16-1.png)
+![](vg02-advanced-features_files/figure-html/unnamed-chunk-14-1.png)
+
+The side-by-side comparison below highlights the contrast: panel (A)
+shows the unstable log marginal likelihood from the short initial run,
+while panel (B) shows the stabilized trajectory after the full run,
+indicating convergence.
 
 ``` r
 
@@ -250,7 +262,7 @@ gg2 <- plot(result, which = 3) + labs(subtitle = "(B)")
 gg1 + gg2
 ```
 
-![](vg02-advanced-features_files/figure-html/unnamed-chunk-17-1.png)
+![](vg02-advanced-features_files/figure-html/unnamed-chunk-15-1.png)
 
 ``` r
 
@@ -260,14 +272,19 @@ if (save_figures) {
 }
 ```
 
+The `update` function can also be used to select a different past
+iteration as the active clustering, without running additional MCMC.
+This is useful when you want to inspect or use a specific sample rather
+than the last one:
+
 ``` r
 
-result_other <- sfclust:::update_within(result, sample = 750)
+result_other <- update(result, sample = 750)
 result_other
 ```
 
     #> Within-cluster formula:
-    #> y ~ f(idt, model = "rw1", hyper = list(prec = list(prior = "normal", 
+    #> y ~ f(id_time, model = "rw1", hyper = list(prec = list(prior = "normal", 
     #>     param = c(-2, 1))))
     #> 
     #> Clustering hyperparameters:
@@ -276,14 +293,14 @@ result_other
     #> 
     #> Clustering movement counts:
     #>  births  deaths changes  hypers 
-    #>      34      50      15      56 
+    #>      33      44       7      43 
     #> 
-    #> Log marginal likelihood (sample 750 out of 1000): 12425.03
+    #> Log marginal likelihood (sample 750 out of 1000): 12319.21
 
 ## Results
 
-The final iteration indicates that the algorithm identified 10 clusters,
-with a log marginal likelihood of 12,708.35. The largest cluster
+The final iteration indicates that the algorithm identified 12 clusters,
+with a log marginal likelihood of 12,602.37. The largest cluster
 consists of 27 regions, while the smallest contains only one region.
 
 ``` r
@@ -294,14 +311,14 @@ summary(result, sort = TRUE)
     #> Summary for clustering sample 1000 out of 1000 
     #> 
     #> Within-cluster formula:
-    #> y ~ f(idt, model = "rw1", hyper = list(prec = list(prior = "normal", 
+    #> y ~ f(id_time, model = "rw1", hyper = list(prec = list(prior = "normal", 
     #>     param = c(-2, 1))))
     #> 
     #> Counts per cluster:
-    #>  1  2  3  4  5  6  7  8  9 10 11 
-    #> 27 19 12 11  9  9  6  3  2  1  1 
+    #>  1  2  3  4  5  6  7  8  9 10 11 12 
+    #> 27 20 12 11  9  8  6  3  1  1  1  1 
     #> 
-    #> Log marginal likelihood:  12654.03
+    #> Log marginal likelihood:  12602.37
 
 Let’s visualize the regions grouped by cluster.
 
@@ -310,7 +327,7 @@ Let’s visualize the regions grouped by cluster.
 plot(result, which = 1:2, sort = TRUE, legend = TRUE)
 ```
 
-![](vg02-advanced-features_files/figure-html/unnamed-chunk-20-1.png)
+![](vg02-advanced-features_files/figure-html/unnamed-chunk-18-1.png)
 
 Let’s visualize the original data grouped by cluster.
 
@@ -321,4 +338,4 @@ plot_clusters_series(result, y, sort = TRUE) +
   labs(title = "Risk per cluster", y = "Response")
 ```
 
-![](vg02-advanced-features_files/figure-html/unnamed-chunk-21-1.png)
+![](vg02-advanced-features_files/figure-html/unnamed-chunk-19-1.png)

@@ -6,12 +6,16 @@
 <url><loc>/articles/sfclust.html</loc></url>
 <url><loc>/articles/vg01-stars-object.html</loc></url>
 <url><loc>/articles/vg02-advanced-features.html</loc></url>
+<url><loc>/articles/vg03-data-frame.html</loc></url>
 <url><loc>/articles/vg11-covid-usa.html</loc></url>
 <url><loc>/articles/vg12-temp-canada.html</loc></url>
+<url><loc>/articles/vg13-ndwi-chaparrillo.html</loc></url>
 <url><loc>/authors.html</loc></url>
 <url><loc>/index.html</loc></url>
+<url><loc>/news/index.html</loc></url>
+<url><loc>/reference/chapa.html</loc></url>
 <url><loc>/reference/data_all.html</loc></url>
-<url><loc>/reference/data_each.html</loc></url>
+<url><loc>/reference/filter_df.html</loc></url>
 <url><loc>/reference/fitted.sfclust.html</loc></url>
 <url><loc>/reference/genclust.html</loc></url>
 <url><loc>/reference/index.html</loc></url>

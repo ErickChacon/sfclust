@@ -12,18 +12,17 @@ library(sfclust)
 library(stars)
 library(ggplot2)
 library(dplyr)
-library(rnaturalearth)
 ```
 
-We use the polygonal shapes of Canadian provinces from the
-`rnaturalearth` package and the `CanadianWeather` dataset from the `fda`
-package, which is commonly used in functional data analysis. This
-dataset is a list containing daily temperature data per station, along
-with metadata such as station coordinates.
+We use the `CanadianWeather` dataset from the `fda` package, which is
+commonly used in functional data analysis. This dataset is a list
+containing daily temperature data per station, along with metadata such
+as station coordinates. For the background map we use the `maps`
+package, which bundles country and province boundaries directly.
 
 ``` r
 
-canada <- ne_states("Canada")
+canada <- sf::st_as_sf(maps::map("world", regions = "Canada", plot = FALSE, fill = TRUE))
 data(CanadianWeather, package = "fda")
 names(CanadianWeather)
 ```
@@ -163,27 +162,26 @@ temperature as a function of:
 
 1.  A polynomial trend over `time`.
 2.  A random walk to capture autocorrelated temporal variation over
-    `idt`.
+    `id_time`.
 
 We initialize with 35 clusters—one per polygon—and set a strong penalty
-(`logpen = -300`) to discourage overfitting and large number of clusters
-unless the log marginal likelihood improves by at least 300.
+(`logpen = -300`) to discourage overfitting and a large number of
+clusters unless the log marginal likelihood improves by at least 300.
 
 ``` r
 
-formula <- ztemp ~ poly(time, 2) + f(idt, model = "rw1")
-geodata <- genclust(domain, nclust = 35)
-
+geodata <- genclust(as(st_touches(domain), "sparseMatrix"), nclust = 35)
 set.seed(123)
-result <- sfclust(canweather, graphdata = geodata, formula = formula,
-    logpen = -300, niter = 4000, burnin = 0, thin = 10, nmessage = 10, nsave = 100,
+result <- sfclust(canweather, graphdata = geodata, logpen = -300,
+    formula = ztemp ~ poly(time, 2) + f(id_time, model = "rw1"),
+    niter = 4000, burnin = 0, thin = 10, nmessage = 10, nsave = 1000,
     control.inla = list(control.vb = list(enable = FALSE)),
     path_save = file.path("canweather-mcmc.rds"))
 result
 ```
 
     #> Within-cluster formula:
-    #> ztemp ~ poly(time, 2) + f(idt, model = "rw1")
+    #> ztemp ~ poly(time, 2) + f(id_time, model = "rw1")
     #> 
     #> Clustering hyperparameters:
     #> log(1-q)    birth    death   change    hyper 
@@ -191,13 +189,13 @@ result
     #> 
     #> Clustering movement counts:
     #>  births  deaths changes  hypers 
-    #>       8      29      19     171 
+    #>       8      29      22     202 
     #> 
-    #> Log marginal likelihood (sample 400 out of 400): 17541.96
+    #> Log marginal likelihood (sample 400 out of 400): 17450.5
 
-Over the course of sampling, 8 cluster additions, 29 merges, and 19
-reassignments occurred. The marginal likelihood reached a value of
-17,541.96. After thinning, 400 samples were retained.
+Over the course of sampling, 8 cluster additions, 29 merges, and 22
+reassignments occurred. The log marginal likelihood reached a value of
+17,450.5. After thinning, 400 samples were retained.
 
 ### Results
 
@@ -209,45 +207,45 @@ summary(result, sort = TRUE)
     #> Summary for clustering sample 400 out of 400 
     #> 
     #> Within-cluster formula:
-    #> ztemp ~ poly(time, 2) + f(idt, model = "rw1")
+    #> ztemp ~ poly(time, 2) + f(id_time, model = "rw1")
     #> 
     #> Counts per cluster:
     #>  1  2  3  4  5  6  7  8  9 10 11 12 13 14 
-    #>  7  7  4  3  2  2  2  2  1  1  1  1  1  1 
+    #>  7  5  4  3  3  2  2  2  2  1  1  1  1  1 
     #> 
-    #> Log marginal likelihood:  17541.96
+    #> Log marginal likelihood:  17450.5
 
 According to the [`summary()`](https://rdrr.io/r/base/summary.html)
-output, 8 out of 14 clusters have more than one member. The largest
-clusters contain 7, 7, and 4 stations, respectively. To assess
-convergence, we plot the marginal likelihood trace:
+output, 9 out of 14 clusters have more than one member. The largest
+clusters contain 7, 5, and 4 stations, respectively. To assess
+convergence, we plot the log marginal likelihood trace:
 
 ``` r
 
 plot(result, which = 3)
 ```
 
-![](vg12-temp-canada_files/figure-html/unnamed-chunk-15-1.png)
+![](vg12-temp-canada_files/figure-html/unnamed-chunk-14-1.png)
 
-The plot shows that the marginal likelihood stabilizes after the first
-100 (thinned) iterations. Below, we visualize the cluster assignments
-and averaged fitted means:
+The plot shows that the log marginal likelihood stabilizes after the
+first 100 (thinned) iterations. Below, we visualize the cluster
+assignments and averaged fitted means:
 
 ``` r
 
-gg1 <- plot_clusters_map(result, sort = TRUE, legend = TRUE, clusters = 1:8,
+gg1 <- plot_clusters_map(result, sort = TRUE, legend = TRUE, clusters = 1:9,
     geom_before = geom_sf(data = canada), size = 3, alpha = 0.8)
-gg2 <- plot_clusters_fitted(result, sort = TRUE, clusters = 1:8, linewidth = 0.4)
+gg2 <- plot_clusters_fitted(result, sort = TRUE, clusters = 1:9, linewidth = 0.4)
 gg1 + gg2
 ```
 
-![](vg12-temp-canada_files/figure-html/unnamed-chunk-16-1.png)
+![](vg12-temp-canada_files/figure-html/unnamed-chunk-15-1.png)
 
 The largest cluster is in southeastern Canada and includes 7 closely
 located stations. The second-largest is more dispersed, while the third
 is in the southwest with 4 stations.
 
-### Empirical standardised temperature per cluster
+### Empirical standardized temperature per cluster
 
 We use [`plot_clusters_series()`](../reference/plot_clusters_series.md)
 to visualize the raw standardized temperature per cluster. The output
@@ -262,15 +260,16 @@ plot_clusters_series(result, ztemp) +
   labs(y = "Standardized temperature")
 ```
 
-![](vg12-temp-canada_files/figure-html/unnamed-chunk-18-1.png)
+![](vg12-temp-canada_files/figure-html/unnamed-chunk-17-1.png)
 
-Panels 1–8 show the empirical risk per cluster for those clusters that
-contain more than one station. The main differences among these clusters
-lie in the initial shape of the curve, the speed of increase, the shape
-and timing of the peak, and the behavior during the decay phase. For
-example, clusters 1 and 2 exhibit a bell-shaped pattern, while others,
-such as clusters 3 to 6, display a nearly linear increase until reaching
-a maximum level. Panels 9–14 present the empirical risk per cluster for
-those that contain only one station. These single-station clusters tend
-to exhibit more unique shapes, which not only distinguish them from the
-previous multi-station clusters but also from each other.
+Panels 1–9 show the empirical standardized temperature per cluster for
+those clusters that contain more than one station. The main differences
+among these clusters lie in the initial shape of the curve, the speed of
+increase, the shape and timing of the peak, and the behavior during the
+decay phase. For example, clusters 1 and 2 exhibit a bell-shaped
+pattern, while others, such as clusters 3 to 6, display a nearly linear
+increase until reaching a maximum level. Panels 10–14 present the
+empirical standardized temperature per cluster for those that contain
+only one station. These single-station clusters tend to exhibit more
+unique shapes, which not only distinguish them from the previous
+multi-station clusters but also from each other.

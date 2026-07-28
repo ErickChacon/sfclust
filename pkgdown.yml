@@ -1,10 +1,12 @@
 pandoc: 3.8.3
-pkgdown: 2.2.0
+pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   sfclust: sfclust.html
   vg01-stars-object: vg01-stars-object.html
   vg02-advanced-features: vg02-advanced-features.html
+  vg03-data-frame: vg03-data-frame.html
   articles/vg11-covid-usa: vg11-covid-usa.html
   articles/vg12-temp-canada: vg12-temp-canada.html
-last_built: 2026-06-04T09:19Z
+  articles/vg13-ndwi-chaparrillo: vg13-ndwi-chaparrillo.html
+last_built: 2026-07-28T12:58Z

@@ -34,7 +34,7 @@ fitted(object, sample = object$clust$id, sort = FALSE, aggregate = FALSE, ...)
 - aggregate:
 
   Logical value indicating if fitted values are desired at cluster
-  level.
+  level. Only supported for `sfclust_stars` results.
 
 - ...:
 
@@ -42,40 +42,20 @@ fitted(object, sample = object$clust$id, sort = FALSE, aggregate = FALSE, ...)
 
 ## Value
 
-A `stars` object with linear predictor fitted values at regions levels.
-In case `aggregate = TRUE`, the `output` produces an `stars` objecto at
-cluster levels.
-
-## Details
-
-The function first checks if the provided `sample` value is valid (i.e.,
-it is within the range of available clustering samples). If the
-specified `sample` does not match the current clustering `id`, the
-`sfclust` object is updated accordingly. It then retrieves the
-membership assignments and cluster models for the selected sample,
-calculates the linear predictions for each cluster, and combines them
-into a matrix of fitted values.
+A data frame with fitted values and cluster assignments, keyed by `id`.
+For `sfclust_stars` objects, a `stars` object is returned instead.
 
 ## Examples
 
 ``` r
 
 # \donttest{
+if (requireNamespace("INLA", quietly = TRUE)) {
 library(sfclust)
 
 data(stgaus)
-result <- sfclust(stgaus, formula = y ~ f(idt, model = "rw1"), niter = 10,
+result <- sfclust(stgaus, formula = y ~ f(id_time, model = "rw1"), niter = 10,
   nmessage = 1)
-#> Iteration 1: clusters = 10, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -1867.5427902665
-#> Iteration 2: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1818.05514399413
-#> Iteration 3: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1818.05514399413
-#> Iteration 4: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1503.31662396488
-#> Iteration 5: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1503.31662396488
-#> Iteration 6: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1503.31662396488
-#> Iteration 7: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1503.31662396488
-#> Iteration 8: clusters = 13, births = 3, deaths = 0, changes = 0, hypers = 0, log_mlike = -840.71568767371
-#> Iteration 9: clusters = 14, births = 4, deaths = 0, changes = 0, hypers = 0, log_mlike = -426.665205363046
-#> Iteration 10: clusters = 14, births = 4, deaths = 0, changes = 0, hypers = 0, log_mlike = -426.665205363046
 
 # Estimated values ordering clusters by size
 df_est <- fitted(result, sort = TRUE)
@@ -85,5 +65,16 @@ df_est <- fitted(result, aggregate = TRUE)
 
 # Estimated values using a particular clustering sample
 df_est <- fitted(result, sample = 3)
+}
+#> Iteration 1: clusters = 10, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -674.186840478705
+#> Iteration 2: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -512.00740082578
+#> Iteration 3: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -512.00740082578
+#> Iteration 4: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -512.00740082578
+#> Iteration 5: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -512.00740082578
+#> Iteration 6: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -444.599321546183
+#> Iteration 7: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -444.599321546183
+#> Iteration 8: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -444.599321546183
+#> Iteration 9: clusters = 12, births = 2, deaths = 0, changes = 1, hypers = 0, log_mlike = -281.109175839767
+#> Iteration 10: clusters = 12, births = 2, deaths = 0, changes = 1, hypers = 0, log_mlike = -281.109175839767
 # }
 ```

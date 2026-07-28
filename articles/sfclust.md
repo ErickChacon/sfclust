@@ -1,13 +1,13 @@
 # Introduction to sfclust
 
 In this vignette, we demonstrate the basic use of `sfclust` for spatial
-clustering. Specifically, we focus on a synthetic dataset of disease
-cases to identify regions with similar disease risk over time.
+functional clustering. Specifically, we focus on a synthetic dataset of
+disease cases to identify regions with similar disease risk over time.
 
 ## Packages
 
 We begin by loading the required packages. In particular, we load the
-`stars` package as our `sfclust` package works with spacio-temporal
+`stars` package as our `sfclust` package works with spatio-temporal
 `stars` objects.
 
 ``` r
@@ -45,7 +45,7 @@ stbinom
 
 We can easily visualize the spatio-temporal risk using `ggplot` and
 [`stars::geom_stars`](https://r-spatial.github.io/stars/reference/geom_stars.html).
-It shows some neightboring regions with similar risk patterns over time.
+It shows some neighboring regions with similar risk patterns over time.
 
 ``` r
 
@@ -63,16 +63,29 @@ ggplot() +
 We can aggregate the data for easier visualization using the
 [`stars::aggregate`](https://r-spatial.github.io/stars/reference/aggregate.stars.html)
 function. The following figure displays the weekly mean risk, providing
-initial insights. For This figure displays the daily risk, providing
 initial insights. For example, the northwestern regions show a higher
-risk at the beginning (2024-01-01), followed by a decline by March 24.
-In contrast, a group of regions on the eastern side exhibits high risk
-at both the beginning (2024-01-01) and the end (2024-03-25) but lower
-values in the middle of the study period (2024-02-12).
+risk at the beginning (2024-01-01), followed by a decline by the end of
+the study period (2024-03-25). In contrast, a group of regions on the
+eastern side exhibits high risk at both the beginning (2024-01-01) and
+the end (2024-03-25) but lower values in the middle of the study period
+(2024-02-12).
+
+``` r
+
+stweekly <- aggregate(stbinom, by = "week", FUN = mean)
+ggplot() +
+  geom_stars(aes(fill = cases/population), stweekly) +
+  facet_wrap(~ time, nrow = 2) +
+  scale_fill_distiller(palette = "RdBu") +
+  theme_bw(base_size = 10) +
+  theme(legend.position = c(0.93, 0.22))
+```
+
+![](sfclust_files/figure-html/unnamed-chunk-5-1.png)
 
 It is also useful to examine trends for each region. This can be done by
 converting the `stars` object into a data frame using the
-`stars::as_tibble` function. The visualization reveals that some regions
+`as.data.frame` function. The visualization reveals that some regions
 exhibit very similar trends over time. Our goal is to cluster these
 regions while considering spatial contiguity.
 
@@ -87,20 +100,27 @@ stbinom |>
     labs(title = "Risk per region", y = "Risk", x = "Time")
 ```
 
-![](sfclust_files/figure-html/unnamed-chunk-6-1.png)
+![](sfclust_files/figure-html/unnamed-chunk-7-1.png)
+
+Our methods convert the `stars` object into a `data.frame` with custom
+unique identifiers for the locations and functional dimensions using the
+`data_all`. In the following chunk you can see the converted data frame
+containing, in addition to the original data, a unique identifier for
+each observation (`id`), a spatial identifier (`ids`), and a temporal
+identifier (`id_time`).
 
 ``` r
 
 head(data_all(stbinom))
 ```
 
-    #>   id ids idt       time cases population
-    #> 1  1   1   1 2024-01-01 10023      26062
-    #> 2  2   2   1 2024-01-01 16022      26411
-    #> 3  3   3   1 2024-01-01 10829      21504
-    #> 4  4   4   1 2024-01-01  9358      15325
-    #> 5  5   5   1 2024-01-01 11702      23981
-    #> 6  6   6   1 2024-01-01  6914      13807
+    #>   id ids id_time       time cases population
+    #> 1  1   1       1 2024-01-01 10023      26062
+    #> 2  2   2       1 2024-01-01 16022      26411
+    #> 3  3   3       1 2024-01-01 10829      21504
+    #> 4  4   4       1 2024-01-01  9358      15325
+    #> 5  5   5       1 2024-01-01 11702      23981
+    #> 6  6   6       1 2024-01-01  6914      13807
 
 ## Clustering
 
@@ -114,7 +134,7 @@ or partition $`M`$, we assume that the observed number of cases
 Binomial random variable $`Y_{it}`$ with size $`N_{it}`$ and success
 probability $`p_{it}`$:
 ``` math
-Y_{it} \mid p_{it}, N_{it}, M \stackrel{ind}{\sim} \text{Binomial}(p_{it},N_{it}).
+Y_{it} \mid p_{it}, N_{it}, M \stackrel{ind}{\sim} \text{Binomial}(N_{it}, p_{it}).
 ```
 
 Based on our exploratory analysis, the success probability $`p_{it}`$ is
@@ -147,9 +167,15 @@ In order to perform Bayesian spatial functional clustering with the
 model above we use the main function `sfclust`. The main arguments of
 this function are:
 
-- `stdata`: The spatio-temporal data which should be a `stars` object.
-- `stnames`: Names of the spatial and time dimensions respectively
-  (default: `c("geometry", "time")`).
+- `x`: The spatio-temporal data which should be a `stars` object.
+- `nclust`: The initial number of clusters.
+- `spnames`: Names of the spatial dimensions (auto-detected if not
+  provided; typically `"geometry"` for vector data, or `c("x", "y")` for
+  raster data).
+- `fnames`: Names of the functional dimensions. This is a parameter of
+  the `data.frame` interface only; for the `stars` interface it is
+  derived automatically as all dimensions other than `spnames`
+  (e.g. `"time"`) and is not user-settable.
 - `niter`: Number of iteration for the Markov chain Monte Carlo
   algorithm.
 
@@ -159,14 +185,14 @@ inference, it accepts any argument of the
 main arguments are:
 
 - `formula`: expression to define the model with fixed and random
-  effects. `sfclust` pre-process the data and create identifiers for
-  regions `ids`, times `idt` and space-time `id`. You can incluse these
-  identifiers in your formula.
+  effects. `sfclust` pre-processes the data and creates identifiers for
+  regions `ids`, functional indices `id_<dimname>` (e.g. `id_time`) and
+  space-time `id`. You can include these identifiers in your formula.
 - `family`: distribution of the response variable.
 - `Ntrials`: Number of trials in case of a Binomial response.
 - `E`: Expected number of cases for a Poisson response.
 
-The following code perform the Bayesian function clustering for the
+The following code performs the Bayesian functional clustering for the
 model explained above with 2000 iterations.
 
 ``` r
@@ -179,14 +205,14 @@ names(result)
 
     #> [1] "samples" "clust"
 
-The returning object is of class `sfclust`, which is a list of two
+The returned object is of class `sfclust`, which is a list of two
 elements:
 
 - `samples`: list containing the `membership` samples, the logarithm of
   the marginal likelihood `log_mlike` and the clustering movements
   `move_counts` done in total.
-- `clust`: list containing the selecting `membership` from `samples`.
-  This include the `id` of selected sample, the selected `membership`
+- `clust`: list containing the selected `membership` from `samples`.
+  This includes the `id` of selected sample, the selected `membership`
   and the `models` associated to each cluster.
 
 ## Basic methods
@@ -194,7 +220,7 @@ elements:
 ### Print
 
 By default, the `sfclust` object prints the within-cluster model, the
-clustering hyperparameters, the movements counts, and the current log
+clustering hyperparameters, the movement counts, and the current log
 marginal likelihood.
 
 ``` r
@@ -211,9 +237,9 @@ result
     #> 
     #> Clustering movement counts:
     #>  births  deaths changes  hypers 
-    #>      60      60      17      90 
+    #>      58      58      21      98 
     #> 
-    #> Log marginal likelihood (sample 2000 out of 2000): -61286.28
+    #> Log marginal likelihood (sample 2000 out of 2000): -61286.27
 
 The output indicates that the within-cluster model is specified using
 the formula `cases ~ poly(time, 2) + f(id)`, which is compatible with
@@ -221,7 +247,7 @@ INLA. This formula includes polynomial fixed effects and an independent
 random effect per observation.
 
 The displayed hyperparameters are used in the clustering algorithm. The
-hyperparameter `log(1-q) = 0.5` penalizes the increase of clusters,
+hyperparameter `log(1-q) = -0.693` penalizes the increase of clusters,
 while the other parameters control the probabilities of different
 clustering movements:
 
@@ -235,13 +261,13 @@ Users can modify these hyperparameters as needed. The output also
 displays clustering movements. The output summary indicates the
 following:
 
-- Clusters were splited 60 times.
-- Clusters were merged 60 times.
-- Clusters were simultaneously split and merged 17 times.
-- The minimum spanning tree was updated 90 times.
+- Clusters were split 58 times.
+- Clusters were merged 58 times.
+- Clusters were simultaneously split and merged 21 times.
+- The minimum spanning tree was updated 98 times.
 
 Finally, the log marginal likelihood for the last iteration (2000) is
-reported as -61,286.28.
+reported as -61,286.27.
 
 ### Plot
 
@@ -249,7 +275,7 @@ The `plot` method generates three main graphs:
 
 1.  A map of the regions colored by clusters.
 2.  The mean function per cluster.
-3.  The marginal likelihood for each iteration.
+3.  The log marginal likelihood for each iteration.
 
 In our example, the left panel displays the regions grouped into the 10
 clusters found in the 2000th (final) iteration. The middle panel shows
@@ -259,7 +285,7 @@ clusters have similar mean trends, they are classified separately due to
 differences in other parameters, such as the variance of the random
 effects.
 
-Finally, the right panel presents the marginal likelihood for each
+Finally, the right panel presents the log marginal likelihood for each
 iteration. The values stabilize around iteration 1500, indicating that
 any clustering beyond this point can be considered a reasonable
 realization of the clustering distribution.
@@ -269,7 +295,7 @@ realization of the clustering distribution.
 plot(result, sort = TRUE, legend = TRUE)
 ```
 
-![](sfclust_files/figure-html/unnamed-chunk-13-1.png)
+![](sfclust_files/figure-html/unnamed-chunk-12-1.png)
 
 ### Summary
 
@@ -281,8 +307,8 @@ formula, similar to the `print` method.
 
 Additionally, the summary provides the number of members in each
 cluster. For example, in this case, Cluster 1 has 27 members, Cluster 2
-has 12 members, and so on. Finally, it reports the associated
-log-marginal likelihood.
+has 12 members, and so on. Finally, it reports the associated log
+marginal likelihood.
 
 ``` r
 
@@ -296,15 +322,15 @@ summary(result)
     #> 
     #> Counts per cluster:
     #>  1  2  3  4  5  6  7  8  9 10 
-    #> 27 12  9  9 11 20  6  1  2  3 
+    #> 27 12  9 11  9  2  6 20  1  3 
     #> 
-    #> Log marginal likelihood:  -61286.28
+    #> Log marginal likelihood:  -61286.27
 
-We can also summarize any other sample, such as the 500th iteration. The
-output clearly indicates that the log-marginal likelihood is much
-smaller in this case. Keep in mind that all other `sfclust` methods use
-the last sample by default, but you can specify a different sample if
-needed.
+We can also summarize any other sample, such as an earlier iteration.
+The output clearly indicates that the log marginal likelihood is
+typically smaller in earlier samples. Keep in mind that all other
+`sfclust` methods use the last sample by default, but you can specify a
+different sample if needed.
 
 ``` r
 
@@ -317,10 +343,10 @@ summary(result, sample = 500)
     #> cases ~ poly(time, 2) + f(id)
     #> 
     #> Counts per cluster:
-    #>  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 
-    #> 26 12  9  8 11  4 16  1  5  1  2  1  2  1  1 
+    #>  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 
+    #> 24  3  6  8  4  1  1  1  3 17  1  2  8  1  1  6  1  1  2  3  1  1  1  1  2 
     #> 
-    #> Log marginal likelihood:  -61439.52
+    #> Log marginal likelihood:  -61992.2
 
 Cluster labels are assigned arbitrarily, but they can be relabeled based
 on the number of members using the option `sort = TRUE`. The following
@@ -342,7 +368,7 @@ summary(result, sort = TRUE)
     #>  1  2  3  4  5  6  7  8  9 10 
     #> 27 20 12 11  9  9  6  3  2  1 
     #> 
-    #> Log marginal likelihood:  -61286.28
+    #> Log marginal likelihood:  -61286.27
 
 ### Fitted values
 
@@ -357,20 +383,32 @@ pred <- fitted(result)
 pred
 ```
 
-    #> stars object with 2 dimensions and 5 attributes
+    #> stars object with 2 dimensions and 11 attributes
     #> attribute(s):
-    #>                         Min.    1st Qu.        Median          Mean   3rd Qu.
-    #> mean              -0.7055731 -0.1988638 -0.0055543163 -0.0004677087 0.1850758
-    #> mean_inv           0.3305778  0.4504473  0.4986114245  0.4998542289 0.5461373
-    #> cluster            1.0000000  1.0000000  4.0000000000  3.8700000000 6.0000000
-    #> mean_cluster      -0.5011533 -0.1986104  0.0001815312 -0.0004677297 0.1898616
-    #> mean_cluster_inv   0.3772697  0.4505100  0.5000453828  0.4998533938 0.5473233
-    #>                         Max.
-    #> mean               0.6887139
-    #> mean_inv           0.6656808
-    #> cluster           10.0000000
-    #> mean_cluster       0.5015424
-    #> mean_cluster_inv   0.6228217
+    #>                            Min.       1st Qu.        Median          Mean
+    #> id                    1.0000000  2275.7500000  4.550500e+03  4.550500e+03
+    #> ids                   1.0000000    25.7500000  5.050000e+01  5.050000e+01
+    #> id_time               1.0000000    23.0000000  4.600000e+01  4.600000e+01
+    #> cases              4632.0000000  9295.0000000  1.176050e+04  1.190397e+04
+    #> population        10911.0000000 18733.5000000  2.425500e+04  2.381457e+04
+    #> sid                   1.0000000    25.7500000  5.050000e+01  5.050000e+01
+    #> mean                 -0.7055729    -0.1988638 -5.554312e-03 -4.677087e-04
+    #> mean_inv              0.3305778     0.4504473  4.986114e-01  4.998542e-01
+    #> cluster               1.0000000     1.0000000  4.000000e+00  4.200000e+00
+    #> mean_cluster         -0.5011533    -0.1986104  1.814918e-04 -4.677297e-04
+    #> mean_cluster_inv      0.3772697     0.4505100  5.000454e-01  4.998534e-01
+    #>                        3rd Qu.         Max.
+    #> id                6.825250e+03 9.100000e+03
+    #> ids               7.525000e+01 1.000000e+02
+    #> id_time           6.900000e+01 9.100000e+01
+    #> cases             1.423800e+04 2.686100e+04
+    #> population        2.751750e+04 4.482900e+04
+    #> sid               7.525000e+01 1.000000e+02
+    #> mean              1.850752e-01 6.887139e-01
+    #> mean_inv          5.461372e-01 6.656808e-01
+    #> cluster           7.000000e+00 1.000000e+01
+    #> mean_cluster      1.898616e-01 5.015424e-01
+    #> mean_cluster_inv  5.473233e-01 6.228217e-01
     #> dimension(s):
     #>          from  to     offset  delta refsys point
     #> geometry    1 100         NA     NA     NA FALSE
@@ -394,7 +432,7 @@ ggplot() +
     theme(legend.position = "bottom")
 ```
 
-![](sfclust_files/figure-html/unnamed-chunk-19-1.png)
+![](sfclust_files/figure-html/unnamed-chunk-18-1.png)
 
 To gain further insights, we can compute the mean fitted values per
 cluster using `aggregate = TRUE`. This returns a `stars` object with
@@ -408,9 +446,9 @@ pred
 
     #> stars object with 2 dimensions and 2 attributes
     #> attribute(s):
-    #>                         Min.    1st Qu.      Median          Mean   3rd Qu.
-    #> mean_cluster      -0.5011527 -0.1716051 0.001578613 -0.0005899816 0.1701283
-    #> mean_cluster_inv   0.3772698  0.4572037 0.500394653  0.4998562818 0.5424298
+    #>                         Min.    1st Qu.      Median         Mean   3rd Qu.
+    #> mean_cluster      -0.5011527 -0.1716051 0.001578615 -0.000589982 0.1701283
+    #> mean_cluster_inv   0.3772698  0.4572037 0.500394654  0.499856282 0.5424298
     #>                        Max.
     #> mean_cluster      0.5015421
     #> mean_cluster_inv  0.6228217
@@ -434,18 +472,10 @@ ggplot() +
   scale_fill_distiller(palette = "RdBu") +
   labs(fill = "Risk") +
   theme_bw(base_size = 10) +
-  theme(legend.position = c(0.93, 0.22))
+  theme(legend.position = "bottom")
 ```
 
-![](sfclust_files/figure-html/unnamed-chunk-21-1.png)
-
-``` r
-
-if (save_figures) {
-  ggsave(file.path(path_figures, "stbinom-weekly-risk-per-cluster.pdf"), width = 10, height = 3.5,
-    device = cairo_pdf)
-}
-```
+![](sfclust_files/figure-html/unnamed-chunk-20-1.png)
 
 Finally, we can use our clustering results to visualize the original
 data grouped by clusters using the function

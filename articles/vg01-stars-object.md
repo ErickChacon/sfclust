@@ -39,9 +39,9 @@ precipitation <- matrix(rnorm(30), nrow = 6, ncol = 5)
 ## Creating a `stars` object
 
 We now use the simulated data to construct a `stars` object. This object
-will contain spatial, temporal, and variable dimensions. While there are
-several ways to build such objects, the following method is commonly
-used:
+will contain spatial and temporal dimensions, along with the three
+simulated variables stored as attributes. While there are several ways
+to build such objects, the following method is commonly used:
 
 ``` r
 
@@ -91,17 +91,17 @@ instance, let’s add a `population` variable:
 
 ``` r
 
-stdata["population"] <- rep(rpois(6, 1000), each = 6)
+stdata["population"] <- rep(rpois(6, 1000), times = 5)
 stdata
 ```
 
     #> stars object with 2 dimensions and 4 attributes
     #> attribute(s):
-    #>                      Min.     1st Qu.        Median         Mean      3rd Qu.
-    #> cases           86.000000  93.0000000   99.00000000  98.90000000  102.7500000
-    #> temperature     -2.060541  -0.4165786    0.06808151   0.02795936    0.5496759
-    #> precipitation   -1.676105  -0.7343718   -0.17034766  -0.09712102    0.4299561
-    #> population     953.000000 975.0000000 1004.00000000 999.60000000 1028.0000000
+    #>                      Min.     1st Qu.        Median          Mean      3rd Qu.
+    #> cases           86.000000  93.0000000   99.00000000   98.90000000  102.7500000
+    #> temperature     -2.060541  -0.4165786    0.06808151    0.02795936    0.5496759
+    #> precipitation   -1.676105  -0.7343718   -0.17034766   -0.09712102    0.4299561
+    #> population     953.000000 975.0000000 1016.00000000 1005.00000000 1032.0000000
     #>                       Max.
     #> cases           116.000000
     #> temperature       1.766004

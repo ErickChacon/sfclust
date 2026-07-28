@@ -6,7 +6,7 @@ the cluster mean, for a given variable in an `sfclust` object.
 ## Usage
 
 ``` r
-plot_clusters_series(x, var, clusters = NULL, sort = FALSE, ...)
+plot_clusters_series(x, var, clusters = NULL, sort = FALSE, fnames = NULL, ...)
 ```
 
 ## Arguments
@@ -17,8 +17,7 @@ plot_clusters_series(x, var, clusters = NULL, sort = FALSE, ...)
 
 - var:
 
-  An unquoted variable name from the `stars` object to plot on the
-  y-axis.
+  An unquoted variable name to plot on the y-axis.
 
 - clusters:
 
@@ -29,6 +28,12 @@ plot_clusters_series(x, var, clusters = NULL, sort = FALSE, ...)
 
   Logical; if `TRUE`, clusters are relabeled by decreasing size. Default
   is `FALSE`.
+
+- fnames:
+
+  Character. Name of the column to use as the x-axis (functional
+  dimension). If `NULL`, taken from the result's stored args (set
+  automatically by [`sfclust()`](sfclust.md)).
 
 - ...:
 

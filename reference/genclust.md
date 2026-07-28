@@ -1,43 +1,79 @@
-# Generate clusters for spatial clustering
+# Generate initial cluster assignments
 
-Creates an undirected graph from spatial polygonal data, computes its
-minimum spanning tree (MST), and generates `nclust` clusters. This
-function is used to initialize cluster membership in a clustering
-algorithm, such as `sfclust`.
+Creates an undirected graph from spatial data or a weighted adjacency
+matrix, computes its minimum spanning tree (MST), and partitions it into
+`nclust` clusters. Accepts weighted `matrix` or `Matrix` objects, and
+`stars` objects with either vector geometry (contiguity via
+[`sf::st_touches()`](https://r-spatial.github.io/sf/reference/geos_binary_pred.html))
+or raster dimensions (4-connected grid adjacency for non-NA pixels).
 
 ## Usage
 
 ``` r
-genclust(x, nclust = 10, weights = NULL)
+genclust(x, ...)
+
+# Default S3 method
+genclust(x, ...)
+
+# S3 method for class 'matrix'
+genclust(x, nclust = 10, weights = NULL, ...)
+
+# S3 method for class 'Matrix'
+genclust(x, nclust = 10, weights = NULL, ...)
+
+# S3 method for class 'stars'
+genclust(x, nclust = 10, spnames = NULL, response = NULL, weights = NULL, ...)
 ```
 
 ## Arguments
 
 - x:
 
-  An `sf` or `sfc` object representing spatial polygonal data. It can
-  also be a `matrix` or `Matrix` object with non-zero values
-  representing weighted connectivity between units.
+  Spatial data or adjacency matrix. Accepted classes: `matrix`,
+  `Matrix`, or `stars`.
+
+- ...:
+
+  Not used; required for S3 method consistency.
 
 - nclust:
 
-  Integer, specifying the initial number of clusters.
+  Integer. Number of initial clusters (default `10`).
 
 - weights:
 
-  Optional `numeric` vector or `matrix` of weights between units in `x`.
-  It should have dimensions `n^2`, where `n` is the number of units in
-  `x`. If NULL, random weights are assigned.
+  Optional numeric vector of edge weights with `n^2` elements, where `n`
+  is the total number of spatial units (before filtering). If `NULL`,
+  random weights are assigned.
+
+- spnames:
+
+  Character vector with the names of the spatial dimensions. If `NULL`,
+  auto-detected as dimensions with a non-`NA` regular `delta` in
+  [`stars::st_dimensions()`](https://r-spatial.github.io/stars/reference/st_dimensions.html).
+  Currently supports 1D (vector geometry) and 2D raster grids; 3D
+  spatial grids (e.g. `x`, `y`, `z`) are not yet supported.
+
+- response:
+
+  Character. Name of the attribute in `x` to use for determining valid
+  spatial cells (cells where all observations are NA are excluded). If
+  `NULL` (default), all spatial cells are treated as valid.
 
 ## Value
 
-A list with three elements:
+A list with:
 
-- `graph`: The undirected graph object representing spatial contiguity.
+- `graph`: undirected igraph object representing spatial contiguity.
 
-- `mst`: The minimum spanning tree.
+- `mst`: minimum spanning tree of `graph`.
 
-- `membership`: The cluster membership for elements in `x`.
+- `membership`: integer vector of cluster assignments (length = number
+  of valid spatial units).
+
+- `valid_ids`: integer vector of flat spatial positions included in the
+  graph (only present for `stars` input; `NULL` for matrix/Matrix
+  input).
 
 ## Examples
 
@@ -45,70 +81,25 @@ A list with three elements:
 
 library(sfclust)
 library(sf)
+library(stars)
 
-x <- st_make_grid(cellsize = c(1, 1), offset = c(0, 0), n = c(3, 2))
-
-# using distance between geometries
-clust <- genclust(x, nclust = 3, weights = st_distance(st_centroid(x)))
-print(clust)
-#> $graph
-#> IGRAPH e9872de UNW- 6 11 -- 
-#> + attr: name (v/c), weight (e/n)
-#> + edges from e9872de (vertex names):
-#>  [1] 1--2 1--4 1--5 2--3 2--4 2--5 2--6 3--5 3--6 4--5 5--6
-#> 
-#> $mst
-#> IGRAPH a990326 UNW- 6 5 -- 
-#> + attr: name (v/c), vid (v/n), weight (e/n)
-#> + edges from a990326 (vertex names):
-#> [1] 1--4 2--3 3--6 4--5 5--6
-#> 
-#> $membership
-#> 1 2 3 4 5 6 
-#> 1 2 3 3 3 3 
-#> 
-plot(st_sf(x, cluster = factor(clust$membership)))
+# stars object with vector geometry
+geom <- st_make_grid(cellsize = c(1, 1), offset = c(0, 0), n = c(3, 2))
+x <- st_as_stars(st_sf(z = 1:6, geometry = geom))
+clust <- genclust(x, nclust = 3)
+plot(st_sf(geom, cluster = factor(clust$membership)))
 
 
-# using increasing weights
-cluster_ini <- genclust(x, nclust = 3, weights = 1:36)
-print(cluster_ini)
-#> $graph
-#> IGRAPH fc9b37f U-W- 6 11 -- 
-#> + attr: weight (e/n)
-#> + edges from fc9b37f:
-#>  [1] 1--2 1--4 1--5 2--3 2--4 2--5 2--6 3--5 3--6 4--5 5--6
-#> 
-#> $mst
-#> IGRAPH d95b66d U-W- 6 5 -- 
-#> + attr: vid (v/n), weight (e/n)
-#> + edges from d95b66d:
-#> [1] 1--2 1--4 1--5 2--3 2--6
-#> 
-#> $membership
-#> [1] 1 1 1 1 2 3
-#> 
-plot(st_sf(x, cluster = factor(cluster_ini$membership)))
+# stars raster input
+x <- st_as_stars(cluster = matrix(1:35, 5))
+clust <- genclust(x, nclust = 4)
+x$cluster <- clust$membership
+plot(x, col = rainbow(4))
 
 
-# using on random weights
-cluster_ini <- genclust(x, nclust = 3, weights = runif(36))
-print(cluster_ini)
-#> $graph
-#> IGRAPH bfdb893 U-W- 6 11 -- 
-#> + attr: weight (e/n)
-#> + edges from bfdb893:
-#>  [1] 1--2 1--4 1--5 2--3 2--4 2--5 2--6 3--5 3--6 4--5 5--6
-#> 
-#> $mst
-#> IGRAPH d8839c5 U-W- 6 5 -- 
-#> + attr: vid (v/n), weight (e/n)
-#> + edges from d8839c5:
-#> [1] 1--4 2--4 2--6 3--5 3--6
-#> 
-#> $membership
-#> [1] 1 2 3 1 3 3
-#> 
-plot(st_sf(x, cluster = factor(cluster_ini$membership)))
-
+# matrix input
+x <- matrix(c(0,1,0,1, 1,0,1,0, 0,1,0,1, 1,0,1,0), nrow = 4)
+clust <- genclust(x, nclust = 2)
+clust$membership
+#> [1] 1 2 1 1
 ```

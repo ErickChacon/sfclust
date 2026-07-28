@@ -20,5 +20,4 @@ Useful links:
 ## Author
 
 Ruiman Zhong <ruiman.zhong@kaust.edu.sa>, Erick A. Chacón-Montalván
-<erick.chaconmontalvan@kaust.edu.sa>, Paula Moraga
-<paula.moraga@kaust.edu.sa>
+<erick.chaconmontalvan@wur.nl>, Paula Moraga <paula.moraga@kaust.edu.sa>

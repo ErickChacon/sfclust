@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">sfclust</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,12 +38,15 @@
     <li><h6 class="dropdown-header" data-toc-skip>Vignettes</h6></li>
     <li><a class="dropdown-item" href="../articles/vg01-stars-object.html">Create a stars dataset</a></li>
     <li><a class="dropdown-item" href="../articles/vg02-advanced-features.html">Advanced features</a></li>
+    <li><a class="dropdown-item" href="../articles/vg03-data-frame.html">Data frame interface</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Applications</h6></li>
     <li><a class="dropdown-item" href="../articles/vg11-covid-usa.html">Weekly relative risk of COVID-19 in US states</a></li>
     <li><a class="dropdown-item" href="../articles/vg12-temp-canada.html">Standardized daily temperature at Canadian stations</a></li>
+    <li><a class="dropdown-item" href="../articles/vg13-ndwi-chaparrillo.html">Clustering raster spatio-temporal data (NDWI2)</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -66,22 +69,22 @@
       <h1>Introduction to sfclust</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/ErickChacon/sfclust/blob/v1.0.2/vignettes/sfclust.Rmd" class="external-link"><code>vignettes/sfclust.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/ErickChacon/sfclust/blob/main/vignettes/sfclust.Rmd" class="external-link"><code>vignettes/sfclust.Rmd</code></a></small>
       <div class="d-none name"><code>sfclust.Rmd</code></div>
     </div>
 
     
     
 <p>In this vignette, we demonstrate the basic use of
-<code>sfclust</code> for spatial clustering. Specifically, we focus on a
-synthetic dataset of disease cases to identify regions with similar
-disease risk over time.</p>
+<code>sfclust</code> for spatial functional clustering. Specifically, we
+focus on a synthetic dataset of disease cases to identify regions with
+similar disease risk over time.</p>
 <div class="section level2">
 <h2 id="packages">Packages<a class="anchor" aria-label="anchor" href="#packages"></a>
 </h2>
 <p>We begin by loading the required packages. In particular, we load the
 <code>stars</code> package as our <code>sfclust</code> package works
-with spacio-temporal <code>stars</code> objects.</p>
+with spatio-temporal <code>stars</code> objects.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://erickchacon.github.io/sfclust" class="external-link">sfclust</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-spatial.github.io/stars/" class="external-link">stars</a></span><span class="op">)</span></span>
@@ -112,7 +115,7 @@ days, starting in January 2024.</p>
 <span><span class="co">#&gt; time                                                              NULL</span></span></code></pre>
 <p>We can easily visualize the spatio-temporal risk using
 <code>ggplot</code> and <code><a href="https://r-spatial.github.io/stars/reference/geom_stars.html" class="external-link">stars::geom_stars</a></code>. It shows some
-neightboring regions with similar risk patterns over time.</p>
+neighboring regions with similar risk patterns over time.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://r-spatial.github.io/stars/reference/geom_stars.html" class="external-link">geom_stars</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="va">cases</span><span class="op">/</span><span class="va">population</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">stbinom</span><span class="op">)</span> <span class="op">+</span></span>
@@ -124,19 +127,27 @@ neightboring regions with similar risk patterns over time.</p>
 <p><img src="sfclust_files/figure-html/unnamed-chunk-4-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
 <p>We can aggregate the data for easier visualization using the
 <code><a href="https://r-spatial.github.io/stars/reference/aggregate.stars.html" class="external-link">stars::aggregate</a></code> function. The following figure displays
-the weekly mean risk, providing initial insights. For This figure
-displays the daily risk, providing initial insights. For example, the
+the weekly mean risk, providing initial insights. For example, the
 northwestern regions show a higher risk at the beginning (2024-01-01),
-followed by a decline by March 24. In contrast, a group of regions on
-the eastern side exhibits high risk at both the beginning (2024-01-01)
-and the end (2024-03-25) but lower values in the middle of the study
-period (2024-02-12).</p>
+followed by a decline by the end of the study period (2024-03-25). In
+contrast, a group of regions on the eastern side exhibits high risk at
+both the beginning (2024-01-01) and the end (2024-03-25) but lower
+values in the middle of the study period (2024-02-12).</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">stweekly</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/aggregate.html" class="external-link">aggregate</a></span><span class="op">(</span><span class="va">stbinom</span>, by <span class="op">=</span> <span class="st">"week"</span>, FUN <span class="op">=</span> <span class="va">mean</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://r-spatial.github.io/stars/reference/geom_stars.html" class="external-link">geom_stars</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="va">cases</span><span class="op">/</span><span class="va">population</span><span class="op">)</span>, <span class="va">stweekly</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">time</span>, nrow <span class="op">=</span> <span class="fl">2</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_brewer.html" class="external-link">scale_fill_distiller</a></span><span class="op">(</span>palette <span class="op">=</span> <span class="st">"RdBu"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">10</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.93</span>, <span class="fl">0.22</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><img src="sfclust_files/figure-html/unnamed-chunk-5-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
 <p>It is also useful to examine trends for each region. This can be done
 by converting the <code>stars</code> object into a data frame using the
-<code>stars::as_tibble</code> function. The visualization reveals that
-some regions exhibit very similar trends over time. Our goal is to
-cluster these regions while considering spatial contiguity.</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code>as.data.frame</code> function. The visualization reveals that some
+regions exhibit very similar trends over time. Our goal is to cluster
+these regions while considering spatial contiguity.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">stbinom</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://r-spatial.github.io/stars/reference/st_dimensions.html" class="external-link">st_set_dimensions</a></span><span class="op">(</span><span class="st">"geometry"</span>, values <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">stbinom</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span></span>
@@ -144,16 +155,23 @@ cluster these regions while considering spatial contiguity.</p>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">cases</span><span class="op">/</span><span class="va">population</span>, group <span class="op">=</span> <span class="va">geometry</span><span class="op">)</span>, linewidth <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Risk per region"</span>, y <span class="op">=</span> <span class="st">"Risk"</span>, x <span class="op">=</span> <span class="st">"Time"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="sfclust_files/figure-html/unnamed-chunk-6-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<p><img src="sfclust_files/figure-html/unnamed-chunk-7-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
+<p>Our methods convert the <code>stars</code> object into a
+<code>data.frame</code> with custom unique identifiers for the locations
+and functional dimensions using the <code>data_all</code>. In the
+following chunk you can see the converted data frame containing, in
+addition to the original data, a unique identifier for each observation
+(<code>id</code>), a spatial identifier (<code>ids</code>), and a
+temporal identifier (<code>id_time</code>).</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="../reference/data_all.html">data_all</a></span><span class="op">(</span><span class="va">stbinom</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt;   id ids idt       time cases population</span></span>
-<span><span class="co">#&gt; 1  1   1   1 2024-01-01 10023      26062</span></span>
-<span><span class="co">#&gt; 2  2   2   1 2024-01-01 16022      26411</span></span>
-<span><span class="co">#&gt; 3  3   3   1 2024-01-01 10829      21504</span></span>
-<span><span class="co">#&gt; 4  4   4   1 2024-01-01  9358      15325</span></span>
-<span><span class="co">#&gt; 5  5   5   1 2024-01-01 11702      23981</span></span>
-<span><span class="co">#&gt; 6  6   6   1 2024-01-01  6914      13807</span></span></code></pre>
+<pre><code><span><span class="co">#&gt;   id ids id_time       time cases population</span></span>
+<span><span class="co">#&gt; 1  1   1       1 2024-01-01 10023      26062</span></span>
+<span><span class="co">#&gt; 2  2   2       1 2024-01-01 16022      26411</span></span>
+<span><span class="co">#&gt; 3  3   3       1 2024-01-01 10829      21504</span></span>
+<span><span class="co">#&gt; 4  4   4       1 2024-01-01  9358      15325</span></span>
+<span><span class="co">#&gt; 5  5   5       1 2024-01-01 11702      23981</span></span>
+<span><span class="co">#&gt; 6  6   6       1 2024-01-01  6914      13807</span></span></code></pre>
 </div>
 <div class="section level2">
 <h2 id="clustering">Clustering<a class="anchor" aria-label="anchor" href="#clustering"></a>
@@ -178,8 +196,8 @@ with size
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>N</mi><mrow><mi>i</mi><mi>t</mi></mrow></msub><annotation encoding="application/x-tex">N_{it}</annotation></semantics></math>
 and success probability
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>p</mi><mrow><mi>i</mi><mi>t</mi></mrow></msub><annotation encoding="application/x-tex">p_{it}</annotation></semantics></math>:
-<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Y</mi><mrow><mi>i</mi><mi>t</mi></mrow></msub><mo>∣</mo><msub><mi>p</mi><mrow><mi>i</mi><mi>t</mi></mrow></msub><mo>,</mo><msub><mi>N</mi><mrow><mi>i</mi><mi>t</mi></mrow></msub><mo>,</mo><mi>M</mi><mover><mo>∼</mo><mrow><mi>i</mi><mi>n</mi><mi>d</mi></mrow></mover><mtext mathvariant="normal">Binomial</mtext><mo stretchy="false" form="prefix">(</mo><msub><mi>p</mi><mrow><mi>i</mi><mi>t</mi></mrow></msub><mo>,</mo><msub><mi>N</mi><mrow><mi>i</mi><mi>t</mi></mrow></msub><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
-Y_{it} \mid p_{it}, N_{it}, M \stackrel{ind}{\sim} \text{Binomial}(p_{it},N_{it}).
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>Y</mi><mrow><mi>i</mi><mi>t</mi></mrow></msub><mo>∣</mo><msub><mi>p</mi><mrow><mi>i</mi><mi>t</mi></mrow></msub><mo>,</mo><msub><mi>N</mi><mrow><mi>i</mi><mi>t</mi></mrow></msub><mo>,</mo><mi>M</mi><mover><mo>∼</mo><mrow><mi>i</mi><mi>n</mi><mi>d</mi></mrow></mover><mtext mathvariant="normal">Binomial</mtext><mo stretchy="false" form="prefix">(</mo><msub><mi>N</mi><mrow><mi>i</mi><mi>t</mi></mrow></msub><mo>,</mo><msub><mi>p</mi><mrow><mi>i</mi><mi>t</mi></mrow></msub><mo stretchy="false" form="postfix">)</mo><mi>.</mi></mrow><annotation encoding="application/x-tex">
+Y_{it} \mid p_{it}, N_{it}, M \stackrel{ind}{\sim} \text{Binomial}(N_{it}, p_{it}).
 </annotation></semantics></math></p>
 <p>Based on our exploratory analysis, the success probability
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>p</mi><mrow><mi>i</mi><mi>t</mi></mrow></msub><annotation encoding="application/x-tex">p_{it}</annotation></semantics></math>
@@ -224,11 +242,20 @@ model above we use the main function <code>sfclust</code>. The main
 arguments of this function are:</p>
 <ul>
 <li>
-<code>stdata</code>: The spatio-temporal data which should be a
+<code>x</code>: The spatio-temporal data which should be a
 <code>stars</code> object.</li>
 <li>
-<code>stnames</code>: Names of the spatial and time dimensions
-respectively (default: <code>c("geometry", "time")</code>).</li>
+<code>nclust</code>: The initial number of clusters.</li>
+<li>
+<code>spnames</code>: Names of the spatial dimensions (auto-detected
+if not provided; typically <code>"geometry"</code> for vector data, or
+<code>c("x", "y")</code> for raster data).</li>
+<li>
+<code>fnames</code>: Names of the functional dimensions. This is a
+parameter of the <code>data.frame</code> interface only; for the
+<code>stars</code> interface it is derived automatically as all
+dimensions other than <code>spnames</code> (e.g. <code>"time"</code>)
+and is not user-settable.</li>
 <li>
 <code>niter</code>: Number of iteration for the Markov chain Monte
 Carlo algorithm.</li>
@@ -239,9 +266,10 @@ perform Bayesian inference, it accepts any argument of the
 <ul>
 <li>
 <code>formula</code>: expression to define the model with fixed and
-random effects. <code>sfclust</code> pre-process the data and create
-identifiers for regions <code>ids</code>, times <code>idt</code> and
-space-time <code>id</code>. You can incluse these identifiers in your
+random effects. <code>sfclust</code> pre-processes the data and creates
+identifiers for regions <code>ids</code>, functional indices
+<code>id_&lt;dimname&gt;</code> (e.g. <code>id_time</code>) and
+space-time <code>id</code>. You can include these identifiers in your
 formula.</li>
 <li>
 <code>family</code>: distribution of the response variable.</li>
@@ -252,16 +280,16 @@ response.</li>
 <code>E</code>: Expected number of cases for a Poisson
 response.</li>
 </ul>
-<p>The following code perform the Bayesian function clustering for the
-model explained above with 2000 iterations.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<p>The following code performs the Bayesian functional clustering for
+the model explained above with 2000 iterations.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">7</span><span class="op">)</span></span>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sfclust.html">sfclust</a></span><span class="op">(</span><span class="va">stbinom</span>, formula <span class="op">=</span> <span class="va">cases</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/stats/poly.html" class="external-link">poly</a></span><span class="op">(</span><span class="va">time</span>, <span class="fl">2</span><span class="op">)</span> <span class="op">+</span> <span class="fu">f</span><span class="op">(</span><span class="va">id</span><span class="op">)</span>,</span>
 <span>  family <span class="op">=</span> <span class="st">"binomial"</span>, Ntrials <span class="op">=</span> <span class="va">population</span>, niter <span class="op">=</span> <span class="fl">2000</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; [1] "samples" "clust"</span></span></code></pre>
-<p>The returning object is of class <code>sfclust</code>, which is a
-list of two elements:</p>
+<p>The returned object is of class <code>sfclust</code>, which is a list
+of two elements:</p>
 <ul>
 <li>
 <code>samples</code>: list containing the <code>membership</code>
@@ -269,8 +297,8 @@ samples, the logarithm of the marginal likelihood <code>log_mlike</code>
 and the clustering movements <code>move_counts</code> done in
 total.</li>
 <li>
-<code>clust</code>: list containing the selecting
-<code>membership</code> from <code>samples</code>. This include the
+<code>clust</code>: list containing the selected
+<code>membership</code> from <code>samples</code>. This includes the
 <code>id</code> of selected sample, the selected <code>membership</code>
 and the <code>models</code> associated to each cluster.</li>
 </ul>
@@ -283,9 +311,9 @@ and the <code>models</code> associated to each cluster.</li>
 <h3 id="print">Print<a class="anchor" aria-label="anchor" href="#print"></a>
 </h3>
 <p>By default, the <code>sfclust</code> object prints the within-cluster
-model, the clustering hyperparameters, the movements counts, and the
+model, the clustering hyperparameters, the movement counts, and the
 current log marginal likelihood.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">result</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; Within-cluster formula:</span></span>
 <span><span class="co">#&gt; cases ~ poly(time, 2) + f(id)</span></span>
@@ -296,16 +324,16 @@ current log marginal likelihood.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Clustering movement counts:</span></span>
 <span><span class="co">#&gt;  births  deaths changes  hypers </span></span>
-<span><span class="co">#&gt;      60      60      17      90 </span></span>
+<span><span class="co">#&gt;      58      58      21      98 </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Log marginal likelihood (sample 2000 out of 2000): -61286.28</span></span></code></pre>
+<span><span class="co">#&gt; Log marginal likelihood (sample 2000 out of 2000): -61286.27</span></span></code></pre>
 <p>The output indicates that the within-cluster model is specified using
 the formula <code>cases ~ poly(time, 2) + f(id)</code>, which is
 compatible with INLA. This formula includes polynomial fixed effects and
 an independent random effect per observation.</p>
 <p>The displayed hyperparameters are used in the clustering algorithm.
-The hyperparameter <code>log(1-q) = 0.5</code> penalizes the increase of
-clusters, while the other parameters control the probabilities of
+The hyperparameter <code>log(1-q) = -0.693</code> penalizes the increase
+of clusters, while the other parameters control the probabilities of
 different clustering movements:</p>
 <ul>
 <li>The probability of splitting a cluster is 0.425.</li>
@@ -318,13 +346,13 @@ is 0.1.</li>
 displays clustering movements. The output summary indicates the
 following:</p>
 <ul>
-<li>Clusters were splited 60 times.</li>
-<li>Clusters were merged 60 times.</li>
-<li>Clusters were simultaneously split and merged 17 times.</li>
-<li>The minimum spanning tree was updated 90 times.</li>
+<li>Clusters were split 58 times.</li>
+<li>Clusters were merged 58 times.</li>
+<li>Clusters were simultaneously split and merged 21 times.</li>
+<li>The minimum spanning tree was updated 98 times.</li>
 </ul>
 <p>Finally, the log marginal likelihood for the last iteration (2000) is
-reported as -61,286.28.</p>
+reported as -61,286.27.</p>
 </div>
 <div class="section level3">
 <h3 id="plot">Plot<a class="anchor" aria-label="anchor" href="#plot"></a>
@@ -333,7 +361,7 @@ reported as -61,286.28.</p>
 <ol style="list-style-type: decimal">
 <li>A map of the regions colored by clusters.</li>
 <li>The mean function per cluster.</li>
-<li>The marginal likelihood for each iteration.</li>
+<li>The log marginal likelihood for each iteration.</li>
 </ol>
 <p>In our example, the left panel displays the regions grouped into the
 10 clusters found in the 2000th (final) iteration. The middle panel
@@ -342,13 +370,13 @@ exhibit linear trends, while others follow quadratic trends. Although
 some clusters have similar mean trends, they are classified separately
 due to differences in other parameters, such as the variance of the
 random effects.</p>
-<p>Finally, the right panel presents the marginal likelihood for each
-iteration. The values stabilize around iteration 1500, indicating that
-any clustering beyond this point can be considered a reasonable
+<p>Finally, the right panel presents the log marginal likelihood for
+each iteration. The values stabilize around iteration 1500, indicating
+that any clustering beyond this point can be considered a reasonable
 realization of the clustering distribution.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">result</span>, sort <span class="op">=</span> <span class="cn">TRUE</span>, legend <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="sfclust_files/figure-html/unnamed-chunk-13-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
+<p><img src="sfclust_files/figure-html/unnamed-chunk-12-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
 <h3 id="summary">Summary<a class="anchor" aria-label="anchor" href="#summary"></a>
@@ -361,9 +389,9 @@ displays the model formula, similar to the <code>print</code>
 method.</p>
 <p>Additionally, the summary provides the number of members in each
 cluster. For example, in this case, Cluster 1 has 27 members, Cluster 2
-has 12 members, and so on. Finally, it reports the associated
-log-marginal likelihood.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+has 12 members, and so on. Finally, it reports the associated log
+marginal likelihood.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; Summary for clustering sample 2000 out of 2000 </span></span>
 <span><span class="co">#&gt; </span></span>
@@ -372,15 +400,15 @@ log-marginal likelihood.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Counts per cluster:</span></span>
 <span><span class="co">#&gt;  1  2  3  4  5  6  7  8  9 10 </span></span>
-<span><span class="co">#&gt; 27 12  9  9 11 20  6  1  2  3 </span></span>
+<span><span class="co">#&gt; 27 12  9 11  9  2  6 20  1  3 </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Log marginal likelihood:  -61286.28</span></span></code></pre>
-<p>We can also summarize any other sample, such as the 500th iteration.
-The output clearly indicates that the log-marginal likelihood is much
-smaller in this case. Keep in mind that all other <code>sfclust</code>
-methods use the last sample by default, but you can specify a different
-sample if needed.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<span><span class="co">#&gt; Log marginal likelihood:  -61286.27</span></span></code></pre>
+<p>We can also summarize any other sample, such as an earlier iteration.
+The output clearly indicates that the log marginal likelihood is
+typically smaller in earlier samples. Keep in mind that all other
+<code>sfclust</code> methods use the last sample by default, but you can
+specify a different sample if needed.</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">result</span>, sample <span class="op">=</span> <span class="fl">500</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; Summary for clustering sample 500 out of 2000 </span></span>
 <span><span class="co">#&gt; </span></span>
@@ -388,16 +416,16 @@ sample if needed.</p>
 <span><span class="co">#&gt; cases ~ poly(time, 2) + f(id)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Counts per cluster:</span></span>
-<span><span class="co">#&gt;  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 </span></span>
-<span><span class="co">#&gt; 26 12  9  8 11  4 16  1  5  1  2  1  2  1  1 </span></span>
+<span><span class="co">#&gt;  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 </span></span>
+<span><span class="co">#&gt; 24  3  6  8  4  1  1  1  3 17  1  2  8  1  1  6  1  1  2  3  1  1  1  1  2 </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Log marginal likelihood:  -61439.52</span></span></code></pre>
+<span><span class="co">#&gt; Log marginal likelihood:  -61992.2</span></span></code></pre>
 <p>Cluster labels are assigned arbitrarily, but they can be relabeled
 based on the number of members using the option
 <code>sort = TRUE</code>. The following output shows that, in the last
 sample, the first seven clusters have more than four members, while the
 last three clusters have fewer than four members.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">result</span>, sort <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; Summary for clustering sample 2000 out of 2000 </span></span>
 <span><span class="co">#&gt; </span></span>
@@ -408,7 +436,7 @@ last three clusters have fewer than four members.</p>
 <span><span class="co">#&gt;  1  2  3  4  5  6  7  8  9 10 </span></span>
 <span><span class="co">#&gt; 27 20 12 11  9  9  6  3  2  1 </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Log marginal likelihood:  -61286.28</span></span></code></pre>
+<span><span class="co">#&gt; Log marginal likelihood:  -61286.27</span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="fitted-values">Fitted values<a class="anchor" aria-label="anchor" href="#fitted-values"></a>
@@ -417,23 +445,35 @@ last three clusters have fewer than four members.</p>
 <code>fitted</code> function, which returns a <code>stars</code> object
 in the same format as the original data. It provides the mean, standard
 deviation, quantiles, and other summary statistics.</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/fitted.values.html" class="external-link">fitted</a></span><span class="op">(</span><span class="va">result</span><span class="op">)</span></span>
 <span><span class="va">pred</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; stars object with 2 dimensions and 5 attributes</span></span>
+<pre><code><span><span class="co">#&gt; stars object with 2 dimensions and 11 attributes</span></span>
 <span><span class="co">#&gt; attribute(s):</span></span>
-<span><span class="co">#&gt;                         Min.    1st Qu.        Median          Mean   3rd Qu.</span></span>
-<span><span class="co">#&gt; mean              -0.7055731 -0.1988638 -0.0055543163 -0.0004677087 0.1850758</span></span>
-<span><span class="co">#&gt; mean_inv           0.3305778  0.4504473  0.4986114245  0.4998542289 0.5461373</span></span>
-<span><span class="co">#&gt; cluster            1.0000000  1.0000000  4.0000000000  3.8700000000 6.0000000</span></span>
-<span><span class="co">#&gt; mean_cluster      -0.5011533 -0.1986104  0.0001815312 -0.0004677297 0.1898616</span></span>
-<span><span class="co">#&gt; mean_cluster_inv   0.3772697  0.4505100  0.5000453828  0.4998533938 0.5473233</span></span>
-<span><span class="co">#&gt;                         Max.</span></span>
-<span><span class="co">#&gt; mean               0.6887139</span></span>
-<span><span class="co">#&gt; mean_inv           0.6656808</span></span>
-<span><span class="co">#&gt; cluster           10.0000000</span></span>
-<span><span class="co">#&gt; mean_cluster       0.5015424</span></span>
-<span><span class="co">#&gt; mean_cluster_inv   0.6228217</span></span>
+<span><span class="co">#&gt;                            Min.       1st Qu.        Median          Mean</span></span>
+<span><span class="co">#&gt; id                    1.0000000  2275.7500000  4.550500e+03  4.550500e+03</span></span>
+<span><span class="co">#&gt; ids                   1.0000000    25.7500000  5.050000e+01  5.050000e+01</span></span>
+<span><span class="co">#&gt; id_time               1.0000000    23.0000000  4.600000e+01  4.600000e+01</span></span>
+<span><span class="co">#&gt; cases              4632.0000000  9295.0000000  1.176050e+04  1.190397e+04</span></span>
+<span><span class="co">#&gt; population        10911.0000000 18733.5000000  2.425500e+04  2.381457e+04</span></span>
+<span><span class="co">#&gt; sid                   1.0000000    25.7500000  5.050000e+01  5.050000e+01</span></span>
+<span><span class="co">#&gt; mean                 -0.7055729    -0.1988638 -5.554312e-03 -4.677087e-04</span></span>
+<span><span class="co">#&gt; mean_inv              0.3305778     0.4504473  4.986114e-01  4.998542e-01</span></span>
+<span><span class="co">#&gt; cluster               1.0000000     1.0000000  4.000000e+00  4.200000e+00</span></span>
+<span><span class="co">#&gt; mean_cluster         -0.5011533    -0.1986104  1.814918e-04 -4.677297e-04</span></span>
+<span><span class="co">#&gt; mean_cluster_inv      0.3772697     0.4505100  5.000454e-01  4.998534e-01</span></span>
+<span><span class="co">#&gt;                        3rd Qu.         Max.</span></span>
+<span><span class="co">#&gt; id                6.825250e+03 9.100000e+03</span></span>
+<span><span class="co">#&gt; ids               7.525000e+01 1.000000e+02</span></span>
+<span><span class="co">#&gt; id_time           6.900000e+01 9.100000e+01</span></span>
+<span><span class="co">#&gt; cases             1.423800e+04 2.686100e+04</span></span>
+<span><span class="co">#&gt; population        2.751750e+04 4.482900e+04</span></span>
+<span><span class="co">#&gt; sid               7.525000e+01 1.000000e+02</span></span>
+<span><span class="co">#&gt; mean              1.850752e-01 6.887139e-01</span></span>
+<span><span class="co">#&gt; mean_inv          5.461372e-01 6.656808e-01</span></span>
+<span><span class="co">#&gt; cluster           7.000000e+00 1.000000e+01</span></span>
+<span><span class="co">#&gt; mean_cluster      1.898616e-01 5.015424e-01</span></span>
+<span><span class="co">#&gt; mean_cluster_inv  5.473233e-01 6.228217e-01</span></span>
 <span><span class="co">#&gt; dimension(s):</span></span>
 <span><span class="co">#&gt;          from  to     offset  delta refsys point</span></span>
 <span><span class="co">#&gt; geometry    1 100         NA     NA     NA FALSE</span></span>
@@ -444,7 +484,7 @@ deviation, quantiles, and other summary statistics.</p>
 <p>We can easily visualize these fitted values. Note that there are
 still differences between regions within the same cluster due to the
 presence of random effects at the individual level.</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://r-spatial.github.io/stars/reference/geom_stars.html" class="external-link">geom_stars</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="va">mean_inv</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">pred</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span> <span class="va">time</span><span class="op">)</span> <span class="op">+</span></span>
@@ -452,18 +492,18 @@ presence of random effects at the individual level.</p>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>title <span class="op">=</span> <span class="st">"Daily risk"</span>, fill <span class="op">=</span> <span class="st">"Risk"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">7</span><span class="op">)</span> <span class="op">+</span></span>
 <span>    <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="sfclust_files/figure-html/unnamed-chunk-19-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
+<p><img src="sfclust_files/figure-html/unnamed-chunk-18-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
 <p>To gain further insights, we can compute the mean fitted values per
 cluster using <code>aggregate = TRUE</code>. This returns a
 <code>stars</code> object with cluster-level geometries.</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pred</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/fitted.values.html" class="external-link">fitted</a></span><span class="op">(</span><span class="va">result</span>, sort <span class="op">=</span> <span class="cn">TRUE</span>, aggregate <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">pred</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; stars object with 2 dimensions and 2 attributes</span></span>
 <span><span class="co">#&gt; attribute(s):</span></span>
-<span><span class="co">#&gt;                         Min.    1st Qu.      Median          Mean   3rd Qu.</span></span>
-<span><span class="co">#&gt; mean_cluster      -0.5011527 -0.1716051 0.001578613 -0.0005899816 0.1701283</span></span>
-<span><span class="co">#&gt; mean_cluster_inv   0.3772698  0.4572037 0.500394653  0.4998562818 0.5424298</span></span>
+<span><span class="co">#&gt;                         Min.    1st Qu.      Median         Mean   3rd Qu.</span></span>
+<span><span class="co">#&gt; mean_cluster      -0.5011527 -0.1716051 0.001578615 -0.000589982 0.1701283</span></span>
+<span><span class="co">#&gt; mean_cluster_inv   0.3772698  0.4572037 0.500394654  0.499856282 0.5424298</span></span>
 <span><span class="co">#&gt;                        Max.</span></span>
 <span><span class="co">#&gt; mean_cluster      0.5015421</span></span>
 <span><span class="co">#&gt; mean_cluster_inv  0.6228217</span></span>
@@ -476,7 +516,7 @@ cluster using <code>aggregate = TRUE</code>. This returns a
 <span><span class="co">#&gt; time                                                              NULL</span></span></code></pre>
 <p>Using these estimates, we can visualize the cluster-level mean risk
 evolution over time.</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">predweekly</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/aggregate.html" class="external-link">aggregate</a></span><span class="op">(</span><span class="va">pred</span>, by <span class="op">=</span> <span class="st">"week"</span>, FUN <span class="op">=</span> <span class="va">mean</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://r-spatial.github.io/stars/reference/geom_stars.html" class="external-link">geom_stars</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="va">mean_cluster_inv</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">predweekly</span><span class="op">)</span> <span class="op">+</span></span>
@@ -484,13 +524,8 @@ evolution over time.</p>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/scale_brewer.html" class="external-link">scale_fill_distiller</a></span><span class="op">(</span>palette <span class="op">=</span> <span class="st">"RdBu"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html" class="external-link">labs</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="st">"Risk"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span>base_size <span class="op">=</span> <span class="fl">10</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.93</span>, <span class="fl">0.22</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="sfclust_files/figure-html/unnamed-chunk-21-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="va">save_figures</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggsave.html" class="external-link">ggsave</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">path_figures</span>, <span class="st">"stbinom-weekly-risk-per-cluster.pdf"</span><span class="op">)</span>, width <span class="op">=</span> <span class="fl">10</span>, height <span class="op">=</span> <span class="fl">3.5</span>,</span>
-<span>    device <span class="op">=</span> <span class="va">cairo_pdf</span><span class="op">)</span></span>
-<span><span class="op">}</span></span></code></pre></div>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"bottom"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="sfclust_files/figure-html/unnamed-chunk-20-1.png" class="r-plt" alt="" width="100%" style="display: block; margin: auto;"></p>
 <p>Finally, we can use our clustering results to visualize the original
 data grouped by clusters using the function
 <code><a href="../reference/plot_clusters_series.html">plot_clusters_series()</a></code>. As the output is a
@@ -516,7 +551,7 @@ their classification as separate clusters.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>
