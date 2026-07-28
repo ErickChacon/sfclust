@@ -66,8 +66,8 @@
 #' Study During COVID-19"* by Bohai Zhang, Huiyan Sang, Zhao Tang Luo, and Hui Huang,
 #' published in *The Annals of Applied Statistics*, 2023. For further details on the
 #' methodology, please refer to:
-#' - The paper: \doi{doi:10.1214/22-AOAS1643}
-#' - Supplementary material: \doi{doi:10.1214/22-AOAS1643SUPPB}
+#' - The paper: \doi{10.1214/22-AOAS1643}
+#' - Supplementary material: \doi{10.1214/22-AOAS1643SUPPB}
 #'
 #' The MCMC algorithm in this implementation is largely based on the supplementary
 #' material provided in the paper. However, we have generalized the computation of the
@@ -78,7 +78,7 @@
 #' Further details of our approach can be found in our paper *"Bayesian spatial functional
 #' data clustering: applications in disease surveillance"* by Ruiman Zhong, Erick A.
 #' Chacón-Montalván, Paula Moraga:
-#' - The paper: <https://doi.org/10.1002/sim.70597>
+#' - The paper: \doi{10.1002/sim.70597}
 #'
 #' @return
 #' An `sfclust` object (from `sfclust.data.frame`) or an `sfclust_stars` object

@@ -297,7 +297,7 @@ linpred_each <- function(k, membership, models, data) {
 
   # get inverse of linear predictor
   link_name <- tolower(models[[k]]$misc$linkfunctions$names)
-  inv_link  <- eval(parse(text = paste0("INLA::inla.link.inv", link_name)))
+  inv_link  <- inv_link_fun(link_name)
 
   # linear predictor per region
   df <- cbind(df, models[[k]]$summary.linear.predictor)
@@ -309,6 +309,24 @@ linpred_each <- function(k, membership, models, data) {
   df$mean_cluster     <- linpred_each_corrected(models[[k]])
   df$mean_cluster_inv <- inv_link(df$mean_cluster)
   df
+}
+
+# inverse link function for most simple cases and INLA otherwise
+inv_link_fun <- function(link_name) {
+  switch(link_name,
+    identity = identity,
+    log      = exp,
+    logit    = stats::plogis,
+    probit   = stats::pnorm,
+    cloglog  = function(x) 1 - exp(-exp(x)),
+    {
+      if (!requireNamespace("INLA", quietly = TRUE)) {
+        stop("Computing the inverse link for '", link_name,
+             "' requires the INLA package.")
+      }
+      eval(parse(text = paste0("INLA::inla.link.inv", link_name)))
+    }
+  )
 }
 
 # linear predictor only for terms that are defined at cluster level

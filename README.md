@@ -21,7 +21,7 @@ and result summarization.
 
 ## Installation
 
-`sfclust` relies on the [`INLA`](https://www.r-inla.org/download-install) package for
+`sfclust` relies on the [`INLA`](https://www.r-inla.org/download/) package for
 efficient Bayesian inference. Install it with:
 
 ```r
@@ -31,7 +31,7 @@ install.packages("INLA", dependencies = TRUE,
 ```
 
 Once `INLA` is installed, you can install `sfclust` from
-[CRAN](https://cran.r-project.org/web/packages/sfclust/index.html) with:
+[CRAN](https://CRAN.R-project.org/package=sfclust) with:
 
 ```r
 install.packages("sfclust")

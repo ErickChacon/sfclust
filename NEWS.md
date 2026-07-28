@@ -34,6 +34,10 @@
 * Fixed adjacency handling for custom/user-supplied adjacency matrices and
   point-geometry plotting.
 * Fixed cluster-level aggregation in fitted values and plots.
+* `fitted()`/`plot()` no longer require INLA to be installed when applied to
+  an already-fitted `sfclust` object (e.g. one loaded from a saved `.rds`);
+  the inverse-link transform for standard families (gaussian, binomial,
+  poisson) is now computed natively instead of via `INLA::inla.link.inv*()`.
 
 # sfclust 1.0.1
 
