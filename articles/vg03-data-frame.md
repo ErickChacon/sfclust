@@ -103,18 +103,18 @@ result <- sfclust(
 )
 ```
 
-    #> Iteration 5: clusters = 6, births = 1, deaths = 0, changes = 0, hypers = 1, log_mlike = -249.806941799476
+    #> Iteration 5: clusters = 6, births = 1, deaths = 0, changes = 0, hypers = 1, log_mlike = -249.806942262186
 
-    #> Iteration 10: clusters = 5, births = 1, deaths = 1, changes = 0, hypers = 1, log_mlike = -228.082699697478
+    #> Iteration 10: clusters = 5, births = 1, deaths = 1, changes = 0, hypers = 1, log_mlike = -228.082701335373
 
     #> 
     #>  *** inla.core.safe:  rerun to try to solve negative eigenvalue(s) in the Hessian 
     #> 
     #>  *** inla.core.safe:  rerun to try to solve negative eigenvalue(s) in the Hessian
 
-    #> Iteration 15: clusters = 4, births = 1, deaths = 2, changes = 0, hypers = 1, log_mlike = -205.932597607733
+    #> Iteration 15: clusters = 4, births = 1, deaths = 2, changes = 0, hypers = 1, log_mlike = -205.932598641884
 
-    #> Iteration 20: clusters = 3, births = 1, deaths = 3, changes = 0, hypers = 1, log_mlike = -191.412242067019
+    #> Iteration 20: clusters = 3, births = 1, deaths = 3, changes = 0, hypers = 1, log_mlike = -191.412243242203
 
 ``` r
 
