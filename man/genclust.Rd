@@ -12,11 +12,34 @@ genclust(x, ...)
 
 \method{genclust}{default}(x, ...)
 
-\method{genclust}{matrix}(x, nclust = 10, weights = NULL, ...)
+\method{genclust}{matrix}(
+  x,
+  nclust = 10,
+  weights = NULL,
+  graph_mode = c("spatial", "dense"),
+  k = NULL,
+  ...
+)
 
-\method{genclust}{Matrix}(x, nclust = 10, weights = NULL, ...)
+\method{genclust}{Matrix}(
+  x,
+  nclust = 10,
+  weights = NULL,
+  graph_mode = c("spatial", "dense"),
+  k = NULL,
+  ...
+)
 
-\method{genclust}{stars}(x, nclust = 10, spnames = NULL, response = NULL, weights = NULL, ...)
+\method{genclust}{stars}(
+  x,
+  nclust = 10,
+  spnames = NULL,
+  response = NULL,
+  weights = NULL,
+  graph_mode = c("spatial", "dense"),
+  k = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{Spatial data or adjacency matrix. Accepted classes: \code{matrix}, \code{Matrix},
@@ -30,9 +53,16 @@ or \code{stars}.}
 where \code{n} is the total number of spatial units (before filtering). If \code{NULL},
 random weights are assigned.}
 
+\item{graph_mode}{Character. Use \code{"spatial"} to build the graph from spatial
+contiguity, or \code{"dense"} to allow every spatial unit to be connected. The
+default is \code{"spatial"}.}
+
+\item{k}{Optional integer. In dense mode, if \code{k} is supplied, only the \code{k}
+nearest neighbors of each spatial unit are kept. This requires \code{weights}.}
+
 \item{spnames}{Character vector with the names of the spatial dimensions. If
 \code{NULL}, auto-detected as dimensions with a non-\code{NA} regular \code{delta} in
-\code{\link[stars:st_dimensions]{stars::st_dimensions()}}. Currently supports 1D (vector geometry) and 2D
+\code{stars::st_dimensions()}. Currently supports 1D (vector geometry) and 2D
 raster grids; 3D spatial grids (e.g. \code{x}, \code{y}, \code{z}) are not yet supported.}
 
 \item{response}{Character. Name of the attribute in \code{x} to use for determining
@@ -53,7 +83,7 @@ A list with:
 Creates an undirected graph from spatial data or a weighted adjacency matrix,
 computes its minimum spanning tree (MST), and partitions it into \code{nclust} clusters.
 Accepts weighted \code{matrix} or \code{Matrix} objects, and \code{stars} objects with either
-vector geometry (contiguity via \code{\link[sf:st_touches]{sf::st_touches()}}) or raster dimensions
+vector geometry (contiguity via \code{sf::st_touches()}) or raster dimensions
 (4-connected grid adjacency for non-NA pixels).
 }
 \examples{

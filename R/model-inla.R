@@ -15,17 +15,31 @@
 #'        case.
 #' @param inla_args A named list or pairlist of arguments passed to `inla()` (e.g.
 #'        `formula`, `family`, `E`).
+#' @param within_model Optional object created by `sfclust_within_model()`. When
+#'        provided with a `stack_fun`, the function is called once per cluster to
+#'        build the INLA stack used for that cluster.
+#'
+#' @details
+#' When a within-model object has a `stack_fun`, it is called as `stack_fun(data)`.
+#' The `data` argument is the long-format data for one cluster. It contains `id`,
+#' `ids`, `sid`, functional index columns such as `id_time`, and all variables
+#' from the original data.
+#'
+#' `stack_fun(data)` may return an `INLA::inla.stack()` object directly, or a
+#' list with components `stack` and optional `formula`. Family and other INLA
+#' arguments should be provided through `sfclust_within_model()` or `sfclust()`,
+#' not returned by `stack_fun`.
 #'
 #' @return A numeric vector containing the log marginal likelihood for each cluster or the
 #'         the fitted INLA model for each cluster when `detailed = TRUE`.
 #'
-log_mlik_all <- function(membership, data, correction = TRUE, detailed = FALSE, inla_args = NULL) {
+log_mlik_all <- function(membership, data, correction = TRUE, detailed = FALSE, inla_args = NULL, within_model = NULL) {
   clusters <- unique_clusters(membership)
 
   if (detailed) {
-    lapply(clusters, log_mlik_each, membership, data, correction, detailed, inla_args)
+    lapply(clusters, log_mlik_each, membership, data, correction, detailed, inla_args, within_model)
   } else {
-    sapply(clusters, log_mlik_each, membership, data, correction, detailed, inla_args)
+    sapply(clusters, log_mlik_each, membership, data, correction, detailed, inla_args, within_model)
   }
 }
 
@@ -45,16 +59,66 @@ unique_clusters <- function (membership) {
   }
 }
 
-log_mlik_each <- function(k, membership, data, correction = TRUE, detailed = FALSE, inla_args = NULL) {
+log_mlik_each <- function(k, membership, data, correction = TRUE, detailed = FALSE, inla_args = NULL, within_model = NULL) {
   cluster_units <- which(membership == k)
   inla_data <- data[data$sid %in% cluster_units, , drop = FALSE]
+  inla_args <- as.list(inla_args)
+
+  inla_call <- list(
+    data = inla_data,
+    control.predictor = list(compute = TRUE),
+    control.compute = list(config = correction)
+  )
+
+  if (!is.null(within_model$stack_fun)) {
+    inla_stack <- within_model$stack_fun(inla_data)
+    stack_formula <- NULL
+    if (!inherits(inla_stack, "inla.data.stack")) {
+      if (!is.list(inla_stack)) {
+        stop("`stack_fun` must return either an INLA stack or a list with `stack` and optional `formula` components.", call. = FALSE)
+      }
+      if (is.null(names(inla_stack)) || !"stack" %in% names(inla_stack)) {
+        stop("A list returned by `stack_fun` must contain a `stack` component.", call. = FALSE)
+      }
+      extra_components <- setdiff(names(inla_stack), c("stack", "formula"))
+      if (length(extra_components) > 0) {
+        stop("A list returned by `stack_fun` may only contain `stack` and optional `formula` components.", call. = FALSE)
+      }
+      stack_formula <- inla_stack$formula
+      inla_stack <- inla_stack$stack
+    }
+    if (!inherits(inla_stack, "inla.data.stack")) {
+      stop("The `stack` component returned by `stack_fun` must be an INLA stack.", call. = FALSE)
+    }
+    if (!is.null(stack_formula) && !inherits(stack_formula, "formula")) {
+      stop("The `formula` component returned by `stack_fun` must be a formula.", call. = FALSE)
+    }
+    if (!is.null(stack_formula)) inla_args$formula <- stack_formula
+
+    inla_call$data <- INLA::inla.stack.data(inla_stack)
+    inla_call$control.predictor$A <- INLA::inla.stack.A(inla_stack)
+  }
+
+  if (!is.null(inla_args$control.predictor)) {
+    user_control_predictor <- inla_args$control.predictor
+    user_control_predictor$compute <- TRUE
+    if (!is.null(inla_call$control.predictor$A)) {
+      user_control_predictor$A <- inla_call$control.predictor$A
+    }
+    inla_call$control.predictor <- user_control_predictor
+  }
+
+  if (!is.null(inla_args$control.compute)) {
+    user_control_compute <- inla_args$control.compute
+    user_control_compute$config <- correction
+    inla_call$control.compute <- user_control_compute
+  }
+
+  inla_args <- inla_args[setdiff(names(inla_args), names(inla_call))]
+  inla_call <- c(inla_call, inla_args)
+
   model <- tryCatch(
-    do.call(INLA::inla, c(
-      list(data = inla_data,
-           control.predictor = list(compute = TRUE),
-           control.compute = list(config = correction)),
-      as.list(inla_args)
-    )),
+    do.call(INLA::inla, inla_call),
     error = function(e) {
       warning("INLA failed for cluster ", k, ": ", conditionMessage(e), immediate. = TRUE)
       NULL
