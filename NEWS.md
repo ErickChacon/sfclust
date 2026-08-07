@@ -1,3 +1,25 @@
+All notable changes to this project will be documented in this file.
+
+# sfclust (development version)
+
+## Added
+
+* Added `sfclust_within_model()` for INLA within-cluster model specifications.
+* Added a `within_model` argument to `sfclust()` for custom INLA models.
+* Added support for joint INLA models using INLA stacks  while preserving the original univariate `formula` and `family` interface.
+* Extended fitted value and plotting methods to support joint models when a compatible `fitted_fun` is provided.
+* Added dense graph construction in `genclust()` for `matrix`, `Matrix`, and `stars` input through `graph_mode = "dense"`.
+
+## Changed
+
+* Kept the original `sfclust()` interface for univariate INLA models while allowing advanced users to define custom within-cluster model.
+
+## Fixed
+
+* Handled repeated INLA model fitting failures during proposal evaluation with a clear stopping rule controlled by `max_inla_failures`.
+* Fixed indexing of INLA latent effects when applying the marginal likelihood correction to models using INLA stacks.
+* Added tests for `within_model` and marginal likelihood correction with formulas in INLA stacks.
+
 # sfclust 1.1.0
 
 ## New features

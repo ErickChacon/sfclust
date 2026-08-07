@@ -12,6 +12,11 @@
 #' @param weights Optional numeric vector or matrix of edge weights with `n^2` elements,
 #'   where `n` is the number of spatial units. Smaller values indicate stronger similarity
 #'   between units. If `NULL`, random weights are assigned.
+#' @param graph_mode Character. Use `"spatial"` to build the graph from spatial
+#'   contiguity, or `"dense"` to allow every spatial unit to be connected. The
+#'   default is `"spatial"`.
+#' @param k Optional integer. When using `graph_mode = "dense"`, if `k` is provided, only the `k`
+#'   nearest neighbors of each spatial unit are kept. This requires `weights`.
 #' @param ... Not used; required for S3 method consistency.
 #'
 #' @return A list with:
@@ -56,16 +61,44 @@ genclust.default <- function(x, ...) {
 
 #' @rdname genclust
 #' @export
-genclust.matrix <- function(x, nclust = 10, weights = NULL, ...) {
+genclust.matrix <- function(x, nclust = 10, weights = NULL, graph_mode = c("spatial", "dense"), k = NULL, ...) {
+  graph_mode <- match.arg(graph_mode)
   validate_nclust(nclust, nrow(x))
-  if (is.null(weights)) weights <- runif(length(x))
-  genclust_adj(x * weights, nclust = nclust)
+
+  if (is.null(weights)) weights <- matrix(runif(length(x)), nrow(x), ncol(x))
+  if (!is.matrix(weights) && !inherits(weights, "Matrix")) {
+    weights <- matrix(weights, nrow(x), ncol(x))
+  }
+
+  if (graph_mode == "dense") {
+    adj <- weights
+    if (!is.null(k)) {
+      if (is.null(weights)) stop("'weights' must be provided to select 'k' nearest neighbors.")
+      if (!is.numeric(k) || length(k) != 1 || is.na(k) || k != as.integer(k) || k < 1 || k > nrow(adj)) {
+        stop("'k' must be a single integer between 1 and the number of regions.")
+      }
+
+      diag(adj) <- NA # skip self matches
+      knn_mat <- matrix(0, nrow(adj), ncol(adj))
+      for (i in seq_len(nrow(adj))) {
+        knn <- order(adj[i, ], decreasing = FALSE)[seq_len(k)]
+        knn_mat[i, knn] <- 1
+        knn_mat[knn, i] <- 1
+      }
+      adj <- knn_mat * adj
+    }
+  } else {
+    adj <- x * weights
+  }
+  diag(adj) <- 0
+  genclust_adj(adj, nclust = nclust)
 }
 
 #' @rdname genclust
 #' @export
-genclust.Matrix <- function(x, nclust = 10, weights = NULL, ...) {
-  genclust.matrix(x, nclust = nclust, weights = weights)
+genclust.Matrix <- function(x, nclust = 10, weights = NULL, graph_mode = c("spatial", "dense"), k = NULL, ...) {
+  graph_mode <- match.arg(graph_mode)
+  genclust.matrix(x, nclust = nclust, weights = weights, graph_mode = graph_mode, k = k)
 }
 
 #' @rdname genclust
@@ -82,11 +115,12 @@ genclust.Matrix <- function(x, nclust = 10, weights = NULL, ...) {
 #'   random weights are assigned.
 #' @importFrom stars st_dimensions
 #' @export
-genclust.stars <- function(x, nclust = 10, spnames = NULL, response = NULL, weights = NULL, ...) {
+genclust.stars <- function(x, nclust = 10, spnames = NULL, response = NULL, weights = NULL, graph_mode = c("spatial", "dense"), k = NULL, ...) {
+  graph_mode <- match.arg(graph_mode)
   spnames   <- detect_spnames(x, spnames)
   domain    <- create_domain(x, spnames, response)
   valid_ids <- which(domain[[1]])
-  adj       <- create_adj(domain, weights, valid_ids)
+  adj       <- create_adj(domain, weights, valid_ids, graph_mode, k)
   validate_nclust(nclust, nrow(adj))
   result <- genclust_adj(adj, nclust = min(nclust, nrow(adj)))
   result$valid_ids <- valid_ids
@@ -112,20 +146,54 @@ create_domain <- function(x, spnames, response = NULL) {
 #' @importFrom stars st_dimensions st_get_dimension_values
 #' @importFrom methods as
 #' @importFrom sf st_touches
-create_adj <- function(domain, weights = NULL, valid_ids = which(domain[[1]])) {
+create_adj <- function(domain, weights = NULL, valid_ids = which(domain[[1]]), graph_mode = c("spatial", "dense"), k = NULL) {
+  graph_mode <- match.arg(graph_mode)
   spnames <- dimnames(domain)
-  if (length(spnames) == 1) {
-    geom <- st_get_dimension_values(domain, spnames)
-    adj <- as(st_touches(geom), "sparseMatrix")
-  } else if (length(spnames) == 2) {
-    adj <- raster_adjacency(dim(domain)[[1]], dim(domain)[[2]])
-  } else if (length(spnames) == 3) {
-    stop("3D raster support (e.g. x, y, z brain voxels) is not yet implemented.")
+
+  if (graph_mode == "dense") {
+    n <- length(domain[[1]])
+    adj <- matrix(1, n, n)
   } else {
-    stop("create_adj only supports 1 (geometry) or 2 (raster) spatial dimensions.")
+    if (length(spnames) == 1) {
+      geom <- st_get_dimension_values(domain, spnames)
+      adj <- as(st_touches(geom), "sparseMatrix")
+    } else if (length(spnames) == 2) {
+      adj <- raster_adjacency(dim(domain)[[1]], dim(domain)[[2]])
+    } else if (length(spnames) == 3) {
+      stop("3D raster support (e.g. x, y, z brain voxels) is not yet implemented.")
+    } else {
+      stop("create_adj only supports 1 (geometry) or 2 (raster) spatial dimensions.")
+    }
   }
-  if (is.null(weights)) weights <- runif(length(adj))
-  adj <- as(adj * weights, "CsparseMatrix")
+
+  if (is.null(weights)) weights <- matrix(runif(length(adj)), nrow(adj), ncol(adj))
+  if (!is.matrix(weights) && !inherits(weights, "Matrix")) {
+    weights <- matrix(weights, nrow(adj), ncol(adj))
+  }
+
+  if (graph_mode == "dense") {
+    adj <- weights
+    if (!is.null(k)) {
+      if (is.null(weights)) stop("'weights' must be provided to select 'k' nearest neighbors.")
+      if (!is.numeric(k) || length(k) != 1 || is.na(k) || k != as.integer(k) || k < 1 || k > nrow(adj)) {
+        stop("'k' must be a single integer between 1 and the number of regions.")
+      }
+
+      diag(adj) <- NA
+      knn_mat <- matrix(0, nrow(adj), ncol(adj))
+      for (i in seq_len(nrow(adj))) {
+        knn <- order(adj[i, ], decreasing = FALSE)[seq_len(k)]
+        knn_mat[i, knn] <- 1
+        knn_mat[knn, i] <- 1
+      }
+      adj <- knn_mat * adj
+    }
+  } else {
+    adj <- adj * weights
+  }
+
+  diag(adj) <- 0
+  adj <- as(adj, "CsparseMatrix")
   adj[valid_ids, valid_ids, drop = FALSE]
 }
 

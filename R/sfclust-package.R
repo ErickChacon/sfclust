@@ -97,4 +97,4 @@
 "chapa"
 
 ## ggplot variables used in NSE contexts
-globalVariables(c("log_mlike", "time", "mean_cluster", "cluster"))
+globalVariables(c("log_mlike", "time", "mean_cluster", "cluster", "response"))

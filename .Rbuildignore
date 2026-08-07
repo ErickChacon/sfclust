@@ -1,4 +1,4 @@
-^spfc\.Rproj$
+^.*\.Rproj$
 ^\.Rproj\.user$
 ^LICENSE\.md$
 ^doc$
