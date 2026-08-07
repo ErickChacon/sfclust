@@ -155,24 +155,54 @@ get_structure_matrix <- function(model) {
   model <- model[["misc"]][["configs"]]
 
   # effects dimension information
-  x_info <- model[["contents"]]
-  ef_start <- setNames(x_info$start[-1] - x_info$length[1], x_info$tag[-1])
-  ef_end <- ef_start + x_info$length[-1] - 1
+  x_info <- data.frame(
+    tag = model[["contents"]][["tag"]],
+    start = model[["contents"]][["start"]],
+    length = model[["contents"]][["length"]],
+    stringsAsFactors = FALSE
+  )
+
+  # Remove predictors not represented in Qprior.
+  exclude <- x_info$tag %in% c("APredictor", "Predictor")
+  offset <- sum(x_info$length[exclude])
+  x_info <- x_info[!exclude, , drop = FALSE]
+
+  ef_start <- setNames(x_info$start - offset, x_info$tag)
+  ef_end <- ef_start + x_info$length - 1
 
   # select effect that requires correction
   effs_to_correct <- correction_required(formula)
 
   # provide structure matrix for selected effects
   ind <- which.max(sapply(model[["config"]], function(x) x$log.posterior))
+  Qprior <- model[["config"]][[ind]][["Qprior"]]
+  theta <- model[["config"]][[ind]][["theta"]]
+
+  if (sum(x_info$length) != nrow(Qprior)) {
+    stop("Cannot map INLA latent effects to Qprior for the marginal likelihood correction.")
+  }
 
   out <- list()
   for (x in effs_to_correct) {
+    if (!x %in% names(ef_start)) {
+      stop("Effect '", x, "' was not found in the INLA latent field.")
+    }
+
     i <- ef_start[x]
     j <- ef_end[x]
-    Qaux <- model[["config"]][[ind]][["Qprior"]][i:j, i:j]
+
+    if (i < 1 || j > nrow(Qprior)) {
+      stop("Invalid Qprior range for effect '", x, "'.")
+    }
+
+    theta_name <- paste0("Log precision for ", x)
+    if (!theta_name %in% names(theta)) {
+      stop("Hyperparameter '", theta_name, "' was not found.")
+    }
+
+    Qaux <- Qprior[i:j, i:j, drop = FALSE]
     Matrix::diag(Qaux) <- Matrix::diag(Qaux) - prior_diagonal
-    Qaux <- Qaux /
-      exp(model[["config"]][[ind]][["theta"]][paste0("Log precision for ", x)])
+    Qaux <- Qaux / exp(theta[theta_name])
     Matrix::diag(Qaux) <- Matrix::diag(Qaux) + prior_diagonal
     out[[x]] <- Qaux
   }
