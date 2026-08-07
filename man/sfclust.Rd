@@ -60,16 +60,16 @@ For \code{sfclust.stars}: a \code{stars} object containing response variables, c
 and other necessary data.}
 
 \item{...}{Additional arguments such as \code{formula}, \code{family}, and others passed to
-\code{inla()}. For stack-based models, define the model with
+\code{inla()}. For models using an INLA stack, define the model with
 \code{sfclust_within_model()} and pass it through \code{within_model}.}
 
 \item{adjacency}{A square weighted adjacency matrix (ns × ns) encoding spatial
 contiguity and edge weights. Can be a dense \code{matrix} or a sparse \code{Matrix}.
 Typically obtained via \code{\link[igraph:as_adjacency_matrix]{igraph::as_adjacency_matrix()}} on the graph returned
-by \code{genclust()}.}
+by \code{\link[=genclust]{genclust()}}.}
 
 \item{graphdata}{A list with components \code{graph}, \code{mst}, and \code{membership} as returned
-by \code{genclust()}. If \code{NULL}, it is built automatically.}
+by \code{\link[=genclust]{genclust()}}. If \code{NULL}, it is built automatically.}
 
 \item{fnames}{Character. Name of the column in \code{x} that holds the functional
 index (e.g. \code{"id_time"}). Used by plot methods; not required by the
@@ -93,9 +93,9 @@ likelihoods should be applied (default is \code{TRUE}). This depends on the type
 of effects included in the \code{INLA} model.}
 
 \item{within_model}{Optional object created by \code{sfclust_within_model()} with
-a reusable within-cluster model specification. Use this for stack-based
-or joint INLA models. The original \code{formula} and \code{family} arguments
-should not be supplied together with \code{within_model}.}
+a within-cluster model specification. Use this INLA models using INLA stacks.
+The original \code{formula} and \code{family} arguments should not be supplied together
+with \code{within_model}.}
 
 \item{niter}{An integer specifying the number of MCMC iterations after burn-in
 (default is \code{100}).}

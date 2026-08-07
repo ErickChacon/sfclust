@@ -16,7 +16,7 @@ plot_clusters_series(x, var, clusters = NULL, sort = FALSE, fnames = NULL, ...)
 \item{sort}{Logical; if \code{TRUE}, clusters are relabeled by decreasing size. Default is \code{FALSE}.}
 
 \item{fnames}{Character. Name of the column to use as the x-axis (functional dimension).
-If \code{NULL}, taken from the result's stored args (set automatically by \code{sfclust()}).}
+If \code{NULL}, taken from the result's stored args (set automatically by \code{\link[=sfclust]{sfclust()}}).}
 
 \item{...}{Additional arguments passed to \code{geom_line()} for individual region series.}
 }

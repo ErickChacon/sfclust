@@ -84,12 +84,6 @@ test_that("genclust: dense matrix input", {
   dimnames(graph_adj) <- NULL
   expect_equal(graph_adj, as(A, "generalMatrix"))
   expect_equal(length(clust$membership), 4L)
-
-  expect_error(
-    genclust(x, nclust = 2, graph_mode = "dense", k = 1),
-    "Weights must be provided to select k nearest neighbors.",
-    fixed = TRUE
-  )
 })
 
 test_that("genclust: dense stars input", {

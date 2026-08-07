@@ -56,7 +56,7 @@ list(
 }
 
 The \code{formula} component is optional. Family and other INLA arguments should
-be supplied through \code{sfclust_within_model()} or \code{sfclust()}, not returned by
+be provided through \code{sfclust_within_model()} or \code{sfclust()}, not returned by
 \code{stack_fun}.
 }
 \examples{

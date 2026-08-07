@@ -32,7 +32,7 @@ case.}
 \code{formula}, \code{family}, \code{E}).}
 
 \item{within_model}{Optional object created by \code{sfclust_within_model()}. When
-supplied with a \code{stack_fun}, the function is called once per cluster to
+provided with a \code{stack_fun}, the function is called once per cluster to
 build the INLA stack used for that cluster.}
 }
 \value{
@@ -51,6 +51,6 @@ from the original data.
 
 \code{stack_fun(data)} may return an \code{INLA::inla.stack()} object directly, or a
 list with components \code{stack} and optional \code{formula}. Family and other INLA
-arguments should be supplied through \code{sfclust_within_model()} or \code{sfclust()},
+arguments should be provided through \code{sfclust_within_model()} or \code{sfclust()},
 not returned by \code{stack_fun}.
 }
