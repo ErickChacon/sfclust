@@ -17,6 +17,8 @@ All notable changes to this project will be documented in this file.
 ## Fixed
 
 * Handled repeated INLA model fitting failures during proposal evaluation with a clear stopping rule controlled by `max_inla_failures`.
+* Fixed indexing of INLA latent effects when applying the marginal likelihood correction to models using INLA stacks.
+* Added tests for `within_model` and marginal likelihood correction with formulas in INLA stacks.
 
 # sfclust 1.1.0
 
