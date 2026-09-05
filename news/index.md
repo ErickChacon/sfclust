@@ -2,6 +2,8 @@
 
 ## sfclust 1.1.0
 
+CRAN release: 2026-07-28
+
 ### New features
 
 - Added support for raster `stars` input (`x`/`y` grid dimensions),

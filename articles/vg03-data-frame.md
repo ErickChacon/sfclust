@@ -103,18 +103,18 @@ result <- sfclust(
 )
 ```
 
-    #> Iteration 5: clusters = 6, births = 1, deaths = 0, changes = 0, hypers = 1, log_mlike = -249.806944867444
+    #> Iteration 5: clusters = 6, births = 1, deaths = 0, changes = 0, hypers = 1, log_mlike = -249.806936709728
 
-    #> Iteration 10: clusters = 5, births = 1, deaths = 1, changes = 0, hypers = 1, log_mlike = -228.082701041887
+    #> Iteration 10: clusters = 5, births = 1, deaths = 1, changes = 0, hypers = 1, log_mlike = -228.082694058725
 
     #> 
     #>  *** inla.core.safe:  rerun to try to solve negative eigenvalue(s) in the Hessian 
     #> 
     #>  *** inla.core.safe:  rerun to try to solve negative eigenvalue(s) in the Hessian
 
-    #> Iteration 15: clusters = 4, births = 1, deaths = 2, changes = 0, hypers = 1, log_mlike = -205.932597510278
+    #> Iteration 15: clusters = 4, births = 1, deaths = 2, changes = 0, hypers = 1, log_mlike = -205.93259419464
 
-    #> Iteration 20: clusters = 3, births = 1, deaths = 3, changes = 0, hypers = 1, log_mlike = -191.41224210314
+    #> Iteration 20: clusters = 3, births = 1, deaths = 3, changes = 0, hypers = 1, log_mlike = -191.4122385953
 
 ``` r
 
@@ -172,11 +172,11 @@ head(df_fit[c("id", "ids", "time", "cluster", "mean", "mean_cluster")])
 ```
 
     #>   id ids time cluster        mean mean_cluster
-    #> 1  1   1    1       1  0.21601251   0.21601251
-    #> 2  2   2    1       1  0.21601251   0.21601251
-    #> 3  3   3    1       1  0.21601251   0.21601251
-    #> 4  4   4    1       1  0.21601251   0.21601251
-    #> 5  5   5    1       1  0.21601251   0.21601251
+    #> 1  1   1    1       1  0.21601254   0.21601254
+    #> 2  2   2    1       1  0.21601254   0.21601254
+    #> 3  3   3    1       1  0.21601254   0.21601254
+    #> 4  4   4    1       1  0.21601254   0.21601254
+    #> 5  5   5    1       1  0.21601254   0.21601254
     #> 6  6   6    1       2 -0.04776628  -0.04776628
 
 The usual plot helpers are available. Since there is no spatial

@@ -12,7 +12,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/ErickChacon/sfclust/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/ErickChacon/sfclust/blob/v1.1.0/DESCRIPTION)
 
 Chacón-Montalván EA, Zhong R, Moraga P (2026). *sfclust: Bayesian
 Spatial Functional Clustering*. R package version 1.1.0,
