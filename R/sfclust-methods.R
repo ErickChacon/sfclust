@@ -167,7 +167,7 @@ update_within <- function(x, sample = NULL) {
   }
   x$clust$id     <- sample
   x$clust$models <- log_mlik_all(x$samples$membership[sample, ], attr(x, "fit_args")$data,
-                                 FALSE, TRUE, attr(x, "inla_args"))
+                                 FALSE, TRUE, attr(x, "inla_args"), attr(x, "fit_args")$within_model)
   x
 }
 
@@ -189,7 +189,8 @@ update_within <- function(x, sample = NULL) {
 #'        level. Only supported for `sfclust_stars` results.
 #' @param ... Additional arguments, currently not used.
 #' @return A data frame with fitted values and cluster assignments, keyed by `id`.
-#'         For `sfclust_stars` objects, a `stars` object is returned instead.
+#'         For `sfclust_stars` objects, a `stars` object is returned instead
+#'         unless the model uses a custom fitted-value extractor.
 #'
 #' @examples
 #'
@@ -227,6 +228,15 @@ fitted.sfclust <- function(object, sample = object$clust$id, sort = FALSE, aggre
     object$clust$models <- object$clust$models[attr(membership, "order")]
   }
 
+  within_model <- attr(object, "fit_args")$within_model
+  if (!is.null(within_model$fitted_fun)) {
+    return(fitted_joint(object, membership, within_model$fitted_fun, aggregate, ...))
+  }
+
+  if (!is.null(within_model$stack_fun)) {
+    stop("Models fitted with `stack_fun` require a user-supplied `fitted_fun` to extract fitted values.", call. = FALSE)
+  }
+
   # obtain fitted values
   pred <- lapply(1:max(membership), linpred_each, membership,
                  object$clust$models, attr(object, "fit_args")$data)
@@ -244,6 +254,11 @@ fitted.sfclust <- function(object, sample = object$clust$id, sort = FALSE, aggre
 #' @importFrom sf st_within st_union
 #' @export
 fitted.sfclust_stars <- function(object, sample = object$clust$id, sort = FALSE, aggregate = FALSE, ...) {
+  within_model <- attr(object, "fit_args")$within_model
+  if (!is.null(within_model$fitted_fun)) {
+    return(NextMethod())
+  }
+
   pred <- NextMethod(aggregate = FALSE)
 
   stars_obj <- attr(object, "input_args")$stars
@@ -283,6 +298,46 @@ fitted.sfclust_stars <- function(object, sample = object$clust$id, sort = FALSE,
   }
 
   stars_obj
+}
+
+fitted_joint <- function(object, membership, fitted_fun, aggregate = FALSE, ...) {
+  data <- attr(object, "fit_args")$data
+
+  pred <- lapply(seq_len(max(membership)), function(k) {
+    cluster_units <- which(membership == k)
+    cluster_data  <- data[data$sid %in% cluster_units, , drop = FALSE]
+
+    fitted_k <- fitted_fun(
+      model = object$clust$models[[k]],
+      data = cluster_data,
+      cluster = k,
+      object = object,
+      aggregate = aggregate,
+      ...
+    )
+
+    if (!is.data.frame(fitted_k)) {
+      stop("`fitted_fun` must return a data frame. The function returned an object of class: ", paste(class(fitted_k), collapse = ", "), call. = FALSE)
+    }
+
+    if (!"cluster" %in% names(fitted_k)) fitted_k$cluster <- k
+    fitted_k
+  })
+
+  pred <- do.call(rbind, pred)
+  if (!is.data.frame(pred)) {
+    stop("Custom fitted values must be returned as a data frame.", call. = FALSE)
+  }
+
+  if ("cluster" %in% names(pred)) pred$cluster <- as.integer(pred$cluster)
+  order_cols <- c("cluster", grep("^id_", names(pred), value = TRUE), "response", "scale")
+  order_cols <- order_cols[order_cols %in% names(pred)]
+  if (length(order_cols) > 0) {
+    pred <- pred[do.call(order, pred[order_cols]), , drop = FALSE]
+  }
+
+  rownames(pred) <- NULL
+  pred
 }
 
 linpred_each <- function(k, membership, models, data) {
@@ -472,6 +527,36 @@ plot_clusters_fitted <- function(x, sample = x$clust$id, clusters = NULL, sort =
   aux      <- get_membership_and_clusters(x, sample, sort, clusters)
   if (is.null(fnames)) fnames <- resolve_fnames(x)
   varname  <- if (!inv_link) "mean_cluster" else "mean_cluster_inv"
+
+  within_model <- attr(x, "fit_args")$within_model
+  if (!is.null(within_model$fitted_fun) || !is.null(within_model$stack_fun)) {
+    if (is.null(within_model$fitted_fun)) {
+      stop("Plotting fitted values for models fitted with `stack_fun` requires a user-supplied `fitted_fun`. Alternatively, call `fitted()` directly and create a custom plot.", call. = FALSE)
+    }
+
+    df <- as.data.frame(fitted(x, sample = sample, sort = sort, aggregate = TRUE))
+    df <- df[df$cluster %in% aux$clusters, , drop = FALSE]
+
+    required_cols <- c("cluster", fnames, "mean", "response")
+    missing_cols <- setdiff(required_cols, names(df))
+    if (length(missing_cols) > 0) {
+      stop("Plotting fitted values for a custom within-cluster model requires `fitted_fun` to return columns: ", paste(required_cols, collapse = ", "), ". Missing columns: ", paste(missing_cols, collapse = ", "), ". Alternatively, call `fitted()` directly and create a custom plot.", call. = FALSE)
+    }
+
+    if ("scale" %in% names(df)) {
+      scales <- unique(df$scale)
+      scale_to_plot <- if ("original" %in% scales) "original" else if ("response" %in% scales) "response" else scales[[1]]
+      df <- df[df$scale == scale_to_plot, , drop = FALSE]
+    }
+
+    gg <- ggplot(df) +
+      geom_line(aes(!!as.name(fnames), mean, color = response, group = response), ...) +
+      facet_wrap(~ cluster, scales = "free_y") +
+      labs(x = NULL, y = "Estimated mean", subtitle = "Cluster functions", color = NULL) +
+      theme_bw()
+    if (!legend) gg <- gg + theme(legend.position = "none")
+    return(gg)
+  }
 
   df <- as.data.frame(fitted(x, sample = sample, sort = sort))
   df <- unique(df[df$cluster %in% aux$clusters, c(fnames, varname, "cluster")])

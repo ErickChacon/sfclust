@@ -54,6 +54,7 @@ test_that("sfclust_stars: vector geometry, gaussian", {
     expect_equal(fit_args$burnin, 0L)
     expect_equal(fit_args$thin, 1L)
     expect_equal(fit_args$correction, FALSE)
+    expect_equal(fit_args$max_inla_failures, 20L)
   })
 
   test_that("print and summary", {

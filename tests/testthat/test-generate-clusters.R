@@ -69,6 +69,35 @@ test_that("genclust: matrix input", {
   expect_equal(clust$membership, c(1, 2, 2, 2, 2, 3))
 })
 
+test_that("genclust: dense matrix input", {
+  x <- sparseMatrix(i = 1:3, j = 2:4, x = 1, dims = c(4, 4), symmetric = TRUE)
+  weights <- as.matrix(dist(seq_len(4), diag = TRUE, upper = TRUE))
+
+  set.seed(1)
+  clust <- genclust(x, nclust = 2, weights = weights, graph_mode = "dense", k = 1)
+
+  A <- sparseMatrix(
+    i = 1:3, j = 2:4,
+    x = 1, dims = c(4, 4), symmetric = TRUE
+  )
+  graph_adj <- as_adjacency_matrix(clust$graph)
+  dimnames(graph_adj) <- NULL
+  expect_equal(graph_adj, as(A, "generalMatrix"))
+  expect_equal(length(clust$membership), 4L)
+})
+
+test_that("genclust: dense stars input", {
+  geom <- st_make_grid(cellsize = c(1, 1), offset = c(0, 0), n = c(4, 1))
+  x <- st_as_stars(st_sf(val = 1:4, geometry = geom))
+
+  set.seed(1)
+  clust <- genclust(x, nclust = 2, graph_mode = "dense")
+
+  expect_equal(ecount(clust$graph), choose(length(geom), 2))
+  expect_equal(length(clust$membership), length(geom))
+  expect_equal(clust$valid_ids, seq_along(geom))
+})
+
 # --- genclust: stars --------------------------------------------------
 
 test_that("genclust: stars with vector geometry", {

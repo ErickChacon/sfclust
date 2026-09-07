@@ -45,6 +45,10 @@
 #' @param correction A logical indicating whether correction to compute the marginal
 #'        likelihoods should be applied (default is `TRUE`). This depends on the type
 #'        of effects included in the `INLA` model.
+#' @param within_model Optional object created by `sfclust_within_model()` with
+#'        a within-cluster model specification. Use this INLA models using INLA stacks.
+#'        The original `formula` and `family` arguments should not be supplied together
+#'        with `within_model`.
 #' @param niter An integer specifying the number of MCMC iterations after burn-in
 #'        (default is `100`).
 #' @param burnin An integer specifying the number of burn-in iterations to discard
@@ -53,12 +57,16 @@
 #'        (default is `1`).
 #' @param nmessage An integer specifying how often progress messages should be printed
 #'        (default is `10`).
+#' @param max_inla_failures An integer specifying the maximum number of consecutive
+#'        INLA model fitting failures allowed before stopping the algorithm
+#'        (default is `20`).
 #' @param path_save A character string specifying the file path to save the results
 #'        (default is `NULL`).
 #' @param nsave An integer specifying the number of iterations between saved results
 #'        (default is `nmessage`).
 #' @param ... Additional arguments such as `formula`, `family`, and others passed to
-#'        `inla()`.
+#'        `inla()`. For models using an INLA stack, define the model with
+#'        `sfclust_within_model()` and pass it through `within_model`.
 #'
 #' @details
 #' This implementation draws inspiration from the methods described in the paper:
@@ -79,6 +87,12 @@
 #' data clustering: applications in disease surveillance"* by Ruiman Zhong, Erick A.
 #' Chacón-Montalván, Paula Moraga:
 #' - The paper: \doi{10.1002/sim.70597}
+#'
+#' The original interface remains available by passing `formula`, `family`, and
+#' other INLA arguments directly to `sfclust()`. More complex within-cluster
+#' models can be passed as `within_model = sfclust_within_model(...)`. In that
+#' case, `formula` and `family` are taken from the within-model object, and any
+#' stack or fitted-value functions are kept inside that object.
 #'
 #' @return
 #' An `sfclust` object (from `sfclust.data.frame`) or an `sfclust_stars` object
@@ -179,9 +193,21 @@ sfclust.data.frame <- function(x, adjacency, graphdata = NULL, fnames = NULL,
                                nclust = 10,
                                move_prob = c(0.425, 0.425, 0.1, 0.05),
                                logpen = log(1 - 0.5),
-                               correction = TRUE, niter = 100, burnin = 0, thin = 1,
-                               nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
+                               correction = TRUE, within_model = NULL,
+                               niter = 100, burnin = 0, thin = 1,
+                               nmessage = 10, max_inla_failures = 20,
+                               path_save = NULL, nsave = nmessage, ...) {
   inla_args <- match.call(expand.dots = FALSE)$...
+
+  if (!is.null(within_model)) {
+    validate_sfclust_within_model(within_model)
+    direct_model_args <- intersect(c("formula", "family"), names(inla_args))
+    if (length(direct_model_args) > 0) {
+      stop("Do not pass `within_model` together with direct model arguments such as `formula` or `family`.", call. = FALSE)
+    }
+    if (!is.null(within_model$formula)) inla_args$formula <- within_model$formula
+    inla_args$family <- within_model$family
+  }
 
   if (is.null(graphdata)) graphdata <- genclust_adj(adjacency * runif(length(adjacency)), nclust = nclust)
   graphdata <- validate_graphdata(graphdata)
@@ -190,8 +216,10 @@ sfclust.data.frame <- function(x, adjacency, graphdata = NULL, fnames = NULL,
               move_prob = move_prob, logpen = logpen,
               correction = correction, niter = niter, burnin = burnin,
               thin = thin, nmessage = nmessage,
+              max_inla_failures = max_inla_failures,
               path_save = path_save, nsave = nsave,
               inla_args = inla_args,
+              within_model = within_model,
               input_args = list(fnames = fnames))
 }
 
@@ -201,15 +229,28 @@ sfclust.data.frame <- function(x, adjacency, graphdata = NULL, fnames = NULL,
 sfclust.stars <- function(x, nclust = 10, graphdata = NULL, spnames = NULL,
                           move_prob = c(0.425, 0.425, 0.1, 0.05),
                           logpen = log(1 - 0.5),
-                          correction = TRUE, niter = 100, burnin = 0, thin = 1,
-                          nmessage = 10, path_save = NULL, nsave = nmessage, ...) {
+                          correction = TRUE, within_model = NULL,
+                          niter = 100, burnin = 0, thin = 1,
+                          nmessage = 10, max_inla_failures = 20,
+                          path_save = NULL, nsave = nmessage, ...) {
   inla_args <- match.call(expand.dots = FALSE)$...
+
+  if (!is.null(within_model)) {
+    validate_sfclust_within_model(within_model)
+    direct_model_args <- intersect(c("formula", "family"), names(inla_args))
+    if (length(direct_model_args) > 0) {
+      stop("Do not pass `within_model` together with direct model arguments such as `formula` or `family`.", call. = FALSE)
+    }
+    if (!is.null(within_model$formula)) inla_args$formula <- within_model$formula
+    inla_args$family <- within_model$family
+  }
+
   spnames <- detect_spnames(x, spnames)
   fnames  <- setdiff(dimnames(x), spnames)
 
   # initial clustering
   if (is.null(graphdata)) {
-    response  <- detect_response(eval(inla_args$formula), names(x))
+    response  <- if (!is.null(inla_args$formula)) detect_response(eval(inla_args$formula), names(x)) else NULL
     graphdata <- genclust(x, spnames = spnames, response = response, nclust = nclust)
   } else {
     graphdata <- validate_graphdata(graphdata)
@@ -221,8 +262,10 @@ sfclust.stars <- function(x, nclust = 10, graphdata = NULL, spnames = NULL,
               move_prob = move_prob, logpen = logpen,
               correction = correction, niter = niter,
               burnin = burnin, thin = thin, nmessage = nmessage,
+              max_inla_failures = max_inla_failures,
               path_save = path_save, nsave = nsave,
               inla_args = inla_args,
+              within_model = within_model,
               save_class = c("sfclust_stars", "sfclust"),
               input_args = input_args)
 }
@@ -246,31 +289,77 @@ validate_graphdata <- function(graphdata) {
 sfclust_fit <- function(data, graphdata,
                         move_prob = c(0.425, 0.425, 0.1, 0.05), logpen = log(1 - 0.5),
                         correction = TRUE, niter = 100, burnin = 0, thin = 1,
-                        nmessage = 10, path_save = NULL, nsave = nmessage,
-                        inla_args = NULL, save_class = "sfclust", input_args = NULL) {
+                        nmessage = 10, max_inla_failures = 20,
+                        path_save = NULL, nsave = nmessage,
+                        inla_args = NULL, within_model = NULL,
+                        save_class = "sfclust", input_args = NULL) {
 
-  # check if correction is required
-  if (correction) {
-    if (length(correction_required(eval(inla_args$formula))) == 0) {
-      correction <- FALSE
-      warning("Log marginal-likelihood correction not required.", immediate. = TRUE)
-    }
+  if (!is.numeric(max_inla_failures) || length(max_inla_failures) != 1 || is.na(max_inla_failures) || max_inla_failures < 1 || max_inla_failures != as.integer(max_inla_failures)) {
+    stop("`max_inla_failures` must be a single positive integer.", call. = FALSE)
   }
+  inla_failure_count <- 0L
 
   if (is.null(data$sid)) data$sid <- match(data$ids, sort(unique(data$ids)))
-
-  fit_args <- list(data = data, graphdata = graphdata, move_prob = move_prob, logpen = logpen,
-                   correction = correction, niter = niter, burnin = burnin, thin = thin)
 
   # initial clustering
   graph      <- graphdata[["graph"]]
   mstgraph   <- graphdata[["mst"]]
   membership <- graphdata[["membership"]]
 
+  stored_formula <- inla_args$formula
+  if (is.null(stored_formula) && !is.null(within_model$stack_fun)) {
+    first_cluster <- unique_clusters(membership)[[1]]
+    cluster_units <- which(membership == first_cluster)
+    cluster_data  <- data[data$sid %in% cluster_units, , drop = FALSE]
+
+    inla_stack <- within_model$stack_fun(cluster_data)
+    stack_formula <- NULL
+    if (!inherits(inla_stack, "inla.data.stack")) {
+      if (!is.list(inla_stack)) {
+        stop("`stack_fun` must return either an INLA stack or a list with `stack` and optional `formula` components.", call. = FALSE)
+      }
+      if (is.null(names(inla_stack)) || !"stack" %in% names(inla_stack)) {
+        stop("A list returned by `stack_fun` must contain a `stack` component.", call. = FALSE)
+      }
+      extra_components <- setdiff(names(inla_stack), c("stack", "formula"))
+      if (length(extra_components) > 0) {
+        stop("A list returned by `stack_fun` may only contain `stack` and optional `formula` components.", call. = FALSE)
+      }
+      stack_formula <- inla_stack$formula
+      inla_stack <- inla_stack$stack
+    }
+    if (!inherits(inla_stack, "inla.data.stack")) {
+      stop("The `stack` component returned by `stack_fun` must be an INLA stack.", call. = FALSE)
+    }
+    if (!is.null(stack_formula) && !inherits(stack_formula, "formula")) {
+      stop("The `formula` component returned by `stack_fun` must be a formula.", call. = FALSE)
+    }
+
+    stored_formula <- stack_formula
+    if (!is.null(stored_formula)) inla_args$formula <- stored_formula
+  }
+
+  if (is.null(stored_formula)) {
+    stop("A within-cluster formula must be supplied through `formula`, `within_model$formula`, or the list returned by `stack_fun`.", call. = FALSE)
+  }
+
+  # check if correction is required
+  if (correction) {
+    if (length(correction_required(eval(stored_formula))) == 0) {
+      correction <- FALSE
+      warning("Log marginal-likelihood correction not required.", immediate. = TRUE)
+    }
+  }
+
+  fit_args <- list(data = data, graphdata = graphdata, move_prob = move_prob, logpen = logpen,
+                   correction = correction, niter = niter, burnin = burnin, thin = thin,
+                   max_inla_failures = max_inla_failures,
+                   within_model = within_model)
+
   ns         <- length(membership)
   nclust     <- max(membership)
   edge_status <- getEdgeStatus(membership, mstgraph)
-  log_mlike_vec <- log_mlik_all(membership, data, correction, FALSE, inla_args)
+  log_mlike_vec <- log_mlik_all(membership, data, correction, FALSE, inla_args, within_model)
   log_mlike  <- sum(log_mlike_vec)
 
   # output objects
@@ -312,7 +401,18 @@ sfclust_fit <- function(data, graphdata,
       }
       log_P   <- log(rd_new) - log(rb)
       log_A   <- logpen
-      log_L_new <- log_mlik_ratio("split", split_res, log_mlike_vec, data, correction, inla_args)
+      log_L_new <- log_mlik_ratio("split", split_res, log_mlike_vec, data, correction, inla_args, within_model)
+
+      # Count consecutive INLA failures. Failed proposals have non-finite log likelihoods.
+      if (any(!is.finite(log_L_new$log_mlike_vec))) {
+        inla_failure_count <- inla_failure_count + 1L
+        message("INLA model fitting failed: ", inla_failure_count, " consecutive failures.")
+        if (inla_failure_count >= max_inla_failures) {
+          stop("INLA model fitting failed too many times in a row. Please check your model specification.", call. = FALSE)
+        }
+      } else {
+        inla_failure_count <- 0L
+      }
       acc_prob  <- exp(min(0, log_A + log_P + log_L_new$ratio))
 
       if (runif(1) < acc_prob) {
@@ -335,7 +435,18 @@ sfclust_fit <- function(data, graphdata,
       }
       log_P   <- log(rb_new) - log(rd)
       log_A   <- -logpen
-      log_L_new <- log_mlik_ratio("merge", merge_res, log_mlike_vec, data, correction, inla_args)
+      log_L_new <- log_mlik_ratio("merge", merge_res, log_mlike_vec, data, correction, inla_args, within_model)
+
+      # Count consecutive INLA failures. Failed proposals have non-finite log likelihoods.
+      if (any(!is.finite(log_L_new$log_mlike_vec))) {
+        inla_failure_count <- inla_failure_count + 1L
+        message("INLA model fitting failed: ", inla_failure_count, " consecutive failures.")
+        if (inla_failure_count >= max_inla_failures) {
+          stop("INLA model fitting failed too many times in a row. Please check your model specification.", call. = FALSE)
+        }
+      } else {
+        inla_failure_count <- 0L
+      }
       acc_prob  <- exp(min(0, log_A + log_P + log_L_new$ratio))
 
       if (runif(1) < acc_prob) {
@@ -352,8 +463,20 @@ sfclust_fit <- function(data, graphdata,
       merge_res <- mergeCluster(mstgraph, edge_status, membership)
       split_res <- splitCluster(mstgraph, nclust - 1, merge_res$membership)
 
-      log_L_new_merge <- log_mlik_ratio("merge", merge_res, log_mlike_vec, data, correction, inla_args)
-      log_L_new       <- log_mlik_ratio("split", split_res, log_L_new_merge$log_mlike_vec, data, correction, inla_args)
+      log_L_new_merge <- log_mlik_ratio("merge", merge_res, log_mlike_vec, data, correction, inla_args, within_model)
+      log_L_new       <- log_mlik_ratio("split", split_res, log_L_new_merge$log_mlike_vec, data, correction, inla_args, within_model)
+
+      # Count consecutive INLA failures. Failed proposals have non-finite log likelihoods.
+      log_L_check <- c(log_L_new_merge$log_mlike_vec, log_L_new$log_mlike_vec)
+      if (any(!is.finite(log_L_check))) {
+        inla_failure_count <- inla_failure_count + 1L
+        message("INLA model fitting failed: ", inla_failure_count, " consecutive failures.")
+        if (inla_failure_count >= max_inla_failures) {
+          stop("INLA model fitting failed too many times in a row. Please check your model specification.", call. = FALSE)
+        }
+      } else {
+        inla_failure_count <- 0L
+      }
       acc_prob        <- exp(min(0, log_L_new_merge$ratio + log_L_new$ratio))
 
       if (runif(1) < acc_prob) {
@@ -424,7 +547,7 @@ sfclust_fit <- function(data, graphdata,
     clust = list(
       id       = nrow(membership_out),
       membership = membership,
-      models   = log_mlik_all(membership, data, FALSE, TRUE, inla_args)
+      models   = log_mlik_all(membership, data, FALSE, TRUE, inla_args, within_model)
     )
   )
   attr(output, "mst")       <- mst_out
@@ -437,12 +560,12 @@ sfclust_fit <- function(data, graphdata,
   return(output)
 }
 
-log_mlik_ratio <- function(move_type, move, log_mlike_vec, data, correction = TRUE, inla_args = NULL) {
+log_mlik_ratio <- function(move_type, move, log_mlike_vec, data, correction = TRUE, inla_args = NULL, within_model = NULL) {
   # update local marginal likelihoods for split move
   if (move_type == "split") {
     log_like_vec_new <- log_mlike_vec
-    M1 <- log_mlik_each(move$cluster_old, move$membership, data, correction, FALSE, inla_args)
-    M2 <- log_mlik_each(move$cluster_new, move$membership, data, correction, FALSE, inla_args)
+    M1 <- log_mlik_each(move$cluster_old, move$membership, data, correction, FALSE, inla_args, within_model)
+    M2 <- log_mlik_each(move$cluster_new, move$membership, data, correction, FALSE, inla_args, within_model)
     log_like_vec_new[move$cluster_old] <- M1
     log_like_vec_new[move$cluster_new] <- M2
     llratio <- M1 + M2 - log_mlike_vec[move$cluster_old]
@@ -452,7 +575,7 @@ log_mlik_ratio <- function(move_type, move, log_mlike_vec, data, correction = TR
   # update local marginal likelihoods for merge move
   if (move_type == "merge") {
     log_like_vec_new <- log_mlike_vec[- move$cluster_rm]
-    M <- log_mlik_each(move$cluster_new, move$membership, data, correction, FALSE, inla_args)
+    M <- log_mlik_each(move$cluster_new, move$membership, data, correction, FALSE, inla_args, within_model)
     log_like_vec_new[move$cluster_new] <- M
     llratio <- M - sum(log_mlike_vec[c(move$cluster_rm, move$cluster_new)])
     if (is.nan(llratio)) llratio <- -Inf

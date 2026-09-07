@@ -9,7 +9,8 @@ log_mlik_all(
   data,
   correction = TRUE,
   detailed = FALSE,
-  inla_args = NULL
+  inla_args = NULL,
+  within_model = NULL
 )
 }
 \arguments{
@@ -29,6 +30,10 @@ case.}
 
 \item{inla_args}{A named list or pairlist of arguments passed to \code{inla()} (e.g.
 \code{formula}, \code{family}, \code{E}).}
+
+\item{within_model}{Optional object created by \code{sfclust_within_model()}. When
+provided with a \code{stack_fun}, the function is called once per cluster to
+build the INLA stack used for that cluster.}
 }
 \value{
 A numeric vector containing the log marginal likelihood for each cluster or the
@@ -37,4 +42,15 @@ the fitted INLA model for each cluster when \code{detailed = TRUE}.
 \description{
 Fit the specified INLA model to each cluster and compute the log marginal likelihood
 for each cluster specified in the membership vector.
+}
+\details{
+When a within-model object has a \code{stack_fun}, it is called as \code{stack_fun(data)}.
+The \code{data} argument is the long-format data for one cluster. It contains \code{id},
+\code{ids}, \code{sid}, functional index columns such as \code{id_time}, and all variables
+from the original data.
+
+\code{stack_fun(data)} may return an \code{INLA::inla.stack()} object directly, or a
+list with components \code{stack} and optional \code{formula}. Family and other INLA
+arguments should be provided through \code{sfclust_within_model()} or \code{sfclust()},
+not returned by \code{stack_fun}.
 }

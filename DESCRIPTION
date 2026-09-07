@@ -7,7 +7,9 @@ Authors@R: c(
     person("Ruiman", "Zhong", ,"ruiman.zhong@kaust.edu.sa", role = c("aut"),
            comment = c(ORCID = "0000-0002-4681-9199")),
     person("Paula", "Moraga", ,"paula.moraga@kaust.edu.sa", role = c("aut"),
-           comment = c(ORCID = "0000-0001-5266-0201"))
+           comment = c(ORCID = "0000-0001-5266-0201")),
+    person("Jorge", "Mestre-Tomás", ,"jorgemestre@icm.csic.es", role = c("aut"),
+           comment = c(ORCID = "0000-0002-8983-3417"))
            )
 Description: Bayesian clustering of spatial regions with similar functional shapes using
     spanning trees and latent Gaussian models. The method enforces spatial contiguity
@@ -46,3 +48,4 @@ VignetteBuilder: knitr
 LazyData: true
 Config/Needs/website: rmarkdown, fda, maps
 Config/roxygen2/version: 8.0.0
+RoxygenNote: 7.3.3

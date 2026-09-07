@@ -24,7 +24,8 @@ level. Only supported for \code{sfclust_stars} results.}
 }
 \value{
 A data frame with fitted values and cluster assignments, keyed by \code{id}.
-For \code{sfclust_stars} objects, a \code{stars} object is returned instead.
+For \code{sfclust_stars} objects, a \code{stars} object is returned instead
+unless the model uses a custom fitted-value extractor.
 }
 \description{
 This function calculates the fitted values for a specific clustering sample in an
