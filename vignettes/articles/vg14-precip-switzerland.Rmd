@@ -48,7 +48,7 @@ cheprec
 We start by visualizing the raw monthly precipitation across the grid, adding a boundary
 that limits our area of study.
 
-```{r, fig.height = 8}
+```{r, fig.height = 5}
 pixel_boundary <- st_as_stars(cheprec["prec", , , 1]) |>
   st_as_sf(as_points = FALSE, na.rm = TRUE) |>
   st_union()
@@ -56,8 +56,8 @@ pixel_boundary <- st_as_stars(cheprec["prec", , , 1]) |>
 ggplot() +
   geom_stars(aes(fill = prec), data = cheprec) +
   geom_sf(data = pixel_boundary, fill = NA, color = "black", linewidth = 0.5) +
-  facet_wrap(~ factor(month, labels = month.abb), ncol = 3) +
-  scale_fill_distiller(palette = "RdBu", direction = 1, na.value = "grey50") +
+  facet_wrap(~ factor(month, labels = month.abb), ncol = 4) +
+  scale_fill_distiller(palette = "RdBu", direction = 1, na.value = NA) +
   labs(fill = "Precip (mm)") +
   coord_sf() +
   theme_void(base_size = 9) +
@@ -132,8 +132,9 @@ shapes:
 
 ```{r, fig.height = 3.5}
 gg1 <- plot_clusters_map(result, sort = TRUE, clusters = 1:12, legend = TRUE) +
-  geom_sf(data = pixel_boundary, fill = NA, color = "black", linewidth = 0.3) +
-  labs(x = NULL, y = NULL)
+  geom_sf(data = pixel_boundary, fill = NA, color = "black", linewidth = 0.5) +
+  labs(x = NULL, y = NULL) +
+  scale_fill_hue(na.value = NA)
 gg2 <- plot_clusters_fitted(result, sort = TRUE, clusters = 1:12) +
   scale_x_continuous(breaks = seq(1, 12, 3), labels = month.abb[seq(1, 12, 3)])
 gg1 + gg2
@@ -158,7 +159,7 @@ clusters, confirming that grid cells assigned to the same cluster share a consis
 seasonal shape, including the less common bimodal pattern of some clusters, while the
 amplitude and timing of the peak vary substantially across clusters.
 
-```{r, fig.height = 6}
+```{r, fig.height = 3}
 plot_clusters_series(result, prec, sort = TRUE, clusters = 1:12) +
   facet_wrap(~ cluster, ncol = 6) +
   scale_x_continuous(breaks = seq(1, 12, 3), labels = month.abb[seq(1, 12, 3)]) +
