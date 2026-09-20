@@ -103,13 +103,13 @@ result <- sfclust(
 )
 ```
 
-    #> Iteration 5: clusters = 6, births = 1, deaths = 0, changes = 0, hypers = 1, log_mlike = -249.80693990521
+    #> Iteration 5: clusters = 6, births = 1, deaths = 0, changes = 0, hypers = 1, log_mlike = -249.806934754319
 
-    #> Iteration 10: clusters = 5, births = 1, deaths = 1, changes = 0, hypers = 1, log_mlike = -228.082696692424
+    #> Iteration 10: clusters = 5, births = 1, deaths = 1, changes = 0, hypers = 1, log_mlike = -228.082697453863
 
-    #> Iteration 15: clusters = 3, births = 1, deaths = 3, changes = 0, hypers = 1, log_mlike = -191.412243002212
+    #> Iteration 15: clusters = 3, births = 1, deaths = 3, changes = 0, hypers = 1, log_mlike = -191.412242012837
 
-    #> Iteration 20: clusters = 3, births = 1, deaths = 3, changes = 0, hypers = 3, log_mlike = -191.412243002212
+    #> Iteration 20: clusters = 3, births = 1, deaths = 3, changes = 0, hypers = 3, log_mlike = -191.412242012837
 
 ``` r
 

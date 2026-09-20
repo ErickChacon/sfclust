@@ -202,7 +202,7 @@ of the peak vary substantially across clusters.
 ``` r
 
 plot_clusters_series(result, prec, sort = TRUE, clusters = 1:12) +
-  facet_wrap(~ cluster, ncol = 4) +
+  facet_wrap(~ cluster, ncol = 6) +
   scale_x_continuous(breaks = seq(1, 12, 3), labels = month.abb[seq(1, 12, 3)]) +
   labs(y = "Monthly precipitation (mm)")
 ```
