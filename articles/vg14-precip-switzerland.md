@@ -53,13 +53,16 @@ pixel_boundary <- st_as_stars(cheprec["prec", , , 1]) |>
 ggplot() +
   geom_stars(aes(fill = prec), data = cheprec) +
   geom_sf(data = pixel_boundary, fill = NA, color = "black", linewidth = 0.5) +
-  facet_wrap(~ factor(month, labels = month.abb), ncol = 3) +
-  scale_fill_distiller(palette = "RdBu", direction = 1, na.value = "grey50") +
+  facet_wrap(~ factor(month, labels = month.abb), ncol = 4) +
+  scale_fill_distiller(palette = "RdBu", direction = 1, na.value = NA) +
   labs(fill = "Precip (mm)") +
   coord_sf() +
   theme_void(base_size = 9) +
   theme(legend.position = "bottom")
 ```
+
+    #> Warning: Removed 11724 rows containing missing values or values outside the scale range
+    #> (`geom_raster()`).
 
 ![](vg14-precip-switzerland_files/figure-html/unnamed-chunk-4-1.png)
 
@@ -176,12 +179,16 @@ their fitted functional shapes:
 ``` r
 
 gg1 <- plot_clusters_map(result, sort = TRUE, clusters = 1:12, legend = TRUE) +
-  geom_sf(data = pixel_boundary, fill = NA, color = "black", linewidth = 0.3) +
-  labs(x = NULL, y = NULL)
+  geom_sf(data = pixel_boundary, fill = NA, color = "black", linewidth = 0.5) +
+  labs(x = NULL, y = NULL) +
+  scale_fill_hue(na.value = NA)
 gg2 <- plot_clusters_fitted(result, sort = TRUE, clusters = 1:12) +
   scale_x_continuous(breaks = seq(1, 12, 3), labels = month.abb[seq(1, 12, 3)])
 gg1 + gg2
 ```
+
+    #> Warning: Removed 1514 rows containing missing values or values outside the scale range
+    #> (`geom_raster()`).
 
 ![](vg14-precip-switzerland_files/figure-html/unnamed-chunk-10-1.png)
 

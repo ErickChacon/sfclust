@@ -103,13 +103,18 @@ result <- sfclust(
 )
 ```
 
-    #> Iteration 5: clusters = 6, births = 1, deaths = 0, changes = 0, hypers = 1, log_mlike = -249.806934754319
+    #> Iteration 5: clusters = 6, births = 1, deaths = 0, changes = 0, hypers = 1, log_mlike = -249.806942077033
 
-    #> Iteration 10: clusters = 5, births = 1, deaths = 1, changes = 0, hypers = 1, log_mlike = -228.082697453863
+    #> Iteration 10: clusters = 5, births = 1, deaths = 1, changes = 0, hypers = 1, log_mlike = -228.082695458659
 
-    #> Iteration 15: clusters = 3, births = 1, deaths = 3, changes = 0, hypers = 1, log_mlike = -191.412242012837
+    #> 
+    #>  *** inla.core.safe:  rerun to try to solve negative eigenvalue(s) in the Hessian 
+    #> 
+    #>  *** inla.core.safe:  rerun to try to solve negative eigenvalue(s) in the Hessian
 
-    #> Iteration 20: clusters = 3, births = 1, deaths = 3, changes = 0, hypers = 3, log_mlike = -191.412242012837
+    #> Iteration 15: clusters = 4, births = 1, deaths = 2, changes = 0, hypers = 1, log_mlike = -205.932590338608
+
+    #> Iteration 20: clusters = 4, births = 1, deaths = 2, changes = 0, hypers = 1, log_mlike = -205.932590338608
 
 ``` r
 
@@ -125,9 +130,9 @@ result
     #> 
     #> Clustering movement counts:
     #>  births  deaths changes  hypers 
-    #>       1       3       0       3 
+    #>       1       2       0       1 
     #> 
-    #> Log marginal likelihood (sample 20 out of 20): -191.4122
+    #> Log marginal likelihood (sample 20 out of 20): -205.9326
 
 The returned object has class `sfclust` (without the `sfclust_stars`
 subclass). The print output is identical to the stars interface:
@@ -150,10 +155,10 @@ summary(result, sort = TRUE)
     #> y ~ f(time, model = "rw1")
     #> 
     #> Counts per cluster:
-    #> 1 2 3 
-    #> 5 4 4 
+    #> 1 2 3 4 
+    #> 5 4 2 2 
     #> 
-    #> Log marginal likelihood:  -191.4122
+    #> Log marginal likelihood:  -205.9326
 
 [`fitted()`](https://rdrr.io/r/stats/fitted.values.html) returns a
 **data frame** instead of a `stars` object, with one row per observation
@@ -167,12 +172,12 @@ head(df_fit[c("id", "ids", "time", "cluster", "mean", "mean_cluster")])
 ```
 
     #>   id ids time cluster        mean mean_cluster
-    #> 1  1   1    1       1  0.21601259   0.21601259
-    #> 2  2   2    1       1  0.21601259   0.21601259
-    #> 3  3   3    1       1  0.21601259   0.21601259
-    #> 4  4   4    1       1  0.21601259   0.21601259
-    #> 5  5   5    1       1  0.21601259   0.21601259
-    #> 6  6   6    1       2 -0.04776628  -0.04776628
+    #> 1  1   1    1       1  0.21601239   0.21601239
+    #> 2  2   2    1       1  0.21601239   0.21601239
+    #> 3  3   3    1       1  0.21601239   0.21601239
+    #> 4  4   4    1       1  0.21601239   0.21601239
+    #> 5  5   5    1       1  0.21601239   0.21601239
+    #> 6  6   6    1       3 -0.05958088  -0.05958088
 
 The usual plot helpers are available. Since there is no spatial
 geometry, [`plot()`](https://rdrr.io/r/graphics/plot.default.html) has
