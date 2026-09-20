@@ -13,3 +13,5 @@
   stations](vg12-temp-canada.md):
 - [Clustering raster spatio-temporal data
   (NDWI2)](vg13-ndwi-chaparrillo.md):
+- [Average seasonal precipitation in
+  Switzerland](vg14-precip-switzerland.md):
