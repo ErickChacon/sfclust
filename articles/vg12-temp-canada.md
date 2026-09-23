@@ -253,7 +253,7 @@ can be customized using `ggplot2` elements.
 
 ``` r
 
-plot_clusters_series(result, ztemp) +
+plot_clusters_series(result, ztemp, sort = TRUE, clusters = 1:9) +
   geom_hline(yintercept = 0, linetype = 2) +
   facet_wrap(~ cluster, ncol = 5) +
   scale_x_date(date_breaks = "2 months", date_labels =  "%b") +
@@ -262,14 +262,10 @@ plot_clusters_series(result, ztemp) +
 
 ![](vg12-temp-canada_files/figure-html/unnamed-chunk-17-1.png)
 
-Panels 1–9 show the empirical standardized temperature per cluster for
-those clusters that contain more than one station. The main differences
+These panels show the empirical standardized temperature per cluster for
+the 9 clusters that contain more than one station. The main differences
 among these clusters lie in the initial shape of the curve, the speed of
 increase, the shape and timing of the peak, and the behavior during the
-decay phase. For example, clusters 1 and 2 exhibit a bell-shaped
-pattern, while others, such as clusters 3 to 6, display a nearly linear
-increase until reaching a maximum level. Panels 10–14 present the
-empirical standardized temperature per cluster for those that contain
-only one station. These single-station clusters tend to exhibit more
-unique shapes, which not only distinguish them from the previous
-multi-station clusters but also from each other.
+decay phase. For example, most clusters (1–5, 8, and 9) exhibit a
+smooth, bell-shaped seasonal pattern, while clusters 6 and 7 show a
+steeper, more linear increase leading to a sharper peak.
