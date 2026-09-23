@@ -1,3 +1,17 @@
+# sfclust 1.1.1
+
+## Documentation fixes
+
+* Rewrote the "Advanced features" vignette (`vg02-advanced-features.Rmd`) to
+  use `nclust` directly instead of an explicit `genclust()` call, and to
+  demonstrate the `path_save`/`nsave` checkpointing arguments; regenerated
+  the corresponding cached vignette data (`gaussian-mcmc1.rds`,
+  `gaussian-mcmc2.rds`).
+* Fixed the "Standardized daily temperature at Canadian stations" vignette
+  (`vg12-temp-canada.Rmd`): added `sort = TRUE` to `plot_clusters_series()` so
+  its cluster numbering matches `plot_clusters_map()`/`plot_clusters_fitted()`,
+  and corrected the resulting narrative description of cluster shapes.
+
 # sfclust 1.1.0
 
 ## New features
