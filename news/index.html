@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">sfclust</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.1.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -47,6 +47,14 @@
       <small>Source: <a href="https://github.com/ErickChacon/sfclust/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="1.1.1" id="sfclust-111">sfclust 1.1.1<a class="anchor" aria-label="anchor" href="#sfclust-111"></a></h2>
+<div class="section level3">
+<h3 id="documentation-fixes-1-1-1">Documentation fixes<a class="anchor" aria-label="anchor" href="#documentation-fixes-1-1-1"></a></h3>
+<ul><li>Rewrote the “Advanced features” vignette (<code>vg02-advanced-features.Rmd</code>) to use <code>nclust</code> directly instead of an explicit <code><a href="../reference/genclust.html">genclust()</a></code> call, and to demonstrate the <code>path_save</code>/<code>nsave</code> checkpointing arguments; regenerated the corresponding cached vignette data (<code>gaussian-mcmc1.rds</code>, <code>gaussian-mcmc2.rds</code>).</li>
+<li>Fixed the “Standardized daily temperature at Canadian stations” vignette (<code>vg12-temp-canada.Rmd</code>): added <code>sort = TRUE</code> to <code><a href="../reference/plot_clusters_series.html">plot_clusters_series()</a></code> so its cluster numbering matches <code><a href="../reference/plot_clusters_map.html">plot_clusters_map()</a></code>/<code><a href="../reference/plot_clusters_fitted.html">plot_clusters_fitted()</a></code>, and corrected the resulting narrative description of cluster shapes.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="1.1.0" id="sfclust-110">sfclust 1.1.0<a class="anchor" aria-label="anchor" href="#sfclust-110"></a></h2><p class="text-muted">CRAN release: 2026-07-28</p>
 <div class="section level3">

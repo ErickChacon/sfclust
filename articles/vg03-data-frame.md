@@ -103,16 +103,13 @@ result <- sfclust(
 )
 ```
 
-    #> Iteration 5: clusters = 6, births = 1, deaths = 0, changes = 0, hypers = 1, log_mlike = -249.806932370494
+    #> Iteration 5: clusters = 6, births = 1, deaths = 0, changes = 0, hypers = 1, log_mlike = -249.806943354879
 
-    #> Iteration 10: clusters = 5, births = 1, deaths = 1, changes = 0, hypers = 1, log_mlike = -228.082701002113
+    #> Iteration 10: clusters = 5, births = 1, deaths = 1, changes = 0, hypers = 1, log_mlike = -228.082698589866
 
-    #> 
-    #>  *** inla.core.safe:  rerun to try to solve negative eigenvalue(s) in the Hessian
+    #> Iteration 15: clusters = 3, births = 1, deaths = 3, changes = 0, hypers = 1, log_mlike = -191.412235739637
 
-    #> Iteration 15: clusters = 4, births = 1, deaths = 2, changes = 0, hypers = 1, log_mlike = -205.932600812274
-
-    #> Iteration 20: clusters = 3, births = 1, deaths = 3, changes = 0, hypers = 1, log_mlike = -191.41224484807
+    #> Iteration 20: clusters = 3, births = 1, deaths = 3, changes = 0, hypers = 3, log_mlike = -191.412235739637
 
 ``` r
 
@@ -128,7 +125,7 @@ result
     #> 
     #> Clustering movement counts:
     #>  births  deaths changes  hypers 
-    #>       1       3       0       1 
+    #>       1       3       0       3 
     #> 
     #> Log marginal likelihood (sample 20 out of 20): -191.4122
 
@@ -170,11 +167,11 @@ head(df_fit[c("id", "ids", "time", "cluster", "mean", "mean_cluster")])
 ```
 
     #>   id ids time cluster        mean mean_cluster
-    #> 1  1   1    1       1  0.21601260   0.21601260
-    #> 2  2   2    1       1  0.21601260   0.21601260
-    #> 3  3   3    1       1  0.21601260   0.21601260
-    #> 4  4   4    1       1  0.21601260   0.21601260
-    #> 5  5   5    1       1  0.21601260   0.21601260
+    #> 1  1   1    1       1  0.21601255   0.21601255
+    #> 2  2   2    1       1  0.21601255   0.21601255
+    #> 3  3   3    1       1  0.21601255   0.21601255
+    #> 4  4   4    1       1  0.21601255   0.21601255
+    #> 5  5   5    1       1  0.21601255   0.21601255
     #> 6  6   6    1       2 -0.04776628  -0.04776628
 
 The usual plot helpers are available. Since there is no spatial
