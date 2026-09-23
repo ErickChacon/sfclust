@@ -142,7 +142,7 @@ ggplot() +
 
 ```{r, echo = FALSE}
 if (save_figures) {
-  ggsave(file.path(path_figures, "canweather-voronoi.pdf"), width = 10, height = 4.1,
+  ggsave(file.path(path_figures, "canweather-voronoi.pdf"), width = 4.8, height = 4.1,
     device = cairo_pdf)
 }
 ```
@@ -219,8 +219,8 @@ second-largest is more dispersed, while the third is in the southwest with 4 sta
 We use `plot_clusters_series()` to visualize the raw standardized temperature per cluster.
 The output can be customized using `ggplot2` elements.
 
-```{r, fig.height = 4.5}
-plot_clusters_series(result, ztemp) +
+```{r, fig.height = 3.5}
+plot_clusters_series(result, ztemp, sort = TRUE, clusters = 1:9) +
   geom_hline(yintercept = 0, linetype = 2) +
   facet_wrap(~ cluster, ncol = 5) +
   scale_x_date(date_breaks = "2 months", date_labels =  "%b") +
@@ -230,26 +230,13 @@ plot_clusters_series(result, ztemp) +
 ```{r, echo = FALSE}
 if (save_figures) {
   ggsave(file.path(path_figures, "canweather-risk-per-cluster.pdf"),
-    width = 10, height = 5.5, device = cairo_pdf)
+    width = 10, height = 4.5, device = cairo_pdf)
 }
 ```
 
-Panels 1–9 show the empirical standardized temperature per cluster for those clusters
+These panels show the empirical standardized temperature per cluster for the 9 clusters
 that contain more than one station. The main differences among these clusters lie in the
 initial shape of the curve, the speed of increase, the shape and timing of the peak, and
-the behavior during the decay phase. For example, clusters 1 and 2 exhibit a bell-shaped
-pattern, while others, such as clusters 3 to 6, display a nearly linear increase until
-reaching a maximum level. Panels 10–14 present the empirical standardized temperature per
-cluster for those that contain only one station. These single-station clusters tend to exhibit more unique shapes, which not only
-distinguish them from the previous multi-station clusters but also from each other.
-
-```{r, echo = FALSE}
-# pred <- fitted(result, sort = TRUE, aggregate = TRUE)
-# ggplot() +
-#     geom_stars(aes(fill = mean_cluster), data = pred) +
-#     facet_wrap(~ time) +
-#     scale_fill_distiller(palette = "RdBu") +
-#     labs(title = "Daily risk", fill = "Risk") +
-#     theme_bw(base_size = 7) +
-#     theme(legend.position = "bottom")
-```
+the behavior during the decay phase. For example, most clusters (1–5, 8, and 9) exhibit a
+smooth, bell-shaped seasonal pattern, while clusters 6 and 7 show a steeper, more linear
+increase leading to a sharper peak.
