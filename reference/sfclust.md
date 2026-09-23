@@ -273,16 +273,16 @@ plot(result2)
  result2 <- update(result, niter = 2, nmessage = 1)
  plot(result2)
 }
-#> Iteration 1: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1966.7409233791
-#> Iteration 2: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1966.7409233791
-#> Iteration 3: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1871.05720404267
-#> Iteration 4: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1871.05720404267
-#> Iteration 5: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1871.05720404267
-#> Iteration 6: clusters = 13, births = 3, deaths = 0, changes = 0, hypers = 0, log_mlike = -1815.85207424898
-#> Iteration 7: clusters = 13, births = 3, deaths = 0, changes = 0, hypers = 0, log_mlike = -1815.85207424898
-#> Iteration 8: clusters = 13, births = 3, deaths = 0, changes = 0, hypers = 0, log_mlike = -1815.85207424898
-#> Iteration 9: clusters = 13, births = 3, deaths = 0, changes = 0, hypers = 0, log_mlike = -1815.85207424898
-#> Iteration 10: clusters = 14, births = 4, deaths = 0, changes = 0, hypers = 0, log_mlike = -1747.15127883248
+#> Iteration 1: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1966.74074229056
+#> Iteration 2: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1966.74074229056
+#> Iteration 3: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1871.05702483276
+#> Iteration 4: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1871.05702483276
+#> Iteration 5: clusters = 12, births = 2, deaths = 0, changes = 0, hypers = 0, log_mlike = -1871.05702483276
+#> Iteration 6: clusters = 13, births = 3, deaths = 0, changes = 0, hypers = 0, log_mlike = -1815.85189529186
+#> Iteration 7: clusters = 13, births = 3, deaths = 0, changes = 0, hypers = 0, log_mlike = -1815.85189529186
+#> Iteration 8: clusters = 13, births = 3, deaths = 0, changes = 0, hypers = 0, log_mlike = -1815.85189529186
+#> Iteration 9: clusters = 13, births = 3, deaths = 0, changes = 0, hypers = 0, log_mlike = -1815.85189529186
+#> Iteration 10: clusters = 14, births = 4, deaths = 0, changes = 0, hypers = 0, log_mlike = -1747.15109987861
 #> Within-cluster formula:
 #> y ~ f(id_time, model = "rw1")
 #> 
@@ -305,19 +305,19 @@ plot(result2)
 #> 71  9  5  4  2  1  1  1  1  1  1  1  1  1 
 #> 
 #> Log marginal likelihood:  -1747.151 
-#> Iteration 1: clusters = 14, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -1747.15136254764
-#> Iteration 2: clusters = 15, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1661.30429271454
+#> Iteration 1: clusters = 14, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -1747.15109716897
+#> Iteration 2: clusters = 15, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -1661.30402762002
 #> Warning: Log marginal-likelihood correction not required.
-#> Iteration 1: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -76867.9510701471
-#> Iteration 2: clusters = 10, births = 1, deaths = 1, changes = 0, hypers = 0, log_mlike = -76848.8909653535
-#> Iteration 3: clusters = 10, births = 1, deaths = 1, changes = 0, hypers = 0, log_mlike = -76848.8909653535
-#> Iteration 4: clusters = 11, births = 2, deaths = 1, changes = 0, hypers = 0, log_mlike = -76666.8948848146
-#> Iteration 5: clusters = 11, births = 2, deaths = 1, changes = 0, hypers = 0, log_mlike = -76666.8948848146
-#> Iteration 6: clusters = 11, births = 2, deaths = 1, changes = 0, hypers = 0, log_mlike = -76666.8948848146
-#> Iteration 7: clusters = 11, births = 2, deaths = 1, changes = 1, hypers = 0, log_mlike = -76541.0413347104
-#> Iteration 8: clusters = 11, births = 2, deaths = 1, changes = 1, hypers = 0, log_mlike = -76541.0413347104
-#> Iteration 9: clusters = 11, births = 2, deaths = 1, changes = 2, hypers = 0, log_mlike = -76452.1428094248
-#> Iteration 10: clusters = 11, births = 2, deaths = 1, changes = 2, hypers = 0, log_mlike = -76452.1428094248
+#> Iteration 1: clusters = 11, births = 1, deaths = 0, changes = 0, hypers = 0, log_mlike = -76867.9525679208
+#> Iteration 2: clusters = 10, births = 1, deaths = 1, changes = 0, hypers = 0, log_mlike = -76848.8913162282
+#> Iteration 3: clusters = 10, births = 1, deaths = 1, changes = 0, hypers = 0, log_mlike = -76848.8913162282
+#> Iteration 4: clusters = 11, births = 2, deaths = 1, changes = 0, hypers = 0, log_mlike = -76666.8952231798
+#> Iteration 5: clusters = 11, births = 2, deaths = 1, changes = 0, hypers = 0, log_mlike = -76666.8952231798
+#> Iteration 6: clusters = 11, births = 2, deaths = 1, changes = 0, hypers = 0, log_mlike = -76666.8952231798
+#> Iteration 7: clusters = 11, births = 2, deaths = 1, changes = 1, hypers = 0, log_mlike = -76541.0416528724
+#> Iteration 8: clusters = 11, births = 2, deaths = 1, changes = 1, hypers = 0, log_mlike = -76541.0416528724
+#> Iteration 9: clusters = 11, births = 2, deaths = 1, changes = 2, hypers = 0, log_mlike = -76452.1431358001
+#> Iteration 10: clusters = 11, births = 2, deaths = 1, changes = 2, hypers = 0, log_mlike = -76452.1431358001
 #> Within-cluster formula:
 #> cases ~ poly(id_time, 2) + f(id)
 #> 
@@ -340,8 +340,8 @@ plot(result2)
 #> 52 32  4  4  2  1  1  1  1  1  1 
 #> 
 #> Log marginal likelihood:  -76452.14 
-#> Iteration 1: clusters = 11, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -76452.1427919292
-#> Iteration 2: clusters = 11, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -76452.1427919292
+#> Iteration 1: clusters = 11, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -76452.1415814455
+#> Iteration 2: clusters = 11, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -76452.1415814455
 #> Warning: Log marginal-likelihood correction not required.
 #> Iteration 1: clusters = 3, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -247.318700787183
 #> Iteration 2: clusters = 3, births = 0, deaths = 0, changes = 0, hypers = 0, log_mlike = -247.318700787183

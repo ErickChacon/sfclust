@@ -13,7 +13,6 @@ library(sfclust)
 library(stars)
 library(ggplot2)
 library(dplyr)
-library(ggraph)
 ```
 
 ## Data
@@ -101,84 +100,60 @@ The prior for the hyperparameter $`\nu_c`$ is defined as:
 \log(\nu_c) \sim \text{Normal}(-2, 1).
 ```
 
-### Initial clustering
+### INLA integration
 
-`sfclust` uses an undirected graph to represent connections between
-regions and proposes spatial clusters using this graph through minimum
-spanning trees (MST). By default, `sfclust` accepts the argument
-`graphdata`, which should include:
+`sfclust` integrates seamlessly with `inla()`, letting us specify the
+within-cluster model above exactly as we would in a standard `INLA`
+workflow. The model formula (including random effects and priors) and
+any additional arguments are passed directly to `inla()`. The following
+formula defines a linear predictor with a first-order random walk and
+the prior `Normal(-2, 1)` on the log-precision described above; we reuse
+this `formula` object in the examples below.
 
-- An undirected `igraph` object representing spatial connections,
-- An MST of that graph, and
-- A `membership` vector indicating the initial cluster assignments for
-  each region.
+``` r
 
-For simplicity, you can use the `genclust` function to generate an
-initial random partitioning with a specified number of clusters. In this
-example, we create a partition with 20 clusters:
+formula <- y ~ f(id_time, model = "rw1",
+  hyper = list(prec = list(prior = "normal", param = c(-2, 1))))
+```
+
+You can define other latent models and priors following `INLA`
+conventions. Further documentation is available at
+<https://www.r-inla.org/documentation>.
+
+### Penalizing the number of clusters
+
+The `logpen` argument sets the log-penalty on the number of clusters,
+specifically `log(1 - q)`, where `q` is the prior probability of keeping
+a cluster: there is no penalty when `logpen = 0`, and more negative
+values increasingly favor fewer clusters. A large negative value such as
+`-50` acts as a strong parsimony prior, meaning that any proposal to
+increase the number of clusters must improve the log marginal likelihood
+by around 50 units to have a high acceptance probability.
+
+### Save options
+
+Besides `niter`, `burnin` discards the first iterations before saving
+samples, and `thin` retains only every `thin`-th iteration, reducing
+autocorrelation in the chain. Note that `niter` counts iterations
+*after* burn-in, so the algorithm runs `burnin + niter` iterations in
+total. To reduce the risk of losing intermediate results, especially
+given the computational cost of the algorithm, you can use the
+`path_save` argument to specify a file for saving the output, and
+`nsave` to define the frequency at which samples are saved.
+
+### Sampling with `sfclust`
+
+We now put all of the above together. We start with 20 initial clusters
+(`nclust = 20`) and run the algorithm for only 50 iterations, using the
+strong penalty and formula defined above, and saving intermediate
+results to `"stgaus-mcmc-initial.rds"`.
 
 ``` r
 
 set.seed(123)
-initial_cluster <- genclust(stgaus, nclust = 20)
-names(initial_cluster)
-```
-
-    #> [1] "graph"      "mst"        "membership" "valid_ids"
-
-Now, let’s visualize how the regions were randomly clustered. Panel (A)
-shows the full adjacency graph (all neighbor connections), panel (B)
-shows the MST derived from it (the backbone used for cluster proposals),
-and panel (C) shows the resulting initial partition:
-
-``` r
-
-gg1 <- ggraph(initial_cluster$graph, layout = st_coordinates(st_centroid(st_geometry(stgaus)))) +
-    geom_edge_fan(linetype = 1, color = 2) +
-    geom_node_point(size = 1.5, color = 1) +
-    geom_sf(data = st_geometry(stgaus), fill = NA, color = 1, linewidth = 0.5) +
-    labs(subtitle = "(A)") +
-    theme_void()
-gg2 <- ggraph(initial_cluster$mst, layout = st_coordinates(st_centroid(st_geometry(stgaus)))) +
-    geom_edge_fan(linetype = 1, color = 2) +
-    geom_node_point(size = 1.5, color = 1) +
-    geom_sf(data = st_geometry(stgaus), fill = NA, color = 1, linewidth = 0.5) +
-    labs(subtitle = "(B)") +
-    theme_void()
-gg3 <- st_sf(st_geometry(stgaus), cluster = factor(initial_cluster$membership)) |>
-  ggplot() +
-    geom_sf(aes(fill = cluster), color = 1) +
-    labs(subtitle = "(C)") +
-    theme_void() +
-    theme(legend.position = "none")
-gg1 + gg2 + gg3 & theme(plot.margin = margin(0, 0, 0, 0))
-```
-
-![](vg02-advanced-features_files/figure-html/unnamed-chunk-7-1.png)
-
-### Sampling with `sfclust`
-
-We will initiate the Bayesian clustering algorithm using our generated
-partition (`initial_cluster`). Additionally, we use the capabilites of
-[`INLA::inla`](https://rdrr.io/pkg/INLA/man/inla.html) to define a model
-that includes a random walk process in the linear predictor, and custom
-priors for the scale hyperparameter. To begin, we will run the algorithm
-for only 50 iterations.
-
-The `logpen` argument sets the log-penalty on the number of clusters,
-specifically `log(1-q)` where `q` is the prior probability of keeping a
-cluster. A large negative value such as `-50` favors fewer clusters,
-acting as a strong parsimony prior. The `burnin` argument discards the
-first iterations before saving samples, and `thin` retains only every
-`thin`-th iteration, reducing autocorrelation in the chain.
-
-``` r
-
-result0 <- sfclust(stgaus, graphdata = initial_cluster, logpen = -50,
-  formula = y ~ f(id_time, model = "rw1",
-                  hyper = list(prec = list(prior = "normal", param = c(-2, 1)))),
-  niter = 50, burnin = 10, thin = 2, nmessage = 10
-)
+result0 <- sfclust(stgaus, nclust = 20, formula = formula, logpen = -50,
+  niter = 50, burnin = 10, thin = 2, nmessage = 10,
+  path_save = "stgaus-mcmc-initial.rds")
 result0
 ```
 
@@ -211,7 +186,7 @@ likelihood has not yet achieved convergence.
 plot(result0, which = 3)
 ```
 
-![](vg02-advanced-features_files/figure-html/unnamed-chunk-11-1.png)
+![](vg02-advanced-features_files/figure-html/unnamed-chunk-9-1.png)
 
 ### Continue sampling
 
@@ -221,7 +196,7 @@ argument:
 
 ``` r
 
-result <- update(result0, niter = 1000)
+result <- update(result0, niter = 1000, nsave = 500, path_save = "stgaus-mcmc.rds")
 result
 ```
 
@@ -248,7 +223,7 @@ that the log marginal likelihood has achieved convergence.
 plot(result, which = 3)
 ```
 
-![](vg02-advanced-features_files/figure-html/unnamed-chunk-14-1.png)
+![](vg02-advanced-features_files/figure-html/unnamed-chunk-12-1.png)
 
 The side-by-side comparison below highlights the contrast: panel (A)
 shows the unstable log marginal likelihood from the short initial run,
@@ -262,7 +237,7 @@ gg2 <- plot(result, which = 3) + labs(subtitle = "(B)")
 gg1 + gg2
 ```
 
-![](vg02-advanced-features_files/figure-html/unnamed-chunk-15-1.png)
+![](vg02-advanced-features_files/figure-html/unnamed-chunk-13-1.png)
 
 ``` r
 
@@ -327,7 +302,7 @@ Let’s visualize the regions grouped by cluster.
 plot(result, which = 1:2, sort = TRUE, legend = TRUE)
 ```
 
-![](vg02-advanced-features_files/figure-html/unnamed-chunk-18-1.png)
+![](vg02-advanced-features_files/figure-html/unnamed-chunk-16-1.png)
 
 Let’s visualize the original data grouped by cluster.
 
@@ -338,4 +313,4 @@ plot_clusters_series(result, y, sort = TRUE) +
   labs(title = "Risk per cluster", y = "Response")
 ```
 
-![](vg02-advanced-features_files/figure-html/unnamed-chunk-19-1.png)
+![](vg02-advanced-features_files/figure-html/unnamed-chunk-17-1.png)
