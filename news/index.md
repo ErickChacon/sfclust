@@ -16,6 +16,8 @@
   its cluster numbering matches
   [`plot_clusters_map()`](../reference/plot_clusters_map.md)/[`plot_clusters_fitted()`](../reference/plot_clusters_fitted.md),
   and corrected the resulting narrative description of cluster shapes.
+- Replaced a dead link to the INLA documentation in
+  `vg02-advanced-features.Rmd`.
 
 ## sfclust 1.1.0
 
