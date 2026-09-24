@@ -6,10 +6,11 @@ API changes). See NEWS.md for full details.
 
 ## Test environments
 
-* local: Linux (Arch), R 4.6.0, via
+* local: Ubuntu 24.04 (Docker), R 4.6.0, via
   `R CMD check --as-cran`
 * GitHub Actions: R CMD check (Linux, macOS,
-  Windows), via .github/workflows
+  Windows; R release and oldrel-1, plus
+  R-devel on Linux)
 * R-hub
 
 ## R CMD check results
@@ -18,20 +19,11 @@ API changes). See NEWS.md for full details.
 
 ## Note for reviewers
 
-Suggested package 'INLA' is not available on
-CRAN. It is required for the package's core
-Bayesian clustering procedure (`sfclust()`),
-which calls INLA at every MCMC iteration;
-without it, only the standalone preprocessing
-utilities (`genclust()`, `data_all()`) are
-usable. All INLA-dependent code in examples,
-tests, and vignettes is guarded by
-`requireNamespace("INLA", quietly = TRUE)`, so
-R CMD check passes cleanly without it. 'INLA'
-is installed from
-<https://inla.r-inla-download.org/R/stable>,
-as noted in the `Additional_repositories`
-field of DESCRIPTION.
+Suggested package 'INLA' is not on CRAN; it is
+available via `Additional_repositories`
+(<https://inla.r-inla-download.org/R/stable>)
+and used conditionally, as in previous
+accepted versions.
 
 ## Downstream dependencies
 

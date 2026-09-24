@@ -11,6 +11,8 @@
   (`vg12-temp-canada.Rmd`): added `sort = TRUE` to `plot_clusters_series()` so
   its cluster numbering matches `plot_clusters_map()`/`plot_clusters_fitted()`,
   and corrected the resulting narrative description of cluster shapes.
+* Replaced a dead link to the INLA documentation in
+  `vg02-advanced-features.Rmd`.
 
 # sfclust 1.1.0
 
