@@ -103,13 +103,18 @@ result <- sfclust(
 )
 ```
 
-    #> Iteration 5: clusters = 6, births = 1, deaths = 0, changes = 0, hypers = 1, log_mlike = -249.806943354879
+    #> Iteration 5: clusters = 6, births = 1, deaths = 0, changes = 0, hypers = 1, log_mlike = -249.806934378231
 
-    #> Iteration 10: clusters = 5, births = 1, deaths = 1, changes = 0, hypers = 1, log_mlike = -228.082698589866
+    #> Iteration 10: clusters = 5, births = 1, deaths = 1, changes = 0, hypers = 1, log_mlike = -228.082702830087
 
-    #> Iteration 15: clusters = 3, births = 1, deaths = 3, changes = 0, hypers = 1, log_mlike = -191.412235739637
+    #> 
+    #>  *** inla.core.safe:  rerun to try to solve negative eigenvalue(s) in the Hessian 
+    #> 
+    #>  *** inla.core.safe:  rerun to try to solve negative eigenvalue(s) in the Hessian
 
-    #> Iteration 20: clusters = 3, births = 1, deaths = 3, changes = 0, hypers = 3, log_mlike = -191.412235739637
+    #> Iteration 15: clusters = 4, births = 1, deaths = 2, changes = 0, hypers = 1, log_mlike = -205.932593663261
+
+    #> Iteration 20: clusters = 3, births = 1, deaths = 3, changes = 0, hypers = 1, log_mlike = -191.412238398135
 
 ``` r
 
@@ -125,7 +130,7 @@ result
     #> 
     #> Clustering movement counts:
     #>  births  deaths changes  hypers 
-    #>       1       3       0       3 
+    #>       1       3       0       1 
     #> 
     #> Log marginal likelihood (sample 20 out of 20): -191.4122
 

@@ -118,7 +118,7 @@ formula <- y ~ f(id_time, model = "rw1",
 
 You can define other latent models and priors following `INLA`
 conventions. Further documentation is available at
-<https://www.r-inla.org/documentation>.
+<https://www.r-inla.org>.
 
 ### Penalizing the number of clusters
 
